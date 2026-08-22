@@ -31,7 +31,7 @@ def validate_runtime_prerequisites(root: Path) -> list[ValidationIssue]:
     ):
         return [ValidationIssue("MCP_VERSION_UNSUPPORTED", "installed MCP version is unsupported")]
     try:
-        requirements = (root / "tools" / "mcp" / "company-context" / "requirements.txt").read_text(encoding="utf-8")
+        requirements = (root / "tools" / "mcp" / "company-context" / "requirements.txt").read_text(encoding="utf-8-sig")
     except (OSError, UnicodeError):
         return [ValidationIssue("MCP_REQUIREMENT_INVALID", "MCP dependency requirement is invalid")]
     if not _has_mcp_v2_bounds(requirements):

@@ -241,6 +241,16 @@ class ValidatorContractTests(unittest.TestCase):
                 contents = f"mcp>=2.0.0,<3.0.0\n{directive}\n"
                 self.assertFalse(_has_mcp_v2_bounds(contents))
 
+    def test_runtime_rejects_bom_prefixed_indirect_requirement(self):
+        with self._temporary_root() as root:
+            requirements = root / "tools" / "mcp" / "company-context" / "requirements.txt"
+            requirements.write_bytes(b"\xef\xbb\xbf-r constraints.txt\nmcp>=2.0.0,<3.0.0\n")
+
+            self.assertEqual(
+                self._codes(validate_runtime_prerequisites(root)),
+                ["MCP_REQUIREMENT_INVALID"],
+            )
+
     def test_runtime_ignores_similar_distribution_names_but_accepts_exact_mcp(self):
         contents = "mcp-tools>=1.0\nmcp_sdk>=1.0\nmcp>=2.0.0,<3.0.0\n"
 
