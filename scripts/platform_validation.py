@@ -25,32 +25,89 @@ def validate_runtime_prerequisites(root: Path) -> list[ValidationIssue]:
     except Exception:
         return [ValidationIssue("MCP_VERSION_UNSUPPORTED", "installed MCP version is unsupported")]
     parsed_version = _parse_version(installed_version)
-    if parsed_version is None or not ((2, 0, 0) <= parsed_version < (3, 0, 0)):
+    if parsed_version is None or not (
+        _compare_versions(parsed_version, (2, 0, 0)) >= 0
+        and _compare_versions(parsed_version, (3, 0, 0)) < 0
+    ):
         return [ValidationIssue("MCP_VERSION_UNSUPPORTED", "installed MCP version is unsupported")]
     try:
         requirements = (root / "tools" / "mcp" / "company-context" / "requirements.txt").read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeError):
         return [ValidationIssue("MCP_REQUIREMENT_INVALID", "MCP dependency requirement is invalid")]
     if not _has_mcp_v2_bounds(requirements):
         return [ValidationIssue("MCP_REQUIREMENT_INVALID", "MCP dependency requirement is invalid")]
     return []
 
 
-def _parse_version(value: str) -> tuple[int, int, int] | None:
-    match = re.fullmatch(r"(\d+)\.(\d+)(?:\.(\d+))?", value.strip())
+def _parse_version(value: str) -> tuple[int, ...] | None:
+    match = re.fullmatch(
+        r"(?i)(\d+(?:\.\d+)*)(?:\.post\d+)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?",
+        value.strip(),
+    )
     if match is None:
         return None
-    return (int(match.group(1)), int(match.group(2)), int(match.group(3) or 0))
+    return tuple(int(part) for part in match.group(1).split("."))
 
 
 def _has_mcp_v2_bounds(requirements: str) -> bool:
+    if any(re.match(r"^\s*-(?:r|c)\b", line, flags=re.IGNORECASE) for line in requirements.splitlines()):
+        return False
+    constraints: list[tuple[str, tuple[int, ...]]] = []
+    has_minimum = False
+    has_maximum = False
     for raw_line in requirements.splitlines():
         line = raw_line.split("#", maxsplit=1)[0].strip()
-        if not line or not re.match(r"(?i)^mcp\s*(?:[<>=!~]|$)", line):
+        if not line:
             continue
-        constraints = {item.strip() for item in line[3:].split(",")}
-        return ">=2.0.0" in constraints and "<3.0.0" in constraints
-    return False
+        match = re.match(r"(?i)^mcp\s*(.*)$", line)
+        if match is None:
+            continue
+        for raw_constraint in match.group(1).split(","):
+            constraint = re.fullmatch(r"\s*(>=|>|<=|<|==)\s*(\S+)\s*", raw_constraint)
+            if constraint is None:
+                return False
+            version = _parse_version(constraint.group(2))
+            if version is None:
+                return False
+            operator = constraint.group(1)
+            constraints.append((operator, version))
+            has_minimum |= operator == ">=" and _compare_versions(version, (2, 0, 0)) == 0
+            has_maximum |= operator == "<" and _compare_versions(version, (3, 0, 0)) == 0
+    return bool(constraints) and has_minimum and has_maximum and _constraints_are_satisfiable(constraints)
+
+
+def _compare_versions(left: tuple[int, ...], right: tuple[int, ...]) -> int:
+    length = max(len(left), len(right), 3)
+    left_normalized = left + (0,) * (length - len(left))
+    right_normalized = right + (0,) * (length - len(right))
+    return (left_normalized > right_normalized) - (left_normalized < right_normalized)
+
+
+def _constraints_are_satisfiable(constraints: list[tuple[str, tuple[int, ...]]]) -> bool:
+    lower: tuple[tuple[int, ...], bool] | None = None
+    upper: tuple[tuple[int, ...], bool] | None = None
+    for operator, version in constraints:
+        if operator == "==":
+            candidates = ((">=", version), ("<=", version))
+        else:
+            candidates = ((operator, version),)
+        for bound_operator, bound_version in candidates:
+            if bound_operator in {">", ">="}:
+                inclusive = bound_operator == ">="
+                if lower is None or _compare_versions(bound_version, lower[0]) > 0 or (
+                    _compare_versions(bound_version, lower[0]) == 0 and not inclusive
+                ):
+                    lower = (bound_version, inclusive)
+            else:
+                inclusive = bound_operator == "<="
+                if upper is None or _compare_versions(bound_version, upper[0]) < 0 or (
+                    _compare_versions(bound_version, upper[0]) == 0 and not inclusive
+                ):
+                    upper = (bound_version, inclusive)
+    if lower is None or upper is None:
+        return True
+    comparison = _compare_versions(lower[0], upper[0])
+    return comparison < 0 or (comparison == 0 and lower[1] and upper[1])
 
 
 GATE_TABLE_COLUMNS = [
@@ -338,6 +395,24 @@ def _valid_active_gate_register(root: Path, path: Path, manifest: dict) -> bool:
         excluded_paths=(path, root / _rtm_path(manifest)),
         evidence_source_path=path,
     )
+
+
+def evaluated_gate_ids(root: Path, manifest: dict) -> list[str]:
+    """Return only decided Gates from the active register's parsed canonical table."""
+    if manifest.get("lifecycle_mode") != "active":
+        return []
+    active_path = _manifest_path(manifest, "active_gate_register")
+    if active_path is None:
+        return []
+    tables = _read_markdown_tables(root / active_path)
+    if tables is None or len(tables) != 1 or tables[0][0] != GATE_TABLE_COLUMNS:
+        return []
+    expected_gates = manifest.get("gates")
+    rows = tables[0][1]
+    if expected_gates != [f"G{index}" for index in range(12)] or [row[0] for row in rows] != expected_gates:
+        return []
+    evaluation_index = GATE_TABLE_COLUMNS.index("Evaluation State")
+    return [row[0] for row in rows if row[evaluation_index] == "DECIDED"]
 
 
 def _valid_gate_rows(

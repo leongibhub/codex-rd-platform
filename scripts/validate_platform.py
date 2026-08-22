@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import importlib
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +14,7 @@ if __package__ in {None, ""}:
 
 from scripts.platform_validation import (
     ValidationIssue,
+    evaluated_gate_ids,
     load_manifest,
     validate_gate_contract,
     validate_manifest_contract,
@@ -47,8 +49,7 @@ def validate_platform(root: Path, static_only: bool = False, strict: bool = Fals
         issues.extend(validate_manifest_contract(root))
         issues.extend(validate_gate_contract(root, manifest))
         issues.extend(validate_rtm_contract(root, manifest))
-        if lifecycle_mode == "active":
-            evaluated_gates = list(manifest.get("gates", []))
+        evaluated_gates = evaluated_gate_ids(root, manifest)
     except Exception:
         issues.append(ValidationIssue("CONFIG_INVALID", "platform validation configuration is invalid"))
 
@@ -56,15 +57,20 @@ def validate_platform(root: Path, static_only: bool = False, strict: bool = Fals
     issues.extend(git_issues)
     warnings.extend(git_warnings)
 
+    prerequisite_issues = validate_runtime_prerequisites(root)
+    issues.extend(prerequisite_issues)
     runtime_executed = False
-    if not static_only:
-        prerequisite_issues = validate_runtime_prerequisites(root)
-        issues.extend(prerequisite_issues)
-        if not prerequisite_issues:
-            from scripts.mcp_health_check import check_company_context
-
+    if not static_only and not prerequisite_issues:
+        try:
+            health_module = importlib.import_module("scripts.mcp_health_check")
+        except Exception:
+            issues.append(ValidationIssue("MCP_HEALTH_IMPORT_FAILED", "MCP health check could not be imported"))
+        else:
             runtime_executed = True
-            issues.extend(check_company_context(root))
+            try:
+                issues.extend(health_module.check_company_context(root))
+            except Exception:
+                issues.append(ValidationIssue("MCP_HEALTH_CHECK_FAILED", "MCP health check failed"))
     return ValidationReport(lifecycle_mode, issues, warnings, runtime_executed, evaluated_gates)
 
 
@@ -114,9 +120,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--static-only", action="store_true")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args(argv)
-    report = validate_platform(Path(__file__).resolve().parents[1], args.static_only, args.strict)
-    _print_report(report, args.static_only)
-    return 0 if report.ok else 1
+    try:
+        report = validate_platform(Path(__file__).resolve().parents[1], args.static_only, args.strict)
+        _print_report(report, args.static_only)
+        return 0 if report.ok else 1
+    except Exception:
+        print("PLATFORM VALIDATION: FAIL")
+        print(" - [VALIDATION_INTERNAL_ERROR] platform validation encountered an internal error")
+        return 1
 
 
 if __name__ == "__main__":
