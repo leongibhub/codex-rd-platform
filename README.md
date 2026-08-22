@@ -30,7 +30,7 @@ This platform intentionally does **not** fabricate:
 - deployment success
 - defect closure
 
-Missing evidence remains PENDING / NOT EXECUTED / BLOCKED.
+Missing evidence remains `PENDING`, `NOT_AVAILABLE`, or `NOT_EXECUTED`. `BLOCKED` is a Gate or verification-result state, never an Evidence Status.
 
 ## Windows installation
 

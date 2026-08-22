@@ -28,7 +28,7 @@ Use specialized subagents and repository skills where appropriate.
 2. Important decisions, requirements, designs, results and evidence must be persisted in this repository.
 3. **Developer != Tester != Reviewer.** The implementation agent must not be the sole validator of its own work.
 4. Never invent approvals, test results, customer confirmations, signatures, benchmarks, defect closure, deployment success, or review conclusions.
-5. If required evidence is absent, record `PENDING`, `NOT AVAILABLE`, `NOT EXECUTED`, or `BLOCKED`.
+5. If required evidence is absent, record `PENDING`, `NOT_AVAILABLE`, or `NOT_EXECUTED` in the evidence domain; use `BLOCKED` only in its permitted Gate or verification-result domain.
 6. Do not begin implementation until requirements and acceptance criteria are sufficiently clear.
 7. Do not recommend release while unresolved blocker/critical issues remain unless a human explicitly accepts the risk.
 8. Documentation is produced continuously during the lifecycle; never reconstruct the whole project history from memory at the end.
@@ -227,7 +227,7 @@ The RTM at `docs/03-requirements/requirement-traceability-matrix.md` is the cent
 
 When a project becomes `active`, create the central Gate Register at `docs/08-project-management/gate-register.md`. It is the sole status source for G0–G11; other documents provide criteria and evidence links only. The active register must contain each Gate exactly once, allow Gate Status only as `PASS`, `FAIL`, or `BLOCKED`, and cite actual Evidence IDs for every `PASS` row.
 
-Keep domains separate: Evaluation State is `NOT_EVALUATED`, `IN_REVIEW`, or `DECIDED`; Document State is `DRAFT`, `BASELINED`, `APPROVED`, or `OBSOLETE`; Evidence Status is `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, `INFERRED`, `OBSERVED`, or `VERIFIED`; Traceability Status is `COMPLETE`, `PARTIAL`, `GAP`, or `NOT_APPLICABLE`. See `docs/08-project-management/gate-management.md` for the controlled vocabulary and active-project controls.
+Keep domains separate: Evaluation State is `NOT_EVALUATED`, `IN_REVIEW`, or `DECIDED`; Document State is `DRAFT`, `BASELINED`, `APPROVED`, or `OBSOLETE`; Evidence Status is `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, `INFERRED`, `OBSERVED`, or `VERIFIED`—never `BLOCKED`; Traceability Status is `COMPLETE`, `PARTIAL`, `GAP`, or `NOT_APPLICABLE`. See `docs/08-project-management/gate-management.md` for the controlled vocabulary and active-project controls.
 
 ### Evidence-driven documents
 

@@ -17,12 +17,12 @@ Do not move values between state domains.
 | Gate Status | `PASS`, `FAIL`, `BLOCKED` | A decision recorded only in the active central Gate Register. |
 | Evaluation State | `NOT_EVALUATED`, `IN_REVIEW`, `DECIDED` | Progress of the Gate evaluation. |
 | Document State | `DRAFT`, `BASELINED`, `APPROVED`, `OBSOLETE` | Lifecycle-artifact control state; it is not a Gate outcome. |
-| Evidence Status | `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, `INFERRED`, `OBSERVED`, `VERIFIED` | Availability and strength of cited evidence. |
+| Evidence Status | `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, `INFERRED`, `OBSERVED`, `VERIFIED` | Availability and strength of cited evidence; `BLOCKED` is not an Evidence Status. |
 | Traceability Status | `COMPLETE`, `PARTIAL`, `GAP`, `NOT_APPLICABLE` | RTM linkage completeness. |
 | Verification Result | `PASS`, `FAIL`, `BLOCKED`, `NOT_EXECUTED` | Test/verification result tied to actual execution evidence; it is not a Gate Status. |
 
 ## Active-register controls
 
-The active register must contain exactly one record for every Gate G0–G11. Every record has the fields in the approved template. Gate Status accepts only the Gate Status domain. A `PASS` Gate row must cite non-placeholder Evidence IDs; if human approval is required, cite the real approval evidence rather than a name, signature placeholder, or inferred outcome.
+The active register must contain exactly one record for every Gate G0–G11. Every record has the fields in the approved template. Gate Status accepts only the Gate Status domain. A `PASS` Gate row requires `Evaluation State: DECIDED`, actual values for its required record fields, and Evidence IDs containing an auditable artifact ID, commit SHA, or valid Markdown link. `-`, TBD, TODO, PENDING, NOT_AVAILABLE, NOT_EXECUTED, INFERRED, N/A, template tokens, and `[待...]` placeholders are not evidence. If human approval is required, cite the real approval evidence rather than a name, signature placeholder, or inferred outcome.
 
 Before a Gate evaluation, check required artifacts, consistency, RTM links, actual evidence, open risks, defects, and approved changes. Record missing information as `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, or `BLOCKED` in its appropriate domain. Do not write an approval, signature, test result, deployment result, customer acceptance, or defect closure without evidence.
