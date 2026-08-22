@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
-mcp = FastMCP("company-context")
+mcp = MCPServer(name="company-context", version="0.2.0")
 
 TEXT_SUFFIXES = {
     ".md", ".txt", ".rst", ".py", ".js", ".ts", ".tsx", ".jsx",
@@ -27,6 +27,26 @@ def _local_roots() -> list[Path]:
     if not roots:
         roots = [Path.cwd() / "knowledge" / "local"]
     return roots
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _is_approved_path(path: Path, roots: list[Path]) -> bool:
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError:
+        return False
+    return any(
+        _is_relative_to(resolved, root.resolve())
+        for root in roots
+        if root.exists()
+    )
 
 
 def _safe_text(path: Path) -> str:
@@ -50,14 +70,17 @@ def search_local_docs(query: str, max_results: int = 20) -> str:
         return json.dumps({"error": "query is empty"}, ensure_ascii=False)
     hits: list[dict[str, Any]] = []
     q_lower = q.lower()
+    roots = _local_roots()
 
-    for root in _local_roots():
+    for root in roots:
         if not root.exists():
             continue
         for path in root.rglob("*"):
             if len(hits) >= max_results:
                 break
             if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
+                continue
+            if not _is_approved_path(path, roots):
                 continue
             try:
                 text = _safe_text(path)
@@ -80,20 +103,13 @@ def search_local_docs(query: str, max_results: int = 20) -> str:
 @mcp.tool()
 def read_local_doc(path: str, start_line: int = 1, max_lines: int = 400) -> str:
     """Read a text/code file only when it is located under an approved COMPANY_LOCAL_ROOTS directory."""
-    target = Path(path).resolve()
-    approved = False
-    for root in _local_roots():
-        try:
-            target.relative_to(root.resolve())
-            approved = True
-            break
-        except ValueError:
-            pass
-    if not approved:
+    target = Path(path)
+    roots = _local_roots()
+    if not _is_approved_path(target, roots):
         return json.dumps({"error": "path is outside approved local roots"}, ensure_ascii=False)
 
     try:
-        text = _safe_text(target)
+        text = _safe_text(target.resolve(strict=True))
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
