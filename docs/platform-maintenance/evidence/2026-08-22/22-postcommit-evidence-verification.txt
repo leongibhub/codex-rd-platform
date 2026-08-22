@@ -1,0 +1,38 @@
+Record Type: PLATFORM_MAINTENANCE_EVIDENCE
+Command: git diff --check main...HEAD
+Started (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+Ended (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+HEAD: 985f83cc17e79f6c6e546caca5a42c48689d59c8
+Branch: codex/fix-BUG-001-platform-readiness
+ExitCode: 0
+Test count/failures: N/A (full-scope diff check).
+
+Command: git grep -n -I -E "sk-[A-Za-z0-9_-]{16,}|glpat-[A-Za-z0-9_-]{10,}|BEGIN [A-Z ]*PRIVATE KEY"
+Started (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+Ended (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+HEAD: 985f83cc17e79f6c6e546caca5a42c48689d59c8
+Branch: codex/fix-BUG-001-platform-readiness
+RawGitGrepExitCode: 1
+ExitCode: 0
+Test count/failures: N/A (expected no-match; wrapper result PASS).
+
+Command: git status --short --branch
+Started (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+Ended (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+HEAD: 985f83cc17e79f6c6e546caca5a42c48689d59c8
+Branch: codex/fix-BUG-001-platform-readiness
+## codex/fix-BUG-001-platform-readiness
+ExitCode: 0
+Test count/failures: N/A (clean worktree before this log was created).
+
+Command: .\.venv\Scripts\python.exe -m unittest tests.platform.test_governance_contract tests.platform.test_manifest_contract -q
+Started (Asia/Shanghai): 2026-08-22 23:40:32 +08:00
+Ended (Asia/Shanghai): 2026-08-22 23:40:34 +08:00
+HEAD: 985f83cc17e79f6c6e546caca5a42c48689d59c8
+Branch: codex/fix-BUG-001-platform-readiness
+----------------------------------------------------------------------
+Ran 42 tests in 1.019s
+
+OK
+ExitCode: 0
+Test count/failures: 42 / 0.
