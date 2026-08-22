@@ -1,0 +1,15 @@
+[agents]
+max_concurrent_threads_per_session = 8
+
+# OpenAI Developer Docs MCP for version-specific Codex/OpenAI documentation.
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+
+# Local Company Context MCP.
+# Run scripts/setup.ps1 first; it creates .venv and installs MCP dependencies.
+[mcp_servers.company_context]
+command = ".venv\\Scripts\\python.exe"
+args = ["tools\\mcp\\company-context\\server.py"]
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+enabled = true

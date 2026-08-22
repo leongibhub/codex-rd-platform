@@ -1,0 +1,51 @@
+{
+  "name": "codex-rd-platform",
+  "version": "0.1.0",
+  "agents": [
+    "documentation-manager",
+    "release-manager",
+    "requirement-analyst",
+    "researcher",
+    "product-manager",
+    "tester",
+    "architect",
+    "developer",
+    "reviewer"
+  ],
+  "skills": [
+    "architecture-design",
+    "code-review",
+    "documentation-governance",
+    "project-closure",
+    "testing",
+    "task-breakdown",
+    "market-research",
+    "competitor-analysis",
+    "project-initiation",
+    "release",
+    "requirement-analysis",
+    "context-discovery",
+    "implementation"
+  ],
+  "gates": [
+    "G0",
+    "G1",
+    "G2",
+    "G3",
+    "G4",
+    "G5",
+    "G6",
+    "G7",
+    "G8",
+    "G9",
+    "G10",
+    "G11"
+  ],
+  "context_mcp": [
+    "local",
+    "redmine",
+    "ragflow",
+    "gitlab"
+  ],
+  "evidence_policy": "never fabricate approvals/tests/metrics/acceptance/deployment results"
+}
