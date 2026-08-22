@@ -46,11 +46,27 @@ def _parse_version(value: str) -> tuple[int, ...] | None:
     )
     if match is None:
         return None
-    return tuple(int(part) for part in match.group(1).split("."))
+    release_parts = match.group(1).split(".")
+    if len(release_parts) > 8 or any(len(part) > 32 for part in release_parts):
+        return None
+    post_match = re.search(r"(?i)\.post(\d+)", value)
+    if post_match is not None and len(post_match.group(1)) > 32:
+        return None
+    try:
+        return tuple(int(part) for part in release_parts)
+    except (TypeError, ValueError):
+        return None
 
 
 def _has_mcp_v2_bounds(requirements: str) -> bool:
-    if any(re.match(r"^\s*-(?:r|c)\b", line, flags=re.IGNORECASE) for line in requirements.splitlines()):
+    if any(
+        re.match(
+            r"^\s*(?:-(?:r|c)(?:\s|=|\S)|--(?:requirement|constraint)(?:\s|=))",
+            line,
+            flags=re.IGNORECASE,
+        )
+        for line in requirements.splitlines()
+    ):
         return False
     constraints: list[tuple[str, tuple[int, ...]]] = []
     has_minimum = False
@@ -59,7 +75,10 @@ def _has_mcp_v2_bounds(requirements: str) -> bool:
         line = raw_line.split("#", maxsplit=1)[0].strip()
         if not line:
             continue
-        match = re.match(r"(?i)^mcp\s*(.*)$", line)
+        match = re.match(
+            r"(?i)^mcp(?=$|\s|\[|[<>=!~])(?:\[[a-z0-9_.-]+(?:\s*,\s*[a-z0-9_.-]+)*\])?\s*(.*)$",
+            line,
+        )
         if match is None:
             continue
         for raw_constraint in match.group(1).split(","):

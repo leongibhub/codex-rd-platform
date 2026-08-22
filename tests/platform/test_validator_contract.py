@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from scripts.platform_validation import ValidationIssue, validate_runtime_prerequisites
+from scripts.platform_validation import _has_mcp_v2_bounds, ValidationIssue, validate_runtime_prerequisites
 from scripts import validate_platform as validator_cli
 from scripts.validate_platform import validate_platform
 
@@ -231,6 +231,36 @@ class ValidatorContractTests(unittest.TestCase):
             with self.subTest(contents=contents), self._temporary_root() as root:
                 (root / "tools" / "mcp" / "company-context" / "requirements.txt").write_text(contents, encoding="utf-8")
                 self.assertEqual(self._codes(validate_runtime_prerequisites(root)), ["MCP_REQUIREMENT_INVALID"])
+
+    def test_runtime_rejects_all_indirect_requirement_forms(self):
+        for directive in (
+            "-rconstraints.txt", "-r constraints.txt", "--requirement constraints.txt", "--requirement=constraints.txt",
+            "-cconstraints.txt", "-c constraints.txt", "--constraint constraints.txt", "--constraint=constraints.txt",
+        ):
+            with self.subTest(directive=directive):
+                contents = f"mcp>=2.0.0,<3.0.0\n{directive}\n"
+                self.assertFalse(_has_mcp_v2_bounds(contents))
+
+    def test_runtime_ignores_similar_distribution_names_but_accepts_exact_mcp(self):
+        contents = "mcp-tools>=1.0\nmcp_sdk>=1.0\nmcp>=2.0.0,<3.0.0\n"
+
+        self.assertTrue(_has_mcp_v2_bounds(contents))
+
+    def test_runtime_rejects_pathological_numeric_versions_without_exception(self):
+        versions = (
+            "2." + "9" * 1000 + ".0",
+            ".".join(["2"] * 100),
+            "2.0.0.post" + "9" * 1000,
+            "2.0.0+bad..local",
+        )
+        for version in versions:
+            with self.subTest(version=version), patch(
+                "scripts.platform_validation.importlib_metadata.version", return_value=version
+            ):
+                self.assertEqual(
+                    self._codes(validate_runtime_prerequisites(ROOT)),
+                    ["MCP_VERSION_UNSUPPORTED"],
+                )
 
     def test_runtime_rejects_undecodable_requirements_without_leaking_error(self):
         with self._temporary_root() as root:
