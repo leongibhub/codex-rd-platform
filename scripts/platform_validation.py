@@ -24,11 +24,35 @@ def collect_agent_ids(root: Path) -> set[str]:
 def collect_skill_ids(root: Path) -> set[str]:
     result = set()
     for path in (root / ".agents" / "skills").glob("*/SKILL.md"):
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.startswith("name:"):
-                result.add(line.split(":", 1)[1].strip())
-                break
+        name = _frontmatter_name(path.read_text(encoding="utf-8"))
+        if name:
+            result.add(name)
     return result
+
+
+def _frontmatter_name(contents: str) -> str | None:
+    lines = contents.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+
+    closing_index = next(
+        (index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---"),
+        None,
+    )
+    if closing_index is None:
+        return None
+
+    for line in lines[1:closing_index]:
+        key, separator, value = line.partition(":")
+        if separator and key.strip() == "name":
+            return _parse_simple_yaml_scalar(value.strip())
+    return None
+
+
+def _parse_simple_yaml_scalar(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"\"", "'"}:
+        return value[1:-1]
+    return value
 
 
 def validate_manifest_contract(root: Path) -> list[ValidationIssue]:
