@@ -10,6 +10,20 @@ url = "https://developers.openai.com/mcp"
 [mcp_servers.company_context]
 command = ".venv\\Scripts\\python.exe"
 args = ["tools\\mcp\\company-context\\server.py"]
+cwd = "."
+required = true
+env_vars = [
+  "COMPANY_LOCAL_ROOTS",
+  "REDMINE_BASE_URL",
+  "REDMINE_API_KEY",
+  "REDMINE_PROJECT",
+  "RAGFLOW_BASE_URL",
+  "RAGFLOW_API_KEY",
+  "RAGFLOW_DATASET_ID",
+  "GITLAB_BASE_URL",
+  "GITLAB_TOKEN",
+  "GITLAB_PROJECT_ID",
+]
 startup_timeout_sec = 20
 tool_timeout_sec = 60
 enabled = true
