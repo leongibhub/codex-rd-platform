@@ -37,16 +37,19 @@ def _is_relative_to(path: Path, root: Path) -> bool:
         return False
 
 
-def _is_approved_path(path: Path, roots: list[Path]) -> bool:
+def _resolve_approved_path(path: Path, roots: list[Path]) -> Path | None:
     try:
         resolved = path.resolve(strict=True)
-    except OSError:
-        return False
-    return any(
-        _is_relative_to(resolved, root.resolve())
-        for root in roots
-        if root.exists()
-    )
+    except (OSError, RuntimeError):
+        return None
+    for root in roots:
+        try:
+            approved_root = root.resolve(strict=True)
+        except (OSError, RuntimeError):
+            continue
+        if _is_relative_to(resolved, approved_root):
+            return resolved
+    return None
 
 
 def _safe_text(path: Path) -> str:
@@ -60,6 +63,14 @@ def _safe_text(path: Path) -> str:
 def _headers(token_env: str, header: str) -> dict[str, str]:
     token = os.getenv(token_env, "").strip()
     return {header: token} if token else {}
+
+
+def _error(message: str) -> str:
+    return json.dumps({"error": message}, ensure_ascii=False)
+
+
+def _request_error(service: str) -> str:
+    return _error(f"{service} request failed")
 
 
 @mcp.tool()
@@ -80,10 +91,11 @@ def search_local_docs(query: str, max_results: int = 20) -> str:
                 break
             if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
                 continue
-            if not _is_approved_path(path, roots):
+            resolved = _resolve_approved_path(path, roots)
+            if resolved is None:
                 continue
             try:
-                text = _safe_text(path)
+                text = _safe_text(resolved)
             except Exception:
                 continue
             idx = text.lower().find(q_lower)
@@ -92,7 +104,7 @@ def search_local_docs(query: str, max_results: int = 20) -> str:
             start = max(0, idx - 300)
             end = min(len(text), idx + len(q) + 500)
             hits.append({
-                "path": str(path),
+                "path": str(resolved),
                 "root": str(root),
                 "snippet": text[start:end]
             })
@@ -105,20 +117,21 @@ def read_local_doc(path: str, start_line: int = 1, max_lines: int = 400) -> str:
     """Read a text/code file only when it is located under an approved COMPANY_LOCAL_ROOTS directory."""
     target = Path(path)
     roots = _local_roots()
-    if not _is_approved_path(target, roots):
-        return json.dumps({"error": "path is outside approved local roots"}, ensure_ascii=False)
+    resolved = _resolve_approved_path(target, roots)
+    if resolved is None:
+        return _error("path is outside approved local roots")
 
     try:
-        text = _safe_text(target.resolve(strict=True))
-    except Exception as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
+        text = _safe_text(resolved)
+    except (OSError, ValueError):
+        return _error("local document read failed")
 
     lines = text.splitlines()
     start = max(1, start_line)
     end = min(len(lines), start - 1 + max(1, min(max_lines, 2000)))
     selected = [{"line": i + 1, "text": lines[i]} for i in range(start - 1, end)]
     return json.dumps({
-        "path": str(target),
+        "path": str(resolved),
         "start_line": start,
         "end_line": end,
         "total_lines": len(lines),
@@ -134,14 +147,17 @@ def get_redmine_issue(issue_id: int) -> str:
     if not base or not key:
         return json.dumps({"error": "Redmine is not configured"}, ensure_ascii=False)
 
-    r = requests.get(
-        f"{base}/issues/{issue_id}.json",
-        headers={"X-Redmine-API-Key": key},
-        params={"include": "journals,relations,attachments,watchers"},
-        timeout=DEFAULT_TIMEOUT,
-    )
-    r.raise_for_status()
-    return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    try:
+        r = requests.get(
+            f"{base}/issues/{issue_id}.json",
+            headers={"X-Redmine-API-Key": key},
+            params={"include": "journals,relations,attachments,watchers"},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        r.raise_for_status()
+        return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    except (requests.RequestException, ValueError):
+        return _request_error("Redmine")
 
 
 @mcp.tool()
@@ -164,15 +180,17 @@ def search_redmine(query: str, limit: int = 50) -> str:
     if project:
         params["project_id"] = project
 
-    r = requests.get(
-        f"{base}/issues.json",
-        headers={"X-Redmine-API-Key": key},
-        params=params,
-        timeout=DEFAULT_TIMEOUT,
-    )
-    r.raise_for_status()
-    data = r.json()
-    return json.dumps(data, ensure_ascii=False, indent=2)
+    try:
+        r = requests.get(
+            f"{base}/issues.json",
+            headers={"X-Redmine-API-Key": key},
+            params=params,
+            timeout=DEFAULT_TIMEOUT,
+        )
+        r.raise_for_status()
+        return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    except (requests.RequestException, ValueError):
+        return _request_error("Redmine")
 
 
 @mcp.tool()
@@ -196,14 +214,17 @@ def ragflow_search(query: str, top_k: int = 8) -> str:
         "page": 1,
         "page_size": max(1, min(top_k, 50)),
     }
-    r = requests.post(
-        f"{base}/api/v1/retrieval",
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=DEFAULT_TIMEOUT,
-    )
-    r.raise_for_status()
-    return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    try:
+        r = requests.post(
+            f"{base}/api/v1/retrieval",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=DEFAULT_TIMEOUT,
+        )
+        r.raise_for_status()
+        return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    except (requests.RequestException, ValueError):
+        return _request_error("RAGFlow")
 
 
 @mcp.tool()
@@ -215,13 +236,16 @@ def get_gitlab_project() -> str:
     if not base or not token or not project_id:
         return json.dumps({"error": "GitLab is not configured"}, ensure_ascii=False)
 
-    r = requests.get(
-        f"{base}/api/v4/projects/{requests.utils.quote(project_id, safe='')}",
-        headers={"PRIVATE-TOKEN": token},
-        timeout=DEFAULT_TIMEOUT,
-    )
-    r.raise_for_status()
-    return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    try:
+        r = requests.get(
+            f"{base}/api/v4/projects/{requests.utils.quote(project_id, safe='')}",
+            headers={"PRIVATE-TOKEN": token},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        r.raise_for_status()
+        return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    except (requests.RequestException, ValueError):
+        return _request_error("GitLab")
 
 
 @mcp.tool()
@@ -233,15 +257,18 @@ def search_gitlab_issues(query: str, limit: int = 50) -> str:
     if not base or not token or not project_id:
         return json.dumps({"error": "GitLab is not configured"}, ensure_ascii=False)
 
-    pid = requests.utils.quote(project_id, safe="")
-    r = requests.get(
-        f"{base}/api/v4/projects/{pid}/issues",
-        headers={"PRIVATE-TOKEN": token},
-        params={"search": query, "per_page": max(1, min(limit, 100)), "scope": "all"},
-        timeout=DEFAULT_TIMEOUT,
-    )
-    r.raise_for_status()
-    return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    try:
+        pid = requests.utils.quote(project_id, safe="")
+        r = requests.get(
+            f"{base}/api/v4/projects/{pid}/issues",
+            headers={"PRIVATE-TOKEN": token},
+            params={"search": query, "per_page": max(1, min(limit, 100)), "scope": "all"},
+            timeout=DEFAULT_TIMEOUT,
+        )
+        r.raise_for_status()
+        return json.dumps(r.json(), ensure_ascii=False, indent=2)
+    except (requests.RequestException, ValueError):
+        return _request_error("GitLab")
 
 
 @mcp.tool()
@@ -255,20 +282,20 @@ def get_project_context(topic: str) -> str:
 
     try:
         bundle["local"] = json.loads(search_local_docs(topic, 10))
-    except Exception as e:
-        bundle["local_error"] = str(e)
+    except Exception:
+        bundle["local_error"] = "local search failed"
 
     try:
         if os.getenv("REDMINE_BASE_URL") and os.getenv("REDMINE_API_KEY"):
             bundle["redmine"] = json.loads(search_redmine(topic, 20))
-    except Exception as e:
-        bundle["redmine_error"] = str(e)
+    except Exception:
+        bundle["redmine_error"] = "Redmine context failed"
 
     try:
         if os.getenv("GITLAB_BASE_URL") and os.getenv("GITLAB_TOKEN") and os.getenv("GITLAB_PROJECT_ID"):
             bundle["gitlab"] = json.loads(search_gitlab_issues(topic, 20))
-    except Exception as e:
-        bundle["gitlab_error"] = str(e)
+    except Exception:
+        bundle["gitlab_error"] = "GitLab context failed"
 
     return json.dumps(bundle, ensure_ascii=False, indent=2)
 

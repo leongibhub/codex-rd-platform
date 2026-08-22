@@ -24,7 +24,7 @@ EXPECTED_TOOLS = {
     "search_local_docs",
     "search_redmine",
 }
-SECRET_SENTINEL = "do-not-leak-this-environment-value"
+SECRET_SENTINEL = "[REDACTED_SECRET]"
 
 
 def _load_server():
@@ -72,8 +72,80 @@ class CompanyContextTests(unittest.TestCase):
                 result = json.loads(self.module.read_local_doc(str(secret)))
         self.assertEqual(result, {"error": "path is outside approved local roots"})
 
+    def test_search_reads_the_approved_canonical_candidate(self):
+        """Reading the traversal path instead of its approved canonical path leaks stale content."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = root / "candidate.txt"
+            canonical = root / "canonical.txt"
+            candidate.write_text("ORIGINAL_SENTINEL", encoding="utf-8")
+            canonical.write_text("canonical content", encoding="utf-8")
+            original_resolve = Path.resolve
+
+            def resolve(path, strict=False):
+                if path == candidate:
+                    return original_resolve(canonical, strict=strict)
+                return original_resolve(path, strict=strict)
+
+            with patch.dict(os.environ, {"COMPANY_LOCAL_ROOTS": str(root)}, clear=True):
+                with patch.object(Path, "rglob", return_value=[candidate]):
+                    with patch.object(Path, "resolve", new=resolve):
+                        result = json.loads(self.module.search_local_docs("canonical content"))
+
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(result["results"][0]["snippet"], "canonical content")
+        self.assertNotIn("ORIGINAL_SENTINEL", json.dumps(result))
+
+    def test_read_returns_the_approved_canonical_path(self):
+        """Returning the requested path instead of the approved path hides canonical resolution."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = root / "candidate.txt"
+            canonical = root / "canonical.txt"
+            candidate.write_text("ORIGINAL_SENTINEL", encoding="utf-8")
+            canonical.write_text("canonical content", encoding="utf-8")
+            original_resolve = Path.resolve
+            expected_path = original_resolve(canonical, strict=True)
+
+            def resolve(path, strict=False):
+                if path == candidate:
+                    return expected_path
+                return original_resolve(path, strict=strict)
+
+            with patch.dict(os.environ, {"COMPANY_LOCAL_ROOTS": str(root)}, clear=True):
+                with patch.object(Path, "resolve", new=resolve):
+                    result = json.loads(self.module.read_local_doc(str(candidate)))
+
+        self.assertEqual(result["path"], str(expected_path))
+        self.assertEqual(result["content"], [{"line": 1, "text": "canonical content"}])
+
+    def test_resolved_escape_candidate_is_not_read(self):
+        """An approved-looking candidate that resolves outside the root must be skipped."""
+        with tempfile.TemporaryDirectory() as approved, tempfile.TemporaryDirectory() as outside:
+            root = Path(approved)
+            candidate = root / "candidate.txt"
+            secret = Path(outside) / "outside.txt"
+            candidate.write_text("safe content", encoding="utf-8")
+            secret.write_text("OUTSIDE_SENTINEL", encoding="utf-8")
+            original_resolve = Path.resolve
+
+            def resolve(path, strict=False):
+                if path == candidate:
+                    return secret
+                return original_resolve(path, strict=strict)
+
+            with patch.dict(os.environ, {"COMPANY_LOCAL_ROOTS": str(root)}, clear=True):
+                with patch.object(Path, "rglob", return_value=[candidate]):
+                    with patch.object(Path, "resolve", new=resolve):
+                        result = json.loads(self.module.search_local_docs("OUTSIDE_SENTINEL"))
+
+        self.assertEqual(result["results"], [])
+
     def test_unconfigured_external_services_return_sanitized_json_errors(self):
         """Missing configuration must not trigger a request or expose configured secret values."""
+        def unexpected_http(*args, **kwargs):
+            raise AssertionError("unconfigured service attempted an HTTP request")
+
         with patch.dict(
             os.environ,
             {
@@ -83,18 +155,50 @@ class CompanyContextTests(unittest.TestCase):
             },
             clear=True,
         ):
-            results = [
+            with patch.object(self.module.requests, "get", side_effect=unexpected_http):
+                with patch.object(self.module.requests, "post", side_effect=unexpected_http):
+                    results = [
+                        self.module.get_redmine_issue(1),
+                        self.module.search_redmine("query"),
+                        self.module.ragflow_search("query"),
+                        self.module.get_gitlab_project(),
+                        self.module.search_gitlab_issues("query"),
+                    ]
+
+        for result in results:
+            parsed = json.loads(result)
+            self.assertIn("error", parsed)
+            self.assertNotIn(SECRET_SENTINEL, result)
+
+    def test_configured_request_errors_are_sanitized_for_direct_and_context_tools(self):
+        """Request parser failures must not expose configured URLs, IDs, or tokens."""
+        environment = {
+            "REDMINE_BASE_URL": SECRET_SENTINEL,
+            "REDMINE_API_KEY": SECRET_SENTINEL,
+            "RAGFLOW_BASE_URL": SECRET_SENTINEL,
+            "RAGFLOW_API_KEY": SECRET_SENTINEL,
+            "RAGFLOW_DATASET_ID": SECRET_SENTINEL,
+            "GITLAB_BASE_URL": SECRET_SENTINEL,
+            "GITLAB_TOKEN": SECRET_SENTINEL,
+            "GITLAB_PROJECT_ID": SECRET_SENTINEL,
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            direct_results = [
                 self.module.get_redmine_issue(1),
                 self.module.search_redmine("query"),
                 self.module.ragflow_search("query"),
                 self.module.get_gitlab_project(),
                 self.module.search_gitlab_issues("query"),
             ]
+            context_result = self.module.get_project_context("query")
 
-        for result in results:
-            parsed = json.loads(result)
-            self.assertIn("error", parsed)
+        for result in [*direct_results, context_result]:
             self.assertNotIn(SECRET_SENTINEL, result)
+        for result in direct_results:
+            self.assertIn("error", json.loads(result))
+        context = json.loads(context_result)
+        self.assertEqual(context["redmine"], {"error": "Redmine request failed"})
+        self.assertEqual(context["gitlab"], {"error": "GitLab request failed"})
 
 
 if __name__ == "__main__":
