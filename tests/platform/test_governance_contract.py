@@ -172,6 +172,37 @@ class GovernanceContractTests(unittest.TestCase):
                 ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
             )
 
+    def test_active_gate_links_resolve_from_register_and_reject_self_rtm_or_outside_targets(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            register = self._write_active_register(root)
+            evidence = root / "docs" / "evidence" / "EVD-002.md"
+            evidence.parent.mkdir(parents=True)
+            evidence.write_text("external evidence\n", encoding="utf-8")
+            self._set_gate_values(
+                register, "G0", self._pass_gate_values("[EVD-002](../evidence/EVD-002.md)")
+            )
+
+            self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
+
+        cases = (
+            "[self](gate-register.md)",
+            "[rtm](../../03-requirements/requirement-traceability-matrix.md)",
+            "[outside](../../../../outside.md)",
+        )
+        for evidence_reference in cases:
+            with self.subTest(evidence_reference=evidence_reference), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                register = self._write_active_register(root)
+                if "outside" in evidence_reference:
+                    (root.parent / "outside.md").write_text("outside\n", encoding="utf-8")
+                self._set_gate_values(register, "G0", self._pass_gate_values(evidence_reference))
+
+                self.assertEqual(
+                    self._codes(validate_gate_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
+                )
+
     def test_active_gate_register_rejects_an_extra_table_or_repeated_gate_after_blank_line(self):
         with self._temporary_governance_root(lifecycle_mode="active") as root:
             register = self._write_active_register(root)
@@ -265,6 +296,25 @@ class GovernanceContractTests(unittest.TestCase):
             {"Test Execution/Evidence": "BG-001"},
             {"BG": "business goal text"},
             {"BUG": "-", "Defect Disposition": "CLOSED"},
+        )
+        for overrides in cases:
+            with self.subTest(overrides=overrides), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                self._write_active_rtm(root, [self._complete_rtm_row(**overrides)])
+
+                self.assertEqual(
+                    self._codes(validate_rtm_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
+                )
+
+    def test_active_rtm_rejects_embedded_or_mixed_typed_references_and_placeholder_prose(self):
+        cases = (
+            {"CR": "TBD CR-001"},
+            {"BUG": "wrong BUG-001 prose"},
+            {"REL": "REL-001 TBD"},
+            {"Test Execution/Evidence": "wrong EVD-001 prose"},
+            {"Acceptance Criteria": "TBD criteria"},
         )
         for overrides in cases:
             with self.subTest(overrides=overrides), self._temporary_governance_root(
@@ -382,6 +432,24 @@ class GovernanceContractTests(unittest.TestCase):
                     ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
                 )
 
+    def test_invalid_fence_closing_cannot_expose_metadata_or_table(self):
+        with self._temporary_governance_root() as root:
+            template = root / "templates" / "gate-register-template.md"
+            template.write_text(
+                template.read_text(encoding="utf-8")
+                .replace(
+                    "- Artifact Type: TEMPLATE",
+                    "- Artifact Type: ACTIVE\n```markdown\n- Artifact Type: TEMPLATE\n````not-a-valid-close\n- Artifact Type: TEMPLATE",
+                )
+                + "\n```\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                self._codes(validate_gate_contract(root, load_manifest(root))),
+                ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
+            )
+
     @staticmethod
     def _codes(issues):
         return [issue.code for issue in issues]
@@ -477,6 +545,7 @@ class GovernanceContractTests(unittest.TestCase):
             "\n".join([header, separator, *(self._rtm_row_line(row) for row in rows)]) + "\n",
             encoding="utf-8",
         )
+        self._write_evidence_document(root, "EVD-001")
 
     @staticmethod
     def _rtm_row_line(row: dict[str, str]) -> str:
