@@ -56,6 +56,20 @@ cd D:\codex-rd-platform
 .\scripts\setup.ps1
 ```
 
+`setup.ps1` requires an existing Git work tree with `user.name` and `user.email`, and Python 3.11 or newer. It creates or reuses `.venv`, installs only the version-constrained MCP requirements, runs `pip check`, creates `knowledge\local`, and runs the complete platform validator. It does not upgrade `pip` or write user-level environment variables by default.
+
+For a repeat setup that reuses the existing dependencies:
+
+```powershell
+.\scripts\setup.ps1 -SkipDependencyInstall
+```
+
+`COMPANY_LOCAL_ROOTS` is set only for the setup process unless you explicitly request persistence:
+
+```powershell
+.\scripts\setup.ps1 -PersistLocalRoot
+```
+
 The repository starts in **template mode**. A successful platform-validator result in this mode confirms only that the reusable platform contracts are structurally valid. It does not mean any product project has started or that any G0–G11 Gate has passed. Start a project through G0 before creating an active Gate Register, requirement rows, or project evidence.
 
 ## Optional internal-system configuration
