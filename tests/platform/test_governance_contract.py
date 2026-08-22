@@ -173,21 +173,28 @@ class GovernanceContractTests(unittest.TestCase):
             )
 
     def test_active_gate_links_resolve_from_register_and_reject_self_rtm_or_outside_targets(self):
-        with self._temporary_governance_root(lifecycle_mode="active") as root:
-            register = self._write_active_register(root)
-            evidence = root / "docs" / "evidence" / "EVD-002.md"
-            evidence.parent.mkdir(parents=True)
-            evidence.write_text("external evidence\n", encoding="utf-8")
-            self._set_gate_values(
-                register, "G0", self._pass_gate_values("[EVD-002](../evidence/EVD-002.md)")
-            )
+        valid_links = (
+            ("[EVD-002](../evidence/EVD-002.md)", "EVD-002.md"),
+            ("[EVD Two](<../evidence/EVD Two.md>)", "EVD Two.md"),
+        )
+        for evidence_reference, filename in valid_links:
+            with self.subTest(evidence_reference=evidence_reference), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                register = self._write_active_register(root)
+                evidence = root / "docs" / "evidence" / filename
+                evidence.parent.mkdir(parents=True)
+                evidence.write_text("external evidence\n", encoding="utf-8")
+                self._set_gate_values(
+                    register, "G0", self._pass_gate_values(evidence_reference)
+                )
 
-            self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
+                self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
 
         cases = (
             "[self](gate-register.md)",
-            "[rtm](../../03-requirements/requirement-traceability-matrix.md)",
-            "[outside](../../../../outside.md)",
+            "[rtm](../03-requirements/requirement-traceability-matrix.md)",
+            "[outside](../../../outside.md)",
         )
         for evidence_reference in cases:
             with self.subTest(evidence_reference=evidence_reference), self._temporary_governance_root(
@@ -308,6 +315,45 @@ class GovernanceContractTests(unittest.TestCase):
                     ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
                 )
 
+    def test_active_rtm_rejects_noncanonical_defect_disposition(self):
+        for disposition in ("CLOSED TBD", "closed", "WAIVED"):
+            with self.subTest(disposition=disposition), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                self._write_active_rtm(
+                    root,
+                    [self._complete_rtm_row(**{"Defect Disposition": disposition})],
+                )
+
+                self.assertEqual(
+                    self._codes(validate_rtm_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
+                )
+
+    def test_active_rtm_accepts_controlled_defect_dispositions(self):
+        cases = (
+            ("OPEN", ""),
+            ("IN_PROGRESS", ""),
+            ("RESOLVED", ""),
+            ("CLOSED", "BUG-001"),
+            ("ACCEPTED_RISK", ""),
+            ("NOT_APPLICABLE", ""),
+        )
+        for disposition, bug in cases:
+            with self.subTest(disposition=disposition), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                self._write_active_rtm(
+                    root,
+                    [
+                        self._complete_rtm_row(
+                            **{"BUG": bug, "Defect Disposition": disposition}
+                        )
+                    ],
+                )
+
+                self.assertEqual(validate_rtm_contract(root, load_manifest(root)), [])
+
     def test_active_rtm_rejects_embedded_or_mixed_typed_references_and_placeholder_prose(self):
         cases = (
             {"CR": "TBD CR-001"},
@@ -326,6 +372,61 @@ class GovernanceContractTests(unittest.TestCase):
                     self._codes(validate_rtm_contract(root, load_manifest(root))),
                     ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
                 )
+
+    def test_active_rtm_prose_placeholder_rules_are_context_sensitive(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            self._write_active_rtm(
+                root,
+                [
+                    self._complete_rtm_row(
+                        **{
+                            "Acceptance Criteria": "system displays PENDING while approval is outstanding"
+                        }
+                    )
+                ],
+            )
+
+            self.assertEqual(validate_rtm_contract(root, load_manifest(root)), [])
+
+        invalid_prose = (
+            "PENDING while approval is outstanding",
+            "NOT_EXECUTED: execution evidence will follow",
+            "INFERRED - confirmation is required",
+            "criterion remains [待项目组确认] after review",
+            "criterion remains {{acceptance_criterion}} after review",
+        )
+        for acceptance_criteria in invalid_prose:
+            with self.subTest(acceptance_criteria=acceptance_criteria), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                self._write_active_rtm(
+                    root,
+                    [
+                        self._complete_rtm_row(
+                            **{"Acceptance Criteria": acceptance_criteria}
+                        )
+                    ],
+                )
+
+                self.assertEqual(
+                    self._codes(validate_rtm_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
+                )
+
+    def test_active_rtm_cannot_self_declare_test_execution_evidence(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            self._write_active_rtm(root, [self._complete_rtm_row()])
+            (root / "docs" / "evidence" / "EVD-001.md").unlink()
+            rtm = root / "docs" / "03-requirements" / "requirement-traceability-matrix.md"
+            rtm.write_text(
+                rtm.read_text(encoding="utf-8") + "\n- Evidence ID: EVD-001\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                self._codes(validate_rtm_contract(root, load_manifest(root))),
+                ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
+            )
 
     def test_active_rtm_rejects_empty_trace_id(self):
         with self._temporary_governance_root(lifecycle_mode="active") as root:
@@ -450,6 +551,31 @@ class GovernanceContractTests(unittest.TestCase):
                 ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
             )
 
+    def test_backtick_info_string_with_backtick_does_not_hide_a_real_table(self):
+        with self._temporary_governance_root() as root:
+            template = root / "templates" / "gate-register-template.md"
+            template.write_text(
+                template.read_text(encoding="utf-8")
+                + "\n```markdown`invalid\n| Extra | Table |\n|---|---|\n| real | data |\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                self._codes(validate_gate_contract(root, load_manifest(root))),
+                ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
+            )
+
+    def test_tilde_info_string_with_backtick_still_opens_a_fence(self):
+        with self._temporary_governance_root() as root:
+            template = root / "templates" / "gate-register-template.md"
+            template.write_text(
+                template.read_text(encoding="utf-8")
+                + "\n   ~~~markdown`allowed\n| Hidden | Table |\n|---|---|\n| fenced | data |\n   ~~~\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
+
     @staticmethod
     def _codes(issues):
         return [issue.code for issue in issues]
@@ -558,7 +684,8 @@ class _TemporaryGovernanceRoot:
         self._lifecycle_mode = lifecycle_mode
 
     def __enter__(self) -> Path:
-        root = Path(self._directory.name)
+        root = Path(self._directory.name) / "repo"
+        root.mkdir()
         manifest = load_manifest(ROOT) | {"lifecycle_mode": self._lifecycle_mode}
         (root / "platform-manifest.json").write_text(
             json.dumps(manifest), encoding="utf-8"

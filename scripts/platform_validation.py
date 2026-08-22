@@ -64,6 +64,14 @@ EVIDENCE_STATUSES = {
     "VERIFIED",
 }
 VERIFICATION_RESULTS = {"PASS", "FAIL", "BLOCKED", "NOT_EXECUTED"}
+DEFECT_DISPOSITIONS = {
+    "OPEN",
+    "IN_PROGRESS",
+    "RESOLVED",
+    "CLOSED",
+    "ACCEPTED_RISK",
+    "NOT_APPLICABLE",
+}
 UNUSABLE_EVIDENCE_STATUSES = {"PENDING", "NOT_AVAILABLE", "NOT_EXECUTED", "INFERRED"}
 GATE_STATUS_TOKEN = "{{PASS|FAIL|BLOCKED}}"
 EVALUATION_STATE_TOKEN = "{{NOT_EVALUATED|IN_REVIEW|DECIDED}}"
@@ -362,6 +370,8 @@ def _valid_active_rtm_row(row: list[str], root: Path, excluded_paths: tuple[Path
         return False
     if values["Verification Result"] not in VERIFICATION_RESULTS:
         return False
+    if values["Defect Disposition"] and values["Defect Disposition"] not in DEFECT_DISPOSITIONS:
+        return False
     if not _typed_links_are_valid(values, root):
         return False
     if values["Scope Status"] == "IN_SCOPE" and not _is_actual_value(values["Acceptance Criteria"]):
@@ -463,10 +473,14 @@ def _is_valid_evidence_reference(
 def _is_existing_markdown_link(
     value: str, source_path: Path, root: Path, excluded_paths: tuple[Path, ...]
 ) -> bool:
-    match = re.fullmatch(r"\[[^\]]+\]\(([^\s)]+)(?:\s+[^)]*)?\)", value)
+    match = re.fullmatch(
+        r"\[[^\]\r\n]+\]\(\s*(?:<([^>\r\n]+)>|([^\s()<>]+))"
+        r"(?:\s+(?:\"[^\"\r\n]*\"|'[^'\r\n]*'|\([^()\r\n]*\)))?\s*\)",
+        value,
+    )
     if match is None:
         return False
-    target = match.group(1).split("#", maxsplit=1)[0]
+    target = (match.group(1) or match.group(2)).split("#", maxsplit=1)[0]
     if not target or "://" in target:
         return False
     try:
@@ -543,25 +557,21 @@ def _contains_artifact_id(value: str, prefix: str) -> bool:
 
 def _is_actual_value(value: str) -> bool:
     normalized = value.strip()
-    return (
-        bool(normalized)
-        and normalized.lower() not in PLACEHOLDER_VALUES
-        and not _contains_placeholder(normalized)
-        and not (normalized.startswith("{{") and normalized.endswith("}}"))
-        and not (normalized.startswith("[待") and normalized.endswith("]"))
-    )
+    return bool(normalized) and not _contains_placeholder(normalized)
 
 
 def _contains_placeholder(value: str) -> bool:
-    normalized = value.strip().lower()
-    return (
-        normalized == "-"
-        or any(
-            re.search(rf"(?<!\w){re.escape(placeholder)}(?!\w)", normalized)
-            for placeholder in PLACEHOLDER_VALUES - {"-"}
-        )
-        or (normalized.startswith("{{") and normalized.endswith("}}"))
-        or (value.strip().startswith("[待") and value.strip().endswith("]"))
+    normalized = value.strip()
+    lowered = normalized.lower()
+    if lowered == "-":
+        return True
+    if re.search(r"\{\{[^{}\r\n]*\}\}", normalized) or re.search(
+        r"\[待[^\]\r\n]*\]", normalized
+    ):
+        return True
+    return any(
+        re.match(rf"^{re.escape(placeholder)}(?:$|[\s:-])", lowered)
+        for placeholder in PLACEHOLDER_VALUES - {"-"}
     )
 
 
@@ -610,6 +620,8 @@ def _unfenced_lines(contents: str) -> list[str]:
     fence: tuple[str, int] | None = None
     for line in contents.splitlines():
         match = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
+        if match is not None and match.group(1).startswith("`") and "`" in match.group(2):
+            match = None
         if fence is not None:
             if (
                 match is not None
