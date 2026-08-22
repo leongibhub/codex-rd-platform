@@ -413,6 +413,35 @@ class GovernanceContractTests(unittest.TestCase):
                     ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
                 )
 
+    def test_active_rtm_prose_placeholder_prefix_uses_complete_marker_boundaries(self):
+        cases = (
+            ("PENDING, approval is outstanding", False),
+            ("TBD. confirmation is required", False),
+            ("TODO/confirm with owner", False),
+            ("NOT_EXECUTED，execution evidence will follow", False),
+            ("NOT EXECUTED。execution evidence will follow", False),
+            ("PENDINGLY describes a real system state", True),
+            ("system displays PENDING while approval is outstanding", True),
+        )
+        for acceptance_criteria, is_valid in cases:
+            with self.subTest(
+                acceptance_criteria=acceptance_criteria, is_valid=is_valid
+            ), self._temporary_governance_root(lifecycle_mode="active") as root:
+                self._write_active_rtm(
+                    root,
+                    [
+                        self._complete_rtm_row(
+                            **{"Acceptance Criteria": acceptance_criteria}
+                        )
+                    ],
+                )
+
+                expected_codes = [] if is_valid else ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"]
+                self.assertEqual(
+                    self._codes(validate_rtm_contract(root, load_manifest(root))),
+                    expected_codes,
+                )
+
     def test_active_rtm_cannot_self_declare_test_execution_evidence(self):
         with self._temporary_governance_root(lifecycle_mode="active") as root:
             self._write_active_rtm(root, [self._complete_rtm_row()])

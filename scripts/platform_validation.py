@@ -570,7 +570,7 @@ def _contains_placeholder(value: str) -> bool:
     ):
         return True
     return any(
-        re.match(rf"^{re.escape(placeholder)}(?:$|[\s:-])", lowered)
+        re.match(rf"^{re.escape(placeholder)}(?=$|[^A-Za-z0-9_])", lowered)
         for placeholder in PLACEHOLDER_VALUES - {"-"}
     )
 
