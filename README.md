@@ -56,6 +56,8 @@ cd D:\codex-rd-platform
 .\scripts\setup.ps1
 ```
 
+The repository starts in **template mode**. A successful platform-validator result in this mode confirms only that the reusable platform contracts are structurally valid. It does not mean any product project has started or that any G0–G11 Gate has passed. Start a project through G0 before creating an active Gate Register, requirement rows, or project evidence.
+
 ## Optional internal-system configuration
 
 Store secrets as Windows environment variables; do not commit them.

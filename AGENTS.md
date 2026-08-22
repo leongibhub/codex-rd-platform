@@ -221,6 +221,14 @@ Business Goal
 
 The RTM at `docs/03-requirements/requirement-traceability-matrix.md` is the central traceability record.
 
+### Gate and RTM governance modes
+
+`platform-manifest.json` declares `lifecycle_mode`. In `template` mode, `templates/gate-register-template.md` and the empty RTM define reusable contracts only: no active project Gate Register, requirement row, Gate decision, approval, test execution, or release evidence is implied. A platform-validator `PASS` in template mode is never a project Gate `PASS`.
+
+When a project becomes `active`, create the central Gate Register at `docs/08-project-management/gate-register.md`. It is the sole status source for G0–G11; other documents provide criteria and evidence links only. The active register must contain each Gate exactly once, allow Gate Status only as `PASS`, `FAIL`, or `BLOCKED`, and cite actual Evidence IDs for every `PASS` row.
+
+Keep domains separate: Evaluation State is `NOT_EVALUATED`, `IN_REVIEW`, or `DECIDED`; Document State is `DRAFT`, `BASELINED`, `APPROVED`, or `OBSOLETE`; Evidence Status is `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, `INFERRED`, `OBSERVED`, or `VERIFIED`; Traceability Status is `COMPLETE`, `PARTIAL`, `GAP`, or `NOT_APPLICABLE`. See `docs/08-project-management/gate-management.md` for the controlled vocabulary and active-project controls.
+
 ### Evidence-driven documents
 
 These must never be fabricated:

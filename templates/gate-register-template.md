@@ -1,0 +1,22 @@
+# Gate Register Template
+
+- Artifact Type: TEMPLATE
+- Usage: Copy this file to the active project path declared by `active_gate_register` only after project initiation.
+- 本模板不得作为项目 Gate 证据；所有占位符均不是项目事实、评估结论或批准记录。
+
+The active project's central Gate Register is the only source of Gate status. Replace every placeholder with evidence-backed project data before recording a decision.
+
+| Gate ID | Gate Name | Gate Status | Evaluation State | Baseline | Evaluated At | Evaluator Role | Recorder | Criteria Result | Evidence IDs | Blockers/Links | Rationale | Next Action | Owner | Target Date | Human Approval Evidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| G0 | Project Initiation | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G1 | Research | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G2 | Product | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G3 | Requirements | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G4 | Architecture & Design | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G5 | Planning | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G6 | Development | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G7 | Test | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G8 | Independent Review | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G9 | Acceptance | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G10 | Release | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
+| G11 | Project Closure | {{PASS\|FAIL\|BLOCKED}} | {{NOT_EVALUATED\|IN_REVIEW\|DECIDED}} | {{baseline}} | {{evaluated_at}} | {{evaluator_role}} | {{recorder}} | {{criteria_result}} | {{evidence_ids}} | {{blockers_or_links}} | {{rationale}} | {{next_action}} | {{owner}} | {{target_date}} | {{human_approval_evidence}} |
