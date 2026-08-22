@@ -52,6 +52,10 @@ def _resolve_approved_path(path: Path, roots: list[Path]) -> Path | None:
     return None
 
 
+def _is_approved_path(path: Path, roots: list[Path]) -> bool:
+    return _resolve_approved_path(path, roots) is not None
+
+
 def _safe_text(path: Path) -> str:
     if not path.exists() or not path.is_file():
         raise FileNotFoundError(str(path))

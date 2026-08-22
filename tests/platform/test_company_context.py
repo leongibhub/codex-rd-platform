@@ -119,6 +119,51 @@ class CompanyContextTests(unittest.TestCase):
         self.assertEqual(result["path"], str(expected_path))
         self.assertEqual(result["content"], [{"line": 1, "text": "canonical content"}])
 
+    def test_search_requires_strict_candidate_and_root_resolution(self):
+        """Non-strict resolution of either containment path must not satisfy the read contract."""
+        with tempfile.TemporaryDirectory() as approved, tempfile.TemporaryDirectory() as outside:
+            root = Path(approved)
+            candidate = root / "candidate.txt"
+            canonical = root / "canonical.txt"
+            outside_path = Path(outside) / "outside.txt"
+            candidate.write_text("ORIGINAL_SENTINEL", encoding="utf-8")
+            canonical.write_text("canonical content", encoding="utf-8")
+            outside_path.write_text("OUTSIDE_SENTINEL", encoding="utf-8")
+            original_resolve = Path.resolve
+            canonical_root = original_resolve(root, strict=True)
+            canonical_path = original_resolve(canonical, strict=True)
+            outside_root = original_resolve(Path(outside), strict=True)
+            outside_file = original_resolve(outside_path, strict=True)
+
+            def resolve(path, strict=False):
+                if path == candidate:
+                    return canonical_path if strict else outside_file
+                if path == root:
+                    return canonical_root if strict else outside_root
+                return original_resolve(path, strict=strict)
+
+            with patch.dict(os.environ, {"COMPANY_LOCAL_ROOTS": str(root)}, clear=True):
+                with patch.object(Path, "rglob", return_value=[candidate]):
+                    with patch.object(Path, "resolve", new=resolve):
+                        result = json.loads(self.module.search_local_docs("canonical content"))
+
+        self.assertEqual(result["results"], [{
+            "path": str(canonical_path),
+            "root": str(root),
+            "snippet": "canonical content",
+        }])
+
+    def test_is_approved_path_reports_resolver_containment(self):
+        """Removing the public containment helper breaks callers that need a boolean result."""
+        with tempfile.TemporaryDirectory() as approved, tempfile.TemporaryDirectory() as outside:
+            root = Path(approved)
+            inside = root / "inside.txt"
+            outside_path = Path(outside) / "outside.txt"
+            inside.write_text("inside", encoding="utf-8")
+            outside_path.write_text("outside", encoding="utf-8")
+            self.assertTrue(self.module._is_approved_path(inside, [root]))
+            self.assertFalse(self.module._is_approved_path(outside_path, [root]))
+
     def test_resolved_escape_candidate_is_not_read(self):
         """An approved-looking candidate that resolves outside the root must be skipped."""
         with tempfile.TemporaryDirectory() as approved, tempfile.TemporaryDirectory() as outside:
