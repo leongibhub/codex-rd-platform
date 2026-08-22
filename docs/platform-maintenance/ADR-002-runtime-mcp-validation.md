@@ -7,7 +7,8 @@
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Design Source: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
 - Implementation Status: IMPLEMENTED
-- Test Evidence Status: VERIFIED_PENDING_RESTART
+- Evidence Status: VERIFIED
+- Restart Evidence Status: NOT_EXECUTED
 
 ## Context
 
@@ -34,7 +35,7 @@
 ## Consequences and Risks
 
 - 验证器需要稳定错误分类、超时处理和子进程清理。
-- stdio 启动和工具契约结果仍待后续执行证据确认。
+- stdio 启动和工具契约已有执行证据；新会话 Codex 工具可见性仍为 `NOT_EXECUTED`。
 - 外部 Redmine、RAGFlow、GitLab 工具调用不属于健康检查范围。
 
 ## Evidence

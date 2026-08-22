@@ -5,6 +5,7 @@
 - Linked BUG: [BUG-001](BUG-001-platform-self-check-false-positive.md)
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Execution Status: NOT_EXECUTED
+- Evidence Status: NOT_EXECUTED
 - Result: NOT_EXECUTED
 
 ## Objective

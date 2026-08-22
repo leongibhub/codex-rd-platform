@@ -3,7 +3,7 @@ Started (Asia/Shanghai): 2026-08-22 21:59:37 +08:00
 HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
 Branch: codex/fix-BUG-001-platform-readiness
 User-level COMPANY_LOCAL_ROOTS before: PRESENT [REDACTED]
-powershell.exe: 
+powershell.exe:
 Line |
    2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
      |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,17 +117,17 @@ Using cached pycparser-3.0-py3-none-any.whl (48 kB)
 Installing collected packages: urllib3, typing-extensions, truststore, rpds-py, pywin32, python-multipart, pyjwt, pycparser, idna, h11, colorama, charset_normalizer, certifi, attrs, annotated-types, typing-inspection, requests, referencing, pydantic-core, opentelemetry-api, httpcore2, click, cffi, anyio, uvicorn, starlette, pydantic, jsonschema-specifications, httpx2, cryptography, sse-starlette, mcp-types, jsonschema, mcp
 
 Successfully installed annotated-types-0.8.0 anyio-4.14.2 attrs-26.1.0 certifi-2026.7.22 cffi-2.1.1 charset_normalizer-3.5.1 click-8.4.2 colorama-0.4.6 cryptography-50.0.0 h11-0.16.0 httpcore2-2.12.0 httpx2-2.12.0 idna-3.19 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 mcp-2.0.0 mcp-types-2.0.0 opentelemetry-api-1.44.0 pycparser-3.0 pydantic-2.13.4 pydantic-core-2.46.4 pyjwt-2.13.0 python-multipart-0.0.32 pywin32-312 referencing-0.37.0 requests-2.34.2 rpds-py-2026.6.3 sse-starlette-3.4.8 starlette-1.6.0 truststore-0.10.4 typing-extensions-4.16.0 typing-inspection-0.4.4 urllib3-2.7.0 uvicorn-0.52.4
-powershell.exe: 
+powershell.exe:
 Line |
    2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
      |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Root element is missing.
-powershell.exe: 
+powershell.exe:
 Line |
    2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
      |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
-powershell.exe: 
+powershell.exe:
 Line |
    2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
      |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -177,6 +177,3 @@ At line:59 char:13
     + CategoryInfo          : InvalidOperation: (:) [Remove-Item], PSInvalidOperationException
 
     + FullyQualifiedErrorId : InvalidOperation,Microsoft.PowerShell.Commands.RemoveItemCommand
-
- 
-

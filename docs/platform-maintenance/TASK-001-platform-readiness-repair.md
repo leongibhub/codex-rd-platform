@@ -45,12 +45,12 @@
 | Evidence Area | Required Evidence | Current State |
 |---|---|---|
 | Unit and contract tests | 失败测试、最小修复后的自动化结果。 | VERIFIED; [TC-001](TC-001-platform-automated-validation.md) |
-| MCP runtime | stdio 启动、协议协商和严格 8 工具列表证据。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
-| Validator | 完整 validator 成功路径和故障注入结果。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
-| Setup | Windows PowerShell 前置检查和重复执行证据。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
-| Independent test | tester 的独立验证记录。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
-| Independent review | reviewer 的缺陷、风险和一致性结论。 | VERIFIED_PENDING_RESTART; initial `NEEDS_FIXES`, P2 re-review closure and P3 disposition in [review evidence](review-evidence-2026-08-22.md) |
-| Codex restart | 新会话运行时工具可见性观察。 | NOT EXECUTED |
+| MCP runtime | stdio 启动、协议协商和严格 8 工具列表证据。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
+| Validator | 完整 validator 成功路径和故障注入结果。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
+| Setup | Windows PowerShell 前置检查和重复执行证据。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
+| Independent test | tester 的独立验证记录。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
+| Independent review | reviewer 的缺陷、风险和一致性结论。 | VERIFIED; initial `NEEDS_FIXES`, P2 re-review closure and P3 disposition in [review evidence](review-evidence-2026-08-22.md) |
+| Codex restart | 新会话运行时工具可见性观察。 | NOT_EXECUTED |
 
 ## Traceability
 
@@ -60,7 +60,7 @@
 
 - 每个后续提交必须引用 `BUG-001`、`TASK-001` 和实际测试命令。
 - 不记录密钥、Token、Cookie 或 Authorization 值。
-- 在真实测试、独立审查和重启验证有证据之前，不改变 BUG-001 状态。
+- 在真实测试和独立审查有证据之前，不得进入 `IMPLEMENTED_PENDING_RESTART`；在 TC-002 有新会话实际证据之前，不得将 BUG-001 或 TASK-001 标为 `CLOSED` 或 `READY`。
 
 ## Current Maintenance State
 

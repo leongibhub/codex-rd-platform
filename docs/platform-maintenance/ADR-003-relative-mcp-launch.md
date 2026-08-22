@@ -7,7 +7,8 @@
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Design Source: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
 - Implementation Status: IMPLEMENTED
-- Test Evidence Status: VERIFIED_PENDING_RESTART
+- Evidence Status: VERIFIED
+- Restart Evidence Status: NOT_EXECUTED
 
 ## Context
 
@@ -27,8 +28,8 @@
 ## Consequences and Risks
 
 - 配置解析、相对路径解析和路径边界需要由运行时健康检查覆盖。
-- `env_vars`、`required` 和 `cwd` 的实际运行效果尚待后续实现与验证。
-- 本任务不执行 MCP 启动或外部系统访问。
+- `env_vars`、`required`、`cwd` 和受信任路径的验证已有执行证据；新会话 Codex 工具可见性仍为 `NOT_EXECUTED`。
+- 本任务不执行外部系统访问。
 
 ## Evidence
 

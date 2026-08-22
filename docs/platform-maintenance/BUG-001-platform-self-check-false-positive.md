@@ -7,7 +7,8 @@
 - Affected Baseline: `7b7198f` (`chore(platform): initialize Codex R&D operating system`)
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Linked Design: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
-- Repair / Regression Test Execution Status: VERIFIED_PENDING_RESTART
+- Repair / Regression Evidence Status: VERIFIED
+- Restart Evidence Status: NOT_EXECUTED
 - Repair Commit: `ce9ca0e` (`fix(platform): close readiness review P2 findings`)
 
 ## Observed Behavior
@@ -18,7 +19,7 @@
 2. `scripts/validate_platform.py` 只检查文件存在和少量 TOML 字段；即使 MCP 服务不能启动、manifest 不一致或 Gate/RTM 契约不完整，仍可能输出成功状态，形成假阳性。
 3. 修复前 Git 原仓库未被当前用户信任且没有提交基线，不能作为工程事实源；`7b7198f` 是本维护记录引用的原始基线提交。
 
-下列命令已由控制器在本任务工作树中复现并提供脱敏输出；它们是故障观察证据，不是修复、回归或独立验证结果。后续修复检查仍为 `NOT EXECUTED`。
+下列命令已由控制器在本任务工作树中复现并提供脱敏输出；它们是故障观察证据，不是修复、回归或独立验证结果。在这次**原始复现**时，后续修复检查尚为 `NOT_EXECUTED`；该历史事实不覆盖本记录后述的修复和回归证据。
 
 ## Observed Reproduction Evidence
 
@@ -64,8 +65,8 @@ EVD-BUG-001-05 demonstrates the false-green condition: the validator exited 0 wh
 ## Regression and Status Basis
 
 - Automated regression execution: `VERIFIED` — [TC-001](TC-001-platform-automated-validation.md) and [test evidence](test-evidence-2026-08-22.md).
-- Independent tester result: `VERIFIED_PENDING_RESTART` — initial `2d3ae0a` and retest `ce9ca0e` results are separately recorded.
-- Independent reviewer result: `VERIFIED_PENDING_RESTART` — initial review was `NEEDS_FIXES`; accepted P2 findings were closed in directed re-review. P3/historical dispositions remain open or pending in [review evidence](review-evidence-2026-08-22.md).
+- Independent tester evidence status: `VERIFIED` — initial `2d3ae0a` and retest `ce9ca0e` results are separately recorded.
+- Independent reviewer evidence status: `VERIFIED` — initial review was `NEEDS_FIXES`; accepted P2 findings were closed in directed re-review. P3/historical dispositions remain open or pending in [review evidence](review-evidence-2026-08-22.md).
 - Codex restart tool-visibility verification: `NOT_EXECUTED` — [TC-002](TC-002-codex-restart-validation.md).
 - External Redmine/RAGFlow/GitLab calls: `NOT_EXECUTED`.
 

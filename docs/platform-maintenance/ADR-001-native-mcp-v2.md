@@ -7,7 +7,8 @@
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Design Source: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
 - Implementation Status: IMPLEMENTED
-- Test Evidence Status: VERIFIED_PENDING_RESTART
+- Evidence Status: VERIFIED
+- Restart Evidence Status: NOT_EXECUTED
 
 ## Context
 
@@ -35,7 +36,7 @@ mcp = MCPServer(name="company-context", version="0.2.0")
 ## Consequences and Risks
 
 - 需要以失败测试、MCP 导入/实例化和 stdio 集成测试证明迁移正确性。
-- SDK 的实际 API 行为、工具暴露列表和依赖安装结果尚无本任务产生的执行证据。
+- 已记录 MCP v2 stdio、精确工具集和 `pip check` 的执行证据；新会话 Codex 工具可见性仍未执行。
 - 实现或验证失败时保留原始基线，不以降级依赖掩盖失败。
 
 ## Evidence
