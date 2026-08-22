@@ -1,0 +1,11 @@
+Command: real trusted stdio health check three consecutive runs and process cleanup probe
+Start (Asia/Shanghai): 2026-08-22 22:53:41 +08:00
+HEAD: ce9ca0e2162b6612deb03209de1130330ae4c14b
+Branch: codex/fix-BUG-001-platform-readiness
+attempt=1; issue_count=0; issue_codes=[]
+attempt=2; issue_count=0; issue_codes=[]
+attempt=3; issue_count=0; issue_codes=[]
+expected_tool_count=8 (validated by trusted stdio health contract)
+PythonProcessCountAfter: 0
+End (Asia/Shanghai): 2026-08-22 22:53:45 +08:00
+ExitCode: 0

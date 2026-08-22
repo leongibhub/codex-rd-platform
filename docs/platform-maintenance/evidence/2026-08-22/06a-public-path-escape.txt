@@ -1,0 +1,8 @@
+Command: public read_local_doc approved-root path-escape probe
+Started (Asia/Shanghai): 2026-08-22 22:07:04 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+Public read_local_doc path-escape result: REJECTED
+Ended (Asia/Shanghai): 2026-08-22 22:07:05 +08:00
+ExitCode: 0
+Test count/failures: 1 public path-escape probe; failures 0 when exit code is 0.

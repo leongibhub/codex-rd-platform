@@ -6,7 +6,8 @@
 - Linked BUG: [BUG-001](BUG-001-platform-self-check-false-positive.md)
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Design Source: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
-- Implementation / Test Status: NOT EXECUTED
+- Implementation Status: IMPLEMENTED
+- Test Evidence Status: VERIFIED_PENDING_RESTART
 
 ## Context
 
@@ -40,6 +41,7 @@ mcp = MCPServer(name="company-context", version="0.2.0")
 ## Evidence
 
 - Decision basis: 已批准设计第 4.1 至 4.3 节。
-- Implementation evidence: NOT EXECUTED.
-- Test evidence: NOT EXECUTED.
-- Independent review evidence: NOT EXECUTED.
+- Implementation evidence: repair commit `ce9ca0e`; see [TASK-001](TASK-001-platform-readiness-repair.md).
+- Test evidence: [TC-001](TC-001-platform-automated-validation.md) and [EVD-T8-TEST-20260822](test-evidence-2026-08-22.md) record `ce9ca0e` full-suite, pip, validator and actual stdio evidence.
+- Independent review evidence: [EVD-T8-REVIEW-20260822](review-evidence-2026-08-22.md) records initial `NEEDS_FIXES` and P2 closure in directed re-review.
+- Pending: [TC-002](TC-002-codex-restart-validation.md) remains `NOT_EXECUTED`; external Redmine/RAGFlow/GitLab calls are `NOT_EXECUTED`.

@@ -1,7 +1,7 @@
 # TASK-001: 平台就绪性修复
 
 - Record Type: PLATFORM_MAINTENANCE
-- Execution Status: NOT EXECUTED
+- Execution Status: IMPLEMENTED_PENDING_RESTART
 - Linked BUG: [BUG-001](BUG-001-platform-self-check-false-positive.md)
 - Design Source: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
 - Implementation Plan: [平台就绪性修复实施计划](../superpowers/plans/2026-08-22-platform-readiness-repair.md)
@@ -17,14 +17,14 @@
 
 | Plan Task | Planned Work | Initial Execution Status |
 |---|---|---|
-| Task 1 | 建立平台维护追踪记录。 | NOT EXECUTED |
-| Task 2 | 用 TDD 建立 manifest 契约。 | NOT EXECUTED |
-| Task 3 | 用 TDD 迁移 MCP v2 并封闭本地路径。 | NOT EXECUTED |
-| Task 4 | 用 TDD 建立真实 stdio 健康检查和 Codex 配置。 | NOT EXECUTED |
-| Task 5 | 用 TDD 补齐 Gate 与 RTM 治理契约。 | NOT EXECUTED |
-| Task 6 | 用 TDD 重构完整平台 validator。 | NOT EXECUTED |
-| Task 7 | 用测试强化 Windows setup。 | NOT EXECUTED |
-| Task 8 | 全量验证、证据固化与独立 Gate。 | NOT EXECUTED |
+| Task 1 | 建立平台维护追踪记录。 | COMPLETE |
+| Task 2 | 用 TDD 建立 manifest 契约。 | COMPLETE |
+| Task 3 | 用 TDD 迁移 MCP v2 并封闭本地路径。 | COMPLETE |
+| Task 4 | 用 TDD 建立真实 stdio 健康检查和 Codex 配置。 | COMPLETE |
+| Task 5 | 用 TDD 补齐 Gate 与 RTM 治理契约。 | COMPLETE |
+| Task 6 | 用 TDD 重构完整平台 validator。 | COMPLETE |
+| Task 7 | 用测试强化 Windows setup。 | COMPLETE |
+| Task 8 | 全量验证、证据固化与独立审查。 | COMPLETE; Codex restart acceptance pending |
 
 ## Acceptance Conditions
 
@@ -44,20 +44,24 @@
 
 | Evidence Area | Required Evidence | Current State |
 |---|---|---|
-| Unit and contract tests | 失败测试、最小修复后的自动化结果。 | NOT EXECUTED |
-| MCP runtime | stdio 启动、协议协商和严格 8 工具列表证据。 | NOT EXECUTED |
-| Validator | 完整 validator 成功路径和故障注入结果。 | NOT EXECUTED |
-| Setup | Windows PowerShell 前置检查和重复执行证据。 | NOT EXECUTED |
-| Independent test | tester 的独立验证记录。 | NOT EXECUTED |
-| Independent review | reviewer 的缺陷、风险和一致性结论。 | NOT EXECUTED |
+| Unit and contract tests | 失败测试、最小修复后的自动化结果。 | VERIFIED; [TC-001](TC-001-platform-automated-validation.md) |
+| MCP runtime | stdio 启动、协议协商和严格 8 工具列表证据。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
+| Validator | 完整 validator 成功路径和故障注入结果。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
+| Setup | Windows PowerShell 前置检查和重复执行证据。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
+| Independent test | tester 的独立验证记录。 | VERIFIED_PENDING_RESTART; [test evidence](test-evidence-2026-08-22.md) |
+| Independent review | reviewer 的缺陷、风险和一致性结论。 | VERIFIED_PENDING_RESTART; initial `NEEDS_FIXES`, P2 re-review closure and P3 disposition in [review evidence](review-evidence-2026-08-22.md) |
 | Codex restart | 新会话运行时工具可见性观察。 | NOT EXECUTED |
 
 ## Traceability
 
-`BUG-001` → `TASK-001` → `ADR-001` / `ADR-002` / `ADR-003` → 后续变更提交与测试证据（均待执行）。
+`BUG-001` → `TASK-001` → `ADR-001` / `ADR-002` / `ADR-003` → repair commit `ce9ca0e` → [TC-001](TC-001-platform-automated-validation.md) → [test evidence](test-evidence-2026-08-22.md) → [review evidence](review-evidence-2026-08-22.md) → [TC-002](TC-002-codex-restart-validation.md) (`NOT_EXECUTED`).
 
 ## Constraints
 
 - 每个后续提交必须引用 `BUG-001`、`TASK-001` 和实际测试命令。
 - 不记录密钥、Token、Cookie 或 Authorization 值。
 - 在真实测试、独立审查和重启验证有证据之前，不改变 BUG-001 状态。
+
+## Current Maintenance State
+
+实施、自动化和独立 retest/re-review 证据已记录；因此本任务为 `IMPLEMENTED_PENDING_RESTART`。Codex 重启后的会话工具可见性仍未执行，外部 Redmine/RAGFlow/GitLab 调用也未执行。本记录不创建产品需求、RTM 数据行、active Gate Register 或任何 G0–G11 决策。

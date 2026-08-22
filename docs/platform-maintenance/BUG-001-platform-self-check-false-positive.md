@@ -1,13 +1,14 @@
 # BUG-001: 平台自检误报通过
 
 - Record Type: PLATFORM_MAINTENANCE
-- Status: OPEN
+- Status: RESOLVED_PENDING_RESTART
 - Severity: BLOCKER
 - Maintenance Scope: 平台骨架就绪性修复；不启动产品项目。
 - Affected Baseline: `7b7198f` (`chore(platform): initialize Codex R&D operating system`)
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Linked Design: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
-- Repair / Regression Test Execution Status: NOT EXECUTED
+- Repair / Regression Test Execution Status: VERIFIED_PENDING_RESTART
+- Repair Commit: `ce9ca0e` (`fix(platform): close readiness review P2 findings`)
 
 ## Observed Behavior
 
@@ -50,20 +51,22 @@ EVD-BUG-001-05 demonstrates the false-green condition: the validator exited 0 wh
 
 平台可能将不可启动的公司上下文 MCP 和不完整的治理契约表示为可用，后续项目工作无法以该自检结果作为可信前置条件。
 
-## Root Cause
+## Repair Evidence
 
-PENDING：根因分析和验证由 TASK-001 后续实现、独立测试与审查记录提供；本任务不宣称根因已确认。
+在 `ce9ca0e` 上，独立 retester 记录全量 `100/100`、`pip check`、五项 P2 定向契约、正确布局 junction 拒绝、full/static validator、三次实际 stdio（精确 8 工具且无残留 Python 进程）、same-process setup、秘密模式扫描和 Git 完整性为 PASS。初始独立审查的五项 P2 已在定向 re-review 中关闭（0 P0/P1/P2）。详见 [测试证据](test-evidence-2026-08-22.md) 和 [审查证据](review-evidence-2026-08-22.md)。
+
+历史 CLIXML 捕获诊断的因果根因仍为 `PENDING`；其不改变上述已记录的命令结果，也不被表述为已关闭。
 
 ## Planned Correction
 
 按 [TASK-001](TASK-001-platform-readiness-repair.md) 实施 MCP SDK v2 原生迁移、真实 stdio 健康检查、Git/manifest/Gate/RTM 契约验证和 Windows setup fail-closed 行为。
 
-## Regression and Closure Evidence
+## Regression and Status Basis
 
-- Automated regression execution: NOT EXECUTED
-- Independent tester result: NOT EXECUTED
-- Independent reviewer result: NOT EXECUTED
-- Codex restart tool-visibility verification: NOT EXECUTED
-- Closure basis: NOT AVAILABLE
+- Automated regression execution: `VERIFIED` — [TC-001](TC-001-platform-automated-validation.md) and [test evidence](test-evidence-2026-08-22.md).
+- Independent tester result: `VERIFIED_PENDING_RESTART` — initial `2d3ae0a` and retest `ce9ca0e` results are separately recorded.
+- Independent reviewer result: `VERIFIED_PENDING_RESTART` — initial review was `NEEDS_FIXES`; accepted P2 findings were closed in directed re-review. P3/historical dispositions remain open or pending in [review evidence](review-evidence-2026-08-22.md).
+- Codex restart tool-visibility verification: `NOT_EXECUTED` — [TC-002](TC-002-codex-restart-validation.md).
+- External Redmine/RAGFlow/GitLab calls: `NOT_EXECUTED`.
 
-BUG-001 在上述证据实际产生并满足设计中的关闭条件前保持 `OPEN`。
+`RESOLVED_PENDING_RESTART` means implementation, automated evidence, independent retest and P2 re-review support resolution of the repair scope, but the required new-session Codex tool-visibility observation is missing. This is not `CLOSED`, a project Gate decision, release, deployment or acceptance.

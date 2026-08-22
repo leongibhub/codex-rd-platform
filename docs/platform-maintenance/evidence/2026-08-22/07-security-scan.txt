@@ -1,0 +1,9 @@
+Command: git grep -n -I -E "sk-[A-Za-z0-9_-]{16,}|glpat-[A-Za-z0-9_-]{10,}|BEGIN [A-Z ]*PRIVATE KEY"
+Started (Asia/Shanghai): 2026-08-22 22:04:11 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+Raw git grep exit code: 1
+Security scan result: no matches.
+Ended (Asia/Shanghai): 2026-08-22 22:04:12 +08:00
+ExitCode: 0
+Test count/failures: N/A (repository secret-pattern scan).

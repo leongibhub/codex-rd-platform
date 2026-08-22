@@ -1,0 +1,13 @@
+Record Type: PLATFORM_MAINTENANCE_EVIDENCE
+Command: controller recoverable cleanup of tester attempt-1 temporary clone
+Time: 2026-08-22 22:09:46 +08:00
+Branch: codex/fix-BUG-001-platform-readiness
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Target: C:\Users\leon.wang\AppData\Local\Temp\codex-rd-setup-task8-1485970c-28b1-43f1-ad31-6e831ba3d060
+Read-only precheck: target existed; resolved target was a direct child of the system temporary directory; basename matched codex-rd-setup-task8-*; target was not the temporary root.
+First deletion attempt: command runner rejected recursive Remove-Item before execution; no state change occurred.
+Executed cleanup: moved the validated target to the Windows Recycle Bin using Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory.
+Exit code: 0
+Exists after: False
+Recovery: recoverable from the Windows Recycle Bin until it is emptied.
+Result: PASS

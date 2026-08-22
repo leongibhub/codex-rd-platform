@@ -1,0 +1,10 @@
+Command: final git diff --check; status; exact HEAD; verify changed paths are Task 8 tester outputs only
+Started (Asia/Shanghai): 2026-08-22 22:08:03 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+## codex/fix-BUG-001-platform-readiness
+?? docs/platform-maintenance/evidence/
+Non-tester-output changed path count: 0
+Ended (Asia/Shanghai): 2026-08-22 22:08:03 +08:00
+ExitCode: 0
+Test count/failures: N/A (final independent tester output scope check).

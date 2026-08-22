@@ -1,0 +1,394 @@
+Command: .\.venv\Scripts\python.exe -m unittest tests.platform.test_company_context tests.platform.test_mcp_stdio tests.platform.test_validator_contract tests.platform.test_setup_contract -v; independent public read_local_doc path-escape probe
+Started (Asia/Shanghai): 2026-08-22 22:02:22 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Root element is missing.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Root element is missing.
+powershell.exe: 
+Line |
+   2 |  & powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand J …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot process the XML from the 'Error' stream of 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe': Data at the root level is invalid. Line 1, position 1.
+=== independent public path-escape probe ===
+Public read_local_doc path-escape result: REJECTED
+Ended (Asia/Shanghai): 2026-08-22 22:03:24 +08:00
+ExitCode: 0
+Test count/failures: see unittest summary above; plus one independent public path-escape probe.

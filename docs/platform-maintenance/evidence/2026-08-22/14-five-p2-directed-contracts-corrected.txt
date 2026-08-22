@@ -1,0 +1,45 @@
+Command: direct test-file entrypoints for five P2 repairs (corrected after stdlib platform module collision)
+Start (Asia/Shanghai): 2026-08-22 22:50:16 +08:00
+HEAD: ce9ca0e2162b6612deb03209de1130330ae4c14b
+Branch: codex/fix-BUG-001-platform-readiness
+Run: .\.venv\Scripts\python.exe tests/platform/test_manifest_contract.py ManifestContractTests.test_manifest_and_runtime_duplicate_identifiers_are_rejected_without_set_false_green -v
+Traceback (most recent call last):
+  File "D:\codex-rd-platform\.worktrees\platform-readiness\tests\platform\test_manifest_contract.py", line 6, in <module>
+    from scripts.platform_validation import (
+    ...<4 lines>...
+    )
+ModuleNotFoundError: No module named 'scripts.platform_validation'
+CommandExitCode: 1
+Run: .\.venv\Scripts\python.exe tests/platform/test_mcp_stdio.py CompanyContextStdioTests.test_resolver_rejects_enabled_and_timeout_contract_violations -v
+Traceback (most recent call last):
+  File "D:\codex-rd-platform\.worktrees\platform-readiness\tests\platform\test_mcp_stdio.py", line 16, in <module>
+    from scripts.mcp_health_check import _check_stdio_parameters, async_check_company_context, check_company_context
+ModuleNotFoundError: No module named 'scripts.mcp_health_check'
+CommandExitCode: 1
+Run: .\.venv\Scripts\python.exe tests/platform/test_governance_contract.py GovernanceContractTests.test_active_decided_fail_or_blocked_requires_external_evidence_without_release -v
+Traceback (most recent call last):
+  File "D:\codex-rd-platform\.worktrees\platform-readiness\tests\platform\test_governance_contract.py", line 7, in <module>
+    from scripts.platform_validation import (
+    ...<3 lines>...
+    )
+ModuleNotFoundError: No module named 'scripts.platform_validation'
+CommandExitCode: 1
+Run: .\.venv\Scripts\python.exe tests/platform/test_governance_contract.py GovernanceContractTests.test_active_future_blocked_gate_allows_not_evaluated_placeholders_but_decided_requires_evidence -v
+Traceback (most recent call last):
+  File "D:\codex-rd-platform\.worktrees\platform-readiness\tests\platform\test_governance_contract.py", line 7, in <module>
+    from scripts.platform_validation import (
+    ...<3 lines>...
+    )
+ModuleNotFoundError: No module named 'scripts.platform_validation'
+CommandExitCode: 1
+Run: .\.venv\Scripts\python.exe tests/platform/test_setup_contract.py SetupContractTests.test_setup_restores_calling_directory_after_success_and_validator_failure -v
+test_setup_restores_calling_directory_after_success_and_validator_failure (__main__.SetupContractTests.test_setup_restores_calling_directory_after_success_and_validator_failure) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 38.588s
+
+OK
+CommandExitCode: 0
+End (Asia/Shanghai): 2026-08-22 22:50:56 +08:00
+ExitCode: 1
+DirectedContracts: 5

@@ -1,0 +1,47 @@
+Command: direct test-file entrypoints with PYTHONPATH=. for five P2 repairs
+Start (Asia/Shanghai): 2026-08-22 22:51:48 +08:00
+HEAD: ce9ca0e2162b6612deb03209de1130330ae4c14b
+Branch: codex/fix-BUG-001-platform-readiness
+Run: PYTHONPATH=. .\.venv\Scripts\python.exe tests/platform/test_manifest_contract.py ManifestContractTests.test_manifest_and_runtime_duplicate_identifiers_are_rejected_without_set_false_green -v
+test_manifest_and_runtime_duplicate_identifiers_are_rejected_without_set_false_green (__main__.ManifestContractTests.test_manifest_and_runtime_duplicate_identifiers_are_rejected_without_set_false_green) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.040s
+
+OK
+CommandExitCode: 0
+Run: PYTHONPATH=. .\.venv\Scripts\python.exe tests/platform/test_mcp_stdio.py CompanyContextStdioTests.test_resolver_rejects_enabled_and_timeout_contract_violations -v
+test_resolver_rejects_enabled_and_timeout_contract_violations (__main__.CompanyContextStdioTests.test_resolver_rejects_enabled_and_timeout_contract_violations) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.089s
+
+OK
+CommandExitCode: 0
+Run: PYTHONPATH=. .\.venv\Scripts\python.exe tests/platform/test_governance_contract.py GovernanceContractTests.test_active_decided_fail_or_blocked_requires_external_evidence_without_release -v
+test_active_decided_fail_or_blocked_requires_external_evidence_without_release (__main__.GovernanceContractTests.test_active_decided_fail_or_blocked_requires_external_evidence_without_release) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.040s
+
+OK
+CommandExitCode: 0
+Run: PYTHONPATH=. .\.venv\Scripts\python.exe tests/platform/test_governance_contract.py GovernanceContractTests.test_active_future_blocked_gate_allows_not_evaluated_placeholders_but_decided_requires_evidence -v
+test_active_future_blocked_gate_allows_not_evaluated_placeholders_but_decided_requires_evidence (__main__.GovernanceContractTests.test_active_future_blocked_gate_allows_not_evaluated_placeholders_but_decided_requires_evidence) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.023s
+
+OK
+CommandExitCode: 0
+Run: PYTHONPATH=. .\.venv\Scripts\python.exe tests/platform/test_setup_contract.py SetupContractTests.test_setup_restores_calling_directory_after_success_and_validator_failure -v
+test_setup_restores_calling_directory_after_success_and_validator_failure (__main__.SetupContractTests.test_setup_restores_calling_directory_after_success_and_validator_failure) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 37.480s
+
+OK
+CommandExitCode: 0
+End (Asia/Shanghai): 2026-08-22 22:52:28 +08:00
+ExitCode: 0
+DirectedContracts: 5

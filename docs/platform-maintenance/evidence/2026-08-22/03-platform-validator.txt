@@ -1,0 +1,12 @@
+Command: .\\.venv\\Scripts\\python.exe scripts\\validate_platform.py
+Started (Asia/Shanghai): 2026-08-22 21:56:35 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+PLATFORM VALIDATION: PASS (TEMPLATE MODE)
+Lifecycle Mode: TEMPLATE
+Evaluated Gates: NONE
+RUNTIME CHECK: EXECUTED
+ - WARNING: Git working tree is dirty
+Ended (Asia/Shanghai): 2026-08-22 21:56:37 +08:00
+ExitCode: 0
+Test count/failures: N/A (full platform validator).

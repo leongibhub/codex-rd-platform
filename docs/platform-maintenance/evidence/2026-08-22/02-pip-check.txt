@@ -1,0 +1,8 @@
+Command: .\\.venv\\Scripts\\python.exe -m pip check
+Started (Asia/Shanghai): 2026-08-22 21:56:35 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+No broken requirements found.
+Ended (Asia/Shanghai): 2026-08-22 21:56:35 +08:00
+ExitCode: 0
+Test count/failures: N/A (dependency consistency check).

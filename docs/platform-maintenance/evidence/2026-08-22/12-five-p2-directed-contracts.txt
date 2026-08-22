@@ -1,0 +1,42 @@
+Command: .\.venv\Scripts\python.exe -m unittest platform.test_manifest_contract.ManifestContractTests.test_manifest_and_runtime_duplicate_identifiers_are_rejected_without_set_false_green platform.test_mcp_stdio.CompanyContextStdioTests.test_resolver_rejects_enabled_and_timeout_contract_violations platform.test_governance_contract.GovernanceContractTests.test_active_decided_fail_or_blocked_requires_external_evidence_without_release platform.test_governance_contract.GovernanceContractTests.test_active_future_blocked_gate_allows_not_evaluated_placeholders_but_decided_requires_evidence platform.test_setup_contract.SetupContractTests.test_setup_restores_calling_directory_after_success_and_validator_failure -v
+Start (Asia/Shanghai): 2026-08-22 22:49:54 +08:00
+HEAD: ce9ca0e2162b6612deb03209de1130330ae4c14b
+Branch: codex/fix-BUG-001-platform-readiness
+test_manifest_contract (unittest.loader._FailedTest.test_manifest_contract) ... ERROR
+test_mcp_stdio (unittest.loader._FailedTest.test_mcp_stdio) ... ERROR
+test_governance_contract (unittest.loader._FailedTest.test_governance_contract) ... ERROR
+test_governance_contract (unittest.loader._FailedTest.test_governance_contract) ... ERROR
+test_setup_contract (unittest.loader._FailedTest.test_setup_contract) ... ERROR
+
+======================================================================
+ERROR: test_manifest_contract (unittest.loader._FailedTest.test_manifest_contract)
+----------------------------------------------------------------------
+AttributeError: module 'platform' has no attribute 'test_manifest_contract'
+
+======================================================================
+ERROR: test_mcp_stdio (unittest.loader._FailedTest.test_mcp_stdio)
+----------------------------------------------------------------------
+AttributeError: module 'platform' has no attribute 'test_mcp_stdio'
+
+======================================================================
+ERROR: test_governance_contract (unittest.loader._FailedTest.test_governance_contract)
+----------------------------------------------------------------------
+AttributeError: module 'platform' has no attribute 'test_governance_contract'
+
+======================================================================
+ERROR: test_governance_contract (unittest.loader._FailedTest.test_governance_contract)
+----------------------------------------------------------------------
+AttributeError: module 'platform' has no attribute 'test_governance_contract'
+
+======================================================================
+ERROR: test_setup_contract (unittest.loader._FailedTest.test_setup_contract)
+----------------------------------------------------------------------
+AttributeError: module 'platform' has no attribute 'test_setup_contract'
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+FAILED (errors=5)
+End (Asia/Shanghai): 2026-08-22 22:49:55 +08:00
+ExitCode: 1
+TestCount: 5

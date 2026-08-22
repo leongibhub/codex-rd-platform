@@ -1,0 +1,67 @@
+Command: git diff --check; git status --short --branch; git log --oneline --decorate main..HEAD; git diff --stat main...HEAD; verify changed paths are tester evidence only
+Started (Asia/Shanghai): 2026-08-22 22:04:25 +08:00
+HEAD: 2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543
+Branch: codex/fix-BUG-001-platform-readiness
+git diff --check exit code: 0
+## codex/fix-BUG-001-platform-readiness
+?? docs/platform-maintenance/evidence/
+2d3ae0a (HEAD -> codex/fix-BUG-001-platform-readiness) test(setup): require a post-baseline default invocation
+bf29f1a test(setup): harden fail-closed setup contract
+6b42dfb fix(setup): fail closed on platform prerequisites
+563bae4 fix(validation): reject BOM-hidden constraints
+8a27a25 fix(validation): fail closed on requirement indirection
+fa3d3da fix(validation): harden static prerequisite checks
+b983299 fix(validation): reject false-green platform checks
+ad6ab49 fix(governance): close placeholder punctuation boundary
+8574ee3 fix(governance): enforce disposition and markdown contracts
+6c122dd fix(governance): harden evidence token parsing
+6421af9 fix(governance): resolve trace evidence references
+92280e1 fix(governance): reject false-pass contracts
+ab10059 docs(governance): define gate and RTM contracts
+c95d3d8 fix(validation): seal company context stdio checks
+40cde7a feat(validation): verify company context over stdio
+796c2fd test(mcp): enforce strict path containment
+c205f93 fix(mcp): sanitize company context failures
+1baa2bf fix(mcp): migrate company context to SDK v2
+ce403fe fix(platform): bound skill manifest frontmatter parsing
+f9da54b fix(platform): align manifest with runtime identifiers
+5022e4f docs(platform): record readiness repair traceability
+7c9f946 docs(platform): add readiness repair implementation plan
+60e6a6a docs(platform): define readiness repair design
+ .codex/config.toml                                 |  14 +
+ AGENTS.md                                          |  10 +-
+ README.md                                          |  18 +-
+ docs/00-project-initiation/context-baseline.md     |   8 +
+ .../requirement-traceability-matrix.md             |  20 +-
+ docs/08-project-management/decision-log.md         |   7 +-
+ docs/08-project-management/gate-management.md      |  29 +
+ docs/08-project-management/issue-register.md       |   1 +
+ docs/platform-maintenance/ADR-001-native-mcp-v2.md |  45 ++
+ .../ADR-002-runtime-mcp-validation.md              |  44 ++
+ .../ADR-003-relative-mcp-launch.md                 |  37 +
+ .../BUG-001-platform-self-check-false-positive.md  |  69 ++
+ .../TASK-001-platform-readiness-repair.md          |  63 ++
+ .../plans/2026-08-22-platform-readiness-repair.md  | 771 ++++++++++++++++++++
+ .../2026-08-22-platform-readiness-repair-design.md | 255 +++++++
+ knowledge/local/README.md                          |   5 +
+ platform-manifest.json                             |  14 +-
+ scripts/mcp_health_check.py                        | 154 ++++
+ scripts/platform_validation.py                     | 784 +++++++++++++++++++++
+ scripts/setup.ps1                                  |  71 +-
+ scripts/validate_platform.py                       | 183 +++--
+ templates/gate-register-template.md                |  22 +
+ tests/__init__.py                                  |   0
+ tests/platform/__init__.py                         |   0
+ tests/platform/test_company_context.py             | 250 +++++++
+ tests/platform/test_governance_contract.py         | 736 +++++++++++++++++++
+ tests/platform/test_manifest_contract.py           | 116 +++
+ tests/platform/test_mcp_stdio.py                   | 196 ++++++
+ tests/platform/test_setup_contract.py              | 248 +++++++
+ tests/platform/test_validator_contract.py          | 350 +++++++++
+ tools/mcp/company-context/requirements.txt         |   4 +-
+ tools/mcp/company-context/server.py                | 181 +++--
+ 32 files changed, 4557 insertions(+), 148 deletions(-)
+Non-evidence changed path count: 0
+Ended (Asia/Shanghai): 2026-08-22 22:04:26 +08:00
+ExitCode: 0
+Test count/failures: N/A (Git integrity and workspace-scope check).

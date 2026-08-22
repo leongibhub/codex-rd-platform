@@ -1,0 +1,11 @@
+Command: correct-layout external Scripts\\python.exe junction probe via public resolve_company_context_config
+Start (Asia/Shanghai): 2026-08-22 22:49:54 +08:00
+HEAD: ce9ca0e2162b6612deb03209de1130330ae4c14b
+Branch: codex/fix-BUG-001-platform-readiness
+junction_create_exit= 0
+resolver_issue= MCP_COMMAND_UNTRUSTED
+external_target_exists_after= True
+external_target_unchanged= True
+junction_removed= True
+End (Asia/Shanghai): 2026-08-22 22:49:55 +08:00
+ExitCode: 0

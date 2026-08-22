@@ -6,7 +6,8 @@
 - Linked BUG: [BUG-001](BUG-001-platform-self-check-false-positive.md)
 - Linked Task: [TASK-001](TASK-001-platform-readiness-repair.md)
 - Design Source: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
-- Implementation / Test Status: NOT EXECUTED
+- Implementation Status: IMPLEMENTED
+- Test Evidence Status: VERIFIED_PENDING_RESTART
 
 ## Context
 
@@ -32,6 +33,7 @@
 ## Evidence
 
 - Decision basis: 已批准设计第 6.2、7.2 和 12 节。
-- Implementation evidence: NOT EXECUTED.
-- Test evidence: NOT EXECUTED.
-- Independent review evidence: NOT EXECUTED.
+- Implementation evidence: repair commit `ce9ca0e`; see [TASK-001](TASK-001-platform-readiness-repair.md).
+- Test evidence: [EVD-T8-TEST-20260822](test-evidence-2026-08-22.md) records P2 config contracts and a correct-layout external junction rejected as `MCP_COMMAND_UNTRUSTED`.
+- Independent review evidence: [EVD-T8-REVIEW-20260822](review-evidence-2026-08-22.md) records the P2 re-review and the remaining command-junction fixture P3.
+- Pending: [TC-002](TC-002-codex-restart-validation.md) is `NOT_EXECUTED`; no external Redmine/RAGFlow/GitLab call was executed.
