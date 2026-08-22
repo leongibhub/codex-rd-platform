@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 import json
 import re
 import subprocess
+import sys
 import tomllib
 
 
@@ -10,6 +12,45 @@ import tomllib
 class ValidationIssue:
     code: str
     message: str
+
+
+def validate_runtime_prerequisites(root: Path) -> list[ValidationIssue]:
+    """Validate the local interpreter and MCP dependency range before stdio starts."""
+    if tuple(sys.version_info[:2]) < (3, 11):
+        return [ValidationIssue("PYTHON_VERSION_UNSUPPORTED", "Python 3.11 or later is required")]
+    try:
+        installed_version = importlib_metadata.version("mcp")
+    except importlib_metadata.PackageNotFoundError:
+        return [ValidationIssue("MCP_VERSION_UNSUPPORTED", "installed MCP version is unsupported")]
+    except Exception:
+        return [ValidationIssue("MCP_VERSION_UNSUPPORTED", "installed MCP version is unsupported")]
+    parsed_version = _parse_version(installed_version)
+    if parsed_version is None or not ((2, 0, 0) <= parsed_version < (3, 0, 0)):
+        return [ValidationIssue("MCP_VERSION_UNSUPPORTED", "installed MCP version is unsupported")]
+    try:
+        requirements = (root / "tools" / "mcp" / "company-context" / "requirements.txt").read_text(encoding="utf-8")
+    except OSError:
+        return [ValidationIssue("MCP_REQUIREMENT_INVALID", "MCP dependency requirement is invalid")]
+    if not _has_mcp_v2_bounds(requirements):
+        return [ValidationIssue("MCP_REQUIREMENT_INVALID", "MCP dependency requirement is invalid")]
+    return []
+
+
+def _parse_version(value: str) -> tuple[int, int, int] | None:
+    match = re.fullmatch(r"(\d+)\.(\d+)(?:\.(\d+))?", value.strip())
+    if match is None:
+        return None
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3) or 0))
+
+
+def _has_mcp_v2_bounds(requirements: str) -> bool:
+    for raw_line in requirements.splitlines():
+        line = raw_line.split("#", maxsplit=1)[0].strip()
+        if not line or not re.match(r"(?i)^mcp\s*(?:[<>=!~]|$)", line):
+            continue
+        constraints = {item.strip() for item in line[3:].split(",")}
+        return ">=2.0.0" in constraints and "<3.0.0" in constraints
+    return False
 
 
 GATE_TABLE_COLUMNS = [
