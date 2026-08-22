@@ -97,6 +97,24 @@ class SetupContractTests(unittest.TestCase):
         finally:
             validator.write_text(original_validator, encoding="utf-8")
 
+    def test_setup_restores_calling_directory_after_success_and_validator_failure(self):
+        self._ensure_healthy_setup()
+        outside = ROOT
+        succeeded = self._run_setup_in_same_powershell(self.clone, outside, "-SkipDependencyInstall")
+        self.assertEqual(succeeded.returncode, 0, self._combined_output(succeeded))
+        self.assertIn(f"CALLER_CWD={outside}", succeeded.stdout)
+
+        validator = self.clone / "scripts" / "validate_platform.py"
+        original_validator = validator.read_text(encoding="utf-8")
+        validator.write_text("import sys\nsys.exit(1)\n", encoding="utf-8")
+        try:
+            failed = self._run_setup_in_same_powershell(self.clone, outside, "-SkipDependencyInstall")
+            self.assertNotEqual(failed.returncode, 0, self._combined_output(failed))
+            self.assertIn("Platform validation failed with exit code 1.", self._combined_output(failed))
+            self.assertIn(f"CALLER_CWD={outside}", failed.stdout)
+        finally:
+            validator.write_text(original_validator, encoding="utf-8")
+
     def test_setup_fails_closed_when_pip_check_reports_a_broken_requirement(self):
         """A synthetic installed distribution with a missing requirement blocks successful setup."""
         self._ensure_healthy_setup()
@@ -200,6 +218,22 @@ class SetupContractTests(unittest.TestCase):
             [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(clone / "scripts" / "setup.ps1"), *arguments],
             cwd=clone, env=environment, text=True, capture_output=True, check=False,
         )
+
+    @staticmethod
+    def _run_setup_in_same_powershell(clone: Path, caller_directory: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+        invocation = " ".join(
+            argument if argument.startswith("-") else "'" + argument.replace("'", "''") + "'"
+            for argument in arguments
+        )
+        script = str(clone / "scripts" / "setup.ps1").replace("'", "''")
+        caller = str(caller_directory).replace("'", "''")
+        command = (
+            "$ErrorActionPreference='Stop'; Set-Location -LiteralPath '" + caller + "'; "
+            "try { & '" + script + "' " + invocation + "; $setupExit=$LASTEXITCODE } "
+            "catch { Write-Error $_ -ErrorAction Continue; $setupExit=1 }; "
+            "Write-Output ('CALLER_CWD=' + (Get-Location).Path); exit $setupExit"
+        )
+        return subprocess.run([POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command], cwd=caller_directory, text=True, capture_output=True, check=False)
 
     @staticmethod
     def _pip_freeze(clone: Path) -> str:

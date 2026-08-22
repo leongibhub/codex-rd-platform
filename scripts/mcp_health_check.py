@@ -40,7 +40,7 @@ def _issue(code: str, message: str) -> CompanyContextConfigError:
 
 
 def _resolve_under(root: Path, configured: str) -> Path:
-    return (root / configured).resolve(strict=False)
+    return (root / configured).resolve(strict=True)
 
 
 def _is_under(path: Path, directory: Path) -> bool:
@@ -68,6 +68,12 @@ def resolve_company_context_config(root: Path) -> StdioServerParameters:
         raise _issue("MCP_CONFIG_INVALID", "company_context MCP configuration is invalid")
     if server.get("required") is not True:
         raise _issue("MCP_REQUIRED_INVALID", "company_context MCP must be required")
+    if server.get("enabled") is not True:
+        raise _issue("MCP_ENABLED_INVALID", "company_context MCP must be enabled")
+    if type(server.get("startup_timeout_sec")) is not int or server["startup_timeout_sec"] != 20:
+        raise _issue("MCP_STARTUP_TIMEOUT_INVALID", "company_context MCP startup timeout must be 20 seconds")
+    if type(server.get("tool_timeout_sec")) is not int or server["tool_timeout_sec"] != 60:
+        raise _issue("MCP_TOOL_TIMEOUT_INVALID", "company_context MCP tool timeout must be 60 seconds")
     if len(args) != 1 or not isinstance(args[0], str):
         raise _issue("MCP_ARGS_INVALID", "company_context MCP arguments are invalid")
     if (
@@ -79,18 +85,25 @@ def resolve_company_context_config(root: Path) -> StdioServerParameters:
     ):
         raise _issue("MCP_ENV_VARS_INVALID", "company_context MCP environment names are invalid")
 
-    command_path = _resolve_under(root, command)
-    venv_root = (root / ".venv").resolve(strict=False)
-    if not _is_under(command_path, venv_root):
+    try:
+        command_path = _resolve_under(root, command)
+        venv_root = _resolve_under(root, ".venv")
+    except OSError:
+        raise _issue("MCP_COMMAND_UNTRUSTED", "company_context command is outside repository .venv") from None
+    if not command_path.is_file() or not _is_under(command_path, root) or not _is_under(venv_root, root) or not _is_under(command_path, venv_root):
         raise _issue("MCP_COMMAND_UNTRUSTED", "company_context command is outside repository .venv")
-
-    cwd_path = _resolve_under(root, cwd)
-    if cwd_path != root:
+    try:
+        cwd_path = _resolve_under(root, cwd)
+    except OSError:
+        raise _issue("MCP_CWD_UNTRUSTED", "company_context cwd is not repository root") from None
+    if not cwd_path.is_dir() or cwd_path != root:
         raise _issue("MCP_CWD_UNTRUSTED", "company_context cwd is not repository root")
-
-    server_path = _resolve_under(root, args[0])
-    expected_server = (root / "tools" / "mcp" / "company-context" / "server.py").resolve(strict=False)
-    if server_path != expected_server:
+    try:
+        server_path = _resolve_under(root, args[0])
+        expected_server = _resolve_under(root, "tools/mcp/company-context/server.py")
+    except OSError:
+        raise _issue("MCP_SERVER_UNTRUSTED", "company_context server is not the trusted server.py") from None
+    if not server_path.is_file() or not _is_under(server_path, root) or not _is_under(expected_server, root) or server_path != expected_server:
         raise _issue("MCP_SERVER_UNTRUSTED", "company_context server is not the trusted server.py")
 
     forwarded_environment = {

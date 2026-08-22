@@ -80,6 +80,29 @@ class ManifestContractTests(unittest.TestCase):
                 ["MANIFEST_LIFECYCLE_MODE_INVALID"],
             )
 
+    def test_manifest_and_runtime_duplicate_identifiers_are_rejected_without_set_false_green(self):
+        cases = (
+            ("manifest agents", {"agents": ["agent", "agent"]}, "MANIFEST_AGENT_IDS_DUPLICATE"),
+            ("manifest skills", {"skills": ["skill", "skill"]}, "MANIFEST_SKILL_IDS_DUPLICATE"),
+        )
+        for name, override, expected_code in cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory)
+                self._write_contract_root(root, **override)
+                self.assertEqual([issue.code for issue in validate_manifest_contract(root)], [expected_code])
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_contract_root(root)
+            (root / ".codex" / "agents" / "duplicate.toml").write_text('name = "agent"\n', encoding="utf-8")
+            self.assertEqual([issue.code for issue in validate_manifest_contract(root)], ["RUNTIME_AGENT_IDS_DUPLICATE"])
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_contract_root(root)
+            self._write_skill(root, "duplicate", "---\nname: skill\n---\nname: body-is-not-frontmatter\n")
+            self.assertEqual([issue.code for issue in validate_manifest_contract(root)], ["RUNTIME_SKILL_IDS_DUPLICATE"])
+
     def _write_contract_root(
         self,
         root: Path,

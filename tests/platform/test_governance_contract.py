@@ -88,6 +88,8 @@ class GovernanceContractTests(unittest.TestCase):
         cases = (
             ("NOT_EVALUATED", "DECIDED"),
             ("BLOCKED", "BLOCKED"),
+            ("PASS", "NOT_EVALUATED"),
+            ("FAIL", "IN_REVIEW"),
         )
         for status, evaluation in cases:
             with self.subTest(status=status, evaluation=evaluation), self._temporary_governance_root(
@@ -99,11 +101,33 @@ class GovernanceContractTests(unittest.TestCase):
                     "G0",
                     {"Gate Status": status, "Evaluation State": evaluation},
                 )
-
                 self.assertEqual(
                     self._codes(validate_gate_contract(root, load_manifest(root))),
                     ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
                 )
+
+    def test_active_future_blocked_gate_allows_not_evaluated_placeholders_but_decided_requires_evidence(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            register = self._write_active_register(root)
+            self._set_gate_values(register, "G0", {"Gate Status": "BLOCKED", "Evaluation State": "NOT_EVALUATED"})
+            self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
+
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            register = self._write_active_register(root)
+            self._set_gate_values(register, "G0", {"Gate Status": "BLOCKED", "Evaluation State": "DECIDED"})
+            self.assertEqual(
+                self._codes(validate_gate_contract(root, load_manifest(root))),
+                ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
+            )
+
+    def test_active_decided_fail_or_blocked_requires_external_evidence_without_release(self):
+        for status in ("FAIL", "BLOCKED"):
+            with self.subTest(status=status), self._temporary_governance_root(lifecycle_mode="active") as root:
+                register = self._write_active_register(root)
+                self._write_evidence_document(root, "EVD-001")
+                values = self._pass_gate_values("EVD-001") | {"Gate Status": status}
+                self._set_gate_values(register, "G0", values)
+                self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
 
     def test_active_gate_pass_rejects_placeholder_evidence_and_required_fields(self):
         placeholders = ("-", "TBD", "TODO", "PENDING", "NOT_AVAILABLE", "NOT EXECUTED", "INFERRED", "N/A", "{{evidence}}", "[待确认]")
@@ -620,7 +644,7 @@ class GovernanceContractTests(unittest.TestCase):
         register.write_text(
             template.read_text(encoding="utf-8")
             .replace("{{PASS\\|FAIL\\|BLOCKED}}", "BLOCKED")
-            .replace("{{NOT_EVALUATED\\|IN_REVIEW\\|DECIDED}}", "DECIDED"),
+            .replace("{{NOT_EVALUATED\\|IN_REVIEW\\|DECIDED}}", "NOT_EVALUATED"),
             encoding="utf-8",
         )
         return register

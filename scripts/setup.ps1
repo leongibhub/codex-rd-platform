@@ -21,10 +21,10 @@ function Invoke-Native {
     }
 }
 
+Push-Location -LiteralPath $Root
+try {
 Write-Host "=== Codex R&D Platform Setup ==="
 Write-Host "Root: $Root"
-
-Set-Location $Root
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw "Git is not installed or not in PATH."
@@ -103,3 +103,7 @@ Write-Host "Next:"
 Write-Host "1) Configure Redmine/RAGFlow/GitLab environment variables if needed."
 Write-Host "2) Start Codex from this repo."
 Write-Host "3) Ask: 'Read AGENTS.md, inspect available agents/skills/MCP, and run platform self-check.'"
+}
+finally {
+    Pop-Location
+}

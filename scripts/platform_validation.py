@@ -193,7 +193,7 @@ UNUSABLE_EVIDENCE_STATUSES = {"PENDING", "NOT_AVAILABLE", "NOT_EXECUTED", "INFER
 GATE_STATUS_TOKEN = "{{PASS|FAIL|BLOCKED}}"
 EVALUATION_STATE_TOKEN = "{{NOT_EVALUATED|IN_REVIEW|DECIDED}}"
 DEFAULT_RTM_PATH = "docs/03-requirements/requirement-traceability-matrix.md"
-GATE_PASS_REQUIRED_FIELDS = (
+GATE_DECISION_REQUIRED_FIELDS = (
     "Baseline",
     "Evaluated At",
     "Evaluator Role",
@@ -205,6 +205,7 @@ GATE_PASS_REQUIRED_FIELDS = (
     "Owner",
     "Target Date",
 )
+GATE_PASS_REQUIRED_FIELDS = GATE_DECISION_REQUIRED_FIELDS
 COMPLETE_TRACEABILITY_FIELDS = (
     "BG",
     "PRD",
@@ -235,18 +236,26 @@ def load_manifest(root: Path) -> dict:
 
 
 def collect_agent_ids(root: Path) -> set[str]:
-    return {
+    return set(_collect_agent_declarations(root))
+
+
+def _collect_agent_declarations(root: Path) -> list[str]:
+    return [
         tomllib.loads(path.read_text(encoding="utf-8"))["name"]
-        for path in (root / ".codex" / "agents").glob("*.toml")
-    }
+        for path in sorted((root / ".codex" / "agents").glob("*.toml"))
+    ]
 
 
 def collect_skill_ids(root: Path) -> set[str]:
-    result = set()
-    for path in (root / ".agents" / "skills").glob("*/SKILL.md"):
+    return set(_collect_skill_declarations(root))
+
+
+def _collect_skill_declarations(root: Path) -> list[str]:
+    result = []
+    for path in sorted((root / ".agents" / "skills").glob("*/SKILL.md")):
         name = _frontmatter_name(path.read_text(encoding="utf-8"))
         if name:
-            result.add(name)
+            result.append(name)
     return result
 
 
@@ -278,15 +287,27 @@ def _parse_simple_yaml_scalar(value: str) -> str:
 def validate_manifest_contract(root: Path) -> list[ValidationIssue]:
     manifest = load_manifest(root)
     issues = []
+    manifest_agents = manifest.get("agents", [])
+    manifest_skills = manifest.get("skills", [])
+    agent_declarations = _collect_agent_declarations(root)
+    skill_declarations = _collect_skill_declarations(root)
 
-    if set(manifest.get("agents", [])) != collect_agent_ids(root):
+    if not isinstance(manifest_agents, list) or len(manifest_agents) != len(set(manifest_agents)):
+        issues.append(ValidationIssue("MANIFEST_AGENT_IDS_DUPLICATE", "manifest agent identifiers must be unique"))
+    elif len(agent_declarations) != len(set(agent_declarations)):
+        issues.append(ValidationIssue("RUNTIME_AGENT_IDS_DUPLICATE", "runtime agent identifiers must be unique"))
+    elif set(manifest_agents) != set(agent_declarations):
         issues.append(
             ValidationIssue(
                 "MANIFEST_AGENTS_MISMATCH",
                 "manifest agents do not match runtime agent identifiers",
             )
         )
-    if set(manifest.get("skills", [])) != collect_skill_ids(root):
+    if not isinstance(manifest_skills, list) or len(manifest_skills) != len(set(manifest_skills)):
+        issues.append(ValidationIssue("MANIFEST_SKILL_IDS_DUPLICATE", "manifest skill identifiers must be unique"))
+    elif len(skill_declarations) != len(set(skill_declarations)):
+        issues.append(ValidationIssue("RUNTIME_SKILL_IDS_DUPLICATE", "runtime skill identifiers must be unique"))
+    elif set(manifest_skills) != set(skill_declarations):
         issues.append(
             ValidationIssue(
                 "MANIFEST_SKILLS_MISMATCH",
@@ -457,24 +478,23 @@ def _valid_gate_rows(
             and row[evaluation_index] == EVALUATION_STATE_TOKEN
             for row in rows
         )
-    return all(
-        row[gate_status_index] in GATE_STATUSES
-        and row[evaluation_index] in EVALUATION_STATES
-        and (
-            row[gate_status_index] != "PASS"
-            or (
-                row[evaluation_index] == "DECIDED"
-                and all(
-                    _is_actual_value(row[GATE_TABLE_COLUMNS.index(field)])
-                    for field in GATE_PASS_REQUIRED_FIELDS
-                )
-                and _is_actual_evidence(
-                    row[GATE_TABLE_COLUMNS.index("Evidence IDs")], root, excluded_paths, evidence_source_path
-                )
-            )
-        )
-        for row in rows
-    )
+    for row in rows:
+        status = row[gate_status_index]
+        evaluation = row[evaluation_index]
+        if status not in GATE_STATUSES or evaluation not in EVALUATION_STATES:
+            return False
+        if status in {"PASS", "FAIL"} and evaluation != "DECIDED":
+            return False
+        if status == "BLOCKED" and evaluation == "IN_REVIEW":
+            return False
+        if evaluation == "DECIDED":
+            if not all(_is_actual_value(row[GATE_TABLE_COLUMNS.index(field)]) for field in GATE_DECISION_REQUIRED_FIELDS):
+                return False
+            if not _is_actual_evidence(
+                row[GATE_TABLE_COLUMNS.index("Evidence IDs")], root, excluded_paths, evidence_source_path
+            ):
+                return False
+    return True
 
 
 def _valid_active_rtm_rows(

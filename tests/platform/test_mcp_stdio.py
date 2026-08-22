@@ -32,6 +32,11 @@ class CompanyContextStdioTests(unittest.TestCase):
         self.assertIs(server["required"], True)
         self.assertEqual(len(server["env_vars"]), 10)
         self.assertEqual(set(server["env_vars"]), EXPECTED_ENV_NAMES)
+        self.assertIs(server["enabled"], True)
+        self.assertEqual(server["startup_timeout_sec"], 20)
+        self.assertIs(type(server["startup_timeout_sec"]), int)
+        self.assertEqual(server["tool_timeout_sec"], 60)
+        self.assertIs(type(server["tool_timeout_sec"]), int)
 
     def test_public_health_check_entry_points_accept_only_root(self):
         self.assertEqual(list(inspect.signature(check_company_context).parameters), ["root"])
@@ -65,6 +70,51 @@ class CompanyContextStdioTests(unittest.TestCase):
     def test_resolver_rejects_required_false(self):
         with self._configured_root(required=False) as root:
             self.assertEqual(self._codes(check_company_context(root)), ["MCP_REQUIRED_INVALID"])
+
+    def test_resolver_rejects_enabled_and_timeout_contract_violations(self):
+        cases = (
+            ({"enabled": False}, "MCP_ENABLED_INVALID"),
+            ({"enabled": "true"}, "MCP_ENABLED_INVALID"),
+            ({"startup_timeout_sec": True}, "MCP_STARTUP_TIMEOUT_INVALID"),
+            ({"startup_timeout_sec": 20.0}, "MCP_STARTUP_TIMEOUT_INVALID"),
+            ({"startup_timeout_sec": "20"}, "MCP_STARTUP_TIMEOUT_INVALID"),
+            ({"startup_timeout_sec": 19}, "MCP_STARTUP_TIMEOUT_INVALID"),
+            ({"tool_timeout_sec": False}, "MCP_TOOL_TIMEOUT_INVALID"),
+            ({"tool_timeout_sec": 60.0}, "MCP_TOOL_TIMEOUT_INVALID"),
+            ({"tool_timeout_sec": "60"}, "MCP_TOOL_TIMEOUT_INVALID"),
+            ({"tool_timeout_sec": 61}, "MCP_TOOL_TIMEOUT_INVALID"),
+        )
+        for overrides, expected_code in cases:
+            with self.subTest(overrides=overrides), self._configured_root(**overrides) as root:
+                self.assertEqual(self._codes(check_company_context(root)), [expected_code])
+
+    @unittest.skipUnless(os.name == "nt", "junction containment is a Windows contract")
+    def test_resolver_rejects_junction_targets_outside_the_canonical_repository_root(self):
+        with self._configured_root() as root, tempfile.TemporaryDirectory() as outside_directory:
+            outside = Path(outside_directory)
+            python_target = outside / "python.exe"
+            python_target.touch()
+            venv_link = root / ".venv"
+            (venv_link / "Scripts" / "python.exe").unlink()
+            (venv_link / "Scripts").rmdir()
+            venv_link.rmdir()
+            self._make_junction(venv_link, outside)
+            try:
+                self.assertEqual(self._codes(check_company_context(root)), ["MCP_COMMAND_UNTRUSTED"])
+            finally:
+                self._remove_junction(venv_link)
+
+        with self._configured_root() as root, tempfile.TemporaryDirectory() as outside_directory:
+            outside = Path(outside_directory)
+            (outside / "server.py").touch()
+            server_directory = root / "tools" / "mcp" / "company-context"
+            (server_directory / "server.py").unlink()
+            server_directory.rmdir()
+            self._make_junction(server_directory, outside)
+            try:
+                self.assertEqual(self._codes(check_company_context(root)), ["MCP_SERVER_UNTRUSTED"])
+            finally:
+                self._remove_junction(server_directory)
 
     def test_resolver_rejects_invalid_environment_name_lists(self):
         cases = {
@@ -130,12 +180,23 @@ class CompanyContextStdioTests(unittest.TestCase):
     def _blocker(self):
         return _BlockingServer(self)
 
+    def _make_junction(self, link: Path, target: Path):
+        result = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], text=True, capture_output=True, check=False)
+        if result.returncode != 0:
+            self.skipTest(f"junction creation is unavailable: {result.stderr or result.stdout}")
+
+    @staticmethod
+    def _remove_junction(link: Path):
+        if link.exists() or link.is_symlink():
+            os.rmdir(link)
+
 
 class _ConfiguredRoot:
-    def __init__(self, command=None, cwd=None, args=None, required=True, env_vars=None):
+    def __init__(self, command=None, cwd=None, args=None, required=True, env_vars=None, enabled=True, startup_timeout_sec=20, tool_timeout_sec=60):
         self._directory = tempfile.TemporaryDirectory()
         self.root, self.command, self.cwd, self.args = Path(self._directory.name), command, cwd, args
         self.required, self.env_vars = required, env_vars
+        self.enabled, self.startup_timeout_sec, self.tool_timeout_sec = enabled, startup_timeout_sec, tool_timeout_sec
 
     def __enter__(self) -> Path:
         (self.root / ".codex").mkdir()
@@ -150,7 +211,8 @@ class _ConfiguredRoot:
         entries = [
             "[mcp_servers.company_context]", f'command = "{command}"',
             "args = [" + ", ".join(f'"{arg}"' for arg in args) + "]",
-            f'cwd = "{cwd}"', f"required = {str(self.required).lower()}",
+            f'cwd = "{cwd}"', f"required = {json.dumps(self.required)}", f"enabled = {json.dumps(self.enabled)}",
+            f"startup_timeout_sec = {json.dumps(self.startup_timeout_sec)}", f"tool_timeout_sec = {json.dumps(self.tool_timeout_sec)}",
             "env_vars = [" + ", ".join(f'"{name}"' for name in env_vars) + "]",
         ]
         (self.root / ".codex" / "config.toml").write_text("\n".join(entries), encoding="utf-8")
