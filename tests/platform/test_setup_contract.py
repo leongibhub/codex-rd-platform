@@ -16,6 +16,8 @@ class SetupContractTests(unittest.TestCase):
     def setUpClass(cls):
         if POWERSHELL is None:
             raise unittest.SkipTest("PowerShell is required for the Windows setup contract")
+        cls._user_company_local_roots_baseline = cls._read_user_company_local_roots()
+        cls._default_setup_invocations_after_user_roots_baseline = 0
         cls._positive_clone = cls._temporary_clone()
         cls.clone = cls._positive_clone.__enter__()
         subprocess.run(["git", "config", "user.name", "Setup Contract Test"], cwd=cls.clone, check=True)
@@ -116,10 +118,24 @@ class SetupContractTests(unittest.TestCase):
 
     def test_default_setup_does_not_change_user_company_local_roots(self):
         """Default setup leaves the user-level COMPANY_LOCAL_ROOTS registry value untouched."""
-        before = self._read_user_company_local_roots()
         self._ensure_healthy_setup()
+        self._assert_default_setup_ran_after_user_roots_baseline()
         after = self._read_user_company_local_roots()
-        self.assertTrue(after == before, "Default setup changed the user-level COMPANY_LOCAL_ROOTS value.")
+        self.assertTrue(
+            after == self.__class__._user_company_local_roots_baseline,
+            "Default setup changed the user-level COMPANY_LOCAL_ROOTS value.",
+        )
+
+    def test_default_setup_persistence_assertion_rejects_prefilled_healthy_cache_without_a_recorded_setup(self):
+        """A prefilled healthy cache alone cannot satisfy the default-persistence contract."""
+        self._ensure_healthy_setup()
+        original_invocation_count = self.__class__._default_setup_invocations_after_user_roots_baseline
+        self.__class__._default_setup_invocations_after_user_roots_baseline = 0
+        try:
+            with self.assertRaisesRegex(AssertionError, "baseline"):
+                self._assert_default_setup_ran_after_user_roots_baseline()
+        finally:
+            self.__class__._default_setup_invocations_after_user_roots_baseline = original_invocation_count
 
     def test_setup_declares_explicit_safe_options_as_a_supplemental_contract(self):
         text = (ROOT / "scripts" / "setup.ps1").read_text(encoding="utf-8")
@@ -132,11 +148,19 @@ class SetupContractTests(unittest.TestCase):
     def _ensure_healthy_setup(self):
         if self.__class__._healthy_setup is None:
             self.__class__._healthy_setup = self._run_setup(self.clone)
+            self.__class__._default_setup_invocations_after_user_roots_baseline += 1
         result = self.__class__._healthy_setup
         self.assertEqual(result.returncode, 0, self._combined_output(result))
         self.assertEqual(result.stdout.count("Setup complete."), 1)
         self.assertTrue((self.clone / ".venv" / "Scripts" / "python.exe").is_file())
         self.assertTrue((self.clone / "knowledge" / "local").is_dir())
+
+    def _assert_default_setup_ran_after_user_roots_baseline(self):
+        self.assertGreater(
+            self.__class__._default_setup_invocations_after_user_roots_baseline,
+            0,
+            "Default setup must run after the class user-level COMPANY_LOCAL_ROOTS baseline.",
+        )
 
     def _assert_skip_mutation_is_detected(self):
         setup = self.clone / "scripts" / "setup.ps1"
