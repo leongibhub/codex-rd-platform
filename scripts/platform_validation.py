@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 import re
+import subprocess
 import tomllib
 
 
@@ -207,7 +208,7 @@ def validate_gate_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
                 "active lifecycle mode requires the central gate register",
             )
         )
-    elif not _valid_active_gate_register(root / active_path, manifest):
+    elif not _valid_active_gate_register(root, root / active_path, manifest):
         issues.append(
             ValidationIssue(
                 "GOVERNANCE_ACTIVE_REGISTER_INVALID",
@@ -246,7 +247,7 @@ def validate_rtm_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
                 "active lifecycle mode requires RTM rows for its REQ/NFR records",
             )
         ]
-    if not _valid_active_rtm_rows(rows):
+    if not _valid_active_rtm_rows(rows, root):
         return [
             ValidationIssue(
                 "GOVERNANCE_ACTIVE_RTM_ROW_INVALID",
@@ -275,14 +276,21 @@ def _valid_gate_template(path: Path, manifest: dict) -> bool:
     return _valid_gate_rows(tables[0][1], manifest, template=True)
 
 
-def _valid_active_gate_register(path: Path, manifest: dict) -> bool:
+def _valid_active_gate_register(root: Path, path: Path, manifest: dict) -> bool:
     tables = _read_markdown_tables(path)
     return tables is not None and len(tables) == 1 and tables[0][0] == GATE_TABLE_COLUMNS and _valid_gate_rows(
-        tables[0][1], manifest, template=False
+        tables[0][1], manifest, template=False, root=root, excluded_paths=(path, root / _rtm_path(manifest))
     )
 
 
-def _valid_gate_rows(rows: list[list[str]], manifest: dict, *, template: bool) -> bool:
+def _valid_gate_rows(
+    rows: list[list[str]],
+    manifest: dict,
+    *,
+    template: bool,
+    root: Path | None = None,
+    excluded_paths: tuple[Path, ...] = (),
+) -> bool:
     expected_gates = manifest.get("gates")
     if expected_gates != [f"G{index}" for index in range(12)] or len(rows) != 12:
         return False
@@ -308,15 +316,17 @@ def _valid_gate_rows(rows: list[list[str]], manifest: dict, *, template: bool) -
                     _is_actual_value(row[GATE_TABLE_COLUMNS.index(field)])
                     for field in GATE_PASS_REQUIRED_FIELDS
                 )
-                and _is_actual_evidence(row[GATE_TABLE_COLUMNS.index("Evidence IDs")])
+                and _is_actual_evidence(
+                    row[GATE_TABLE_COLUMNS.index("Evidence IDs")], root, excluded_paths
+                )
             )
         )
         for row in rows
     )
 
 
-def _valid_active_rtm_rows(rows: list[list[str]]) -> bool:
-    if not all(_valid_active_rtm_row(row) for row in rows):
+def _valid_active_rtm_rows(rows: list[list[str]], root: Path) -> bool:
+    if not all(_valid_active_rtm_row(row, root) for row in rows):
         return False
     values = [dict(zip(RTM_TABLE_COLUMNS, row, strict=True)) for row in rows]
     return len({row["Trace ID"] for row in values}) == len(values) and len(
@@ -324,11 +334,13 @@ def _valid_active_rtm_rows(rows: list[list[str]]) -> bool:
     ) == len(values)
 
 
-def _valid_active_rtm_row(row: list[str]) -> bool:
+def _valid_active_rtm_row(row: list[str], root: Path) -> bool:
     if len(row) != len(RTM_TABLE_COLUMNS):
         return False
     values = dict(zip(RTM_TABLE_COLUMNS, row, strict=True))
     requirement_id = values["REQ/NFR"]
+    if not re.fullmatch(r"TRACE-[A-Za-z0-9._-]+", values["Trace ID"]):
+        return False
     if not re.fullmatch(r"(?:REQ|NFR)-[A-Za-z0-9._-]+", requirement_id):
         return False
     if values["Scope Status"] not in SCOPE_STATUSES:
@@ -339,25 +351,31 @@ def _valid_active_rtm_row(row: list[str]) -> bool:
         return False
     if values["Verification Result"] not in VERIFICATION_RESULTS:
         return False
+    if not _typed_links_are_valid(values, root):
+        return False
     if values["Scope Status"] == "IN_SCOPE" and not _is_actual_value(values["Acceptance Criteria"]):
         return False
     if _is_actual_value(values["Commit/MR"]) and not all(
         _is_actual_value(values[field]) for field in ("DES/ADR", "TASK")
     ):
         return False
-    is_verified_or_released = (
-        values["Verification Result"] != "NOT_EXECUTED" or _is_actual_value(values["REL"])
-    )
-    if is_verified_or_released:
+    result = values["Verification Result"]
+    requires_release_evidence = result == "PASS" or _is_actual_value(values["REL"])
+    requires_execution_evidence = result in {"PASS", "FAIL", "BLOCKED"} or _is_actual_value(values["REL"])
+    if requires_execution_evidence:
         if values["Evidence Status"] != "VERIFIED":
             return False
-        if not all(
-            _is_actual_value(values[field]) for field in ("TC", "Test Execution/Evidence", "REL")
-        ) or not _is_actual_evidence(values["Test Execution/Evidence"]):
+        if not all(_is_actual_value(values[field]) for field in ("TC", "Test Execution/Evidence")):
             return False
+        if not _has_typed_reference(values["Test Execution/Evidence"], "EVD"):
+            return False
+    if requires_release_evidence and not _is_actual_value(values["REL"]):
+        return False
     if values["Verification Result"] == "PASS" and values["Evidence Status"] in UNUSABLE_EVIDENCE_STATUSES:
         return False
-    if values["Defect Disposition"] == "CLOSED" and _is_actual_value(values["BUG"]):
+    if values["Defect Disposition"] == "CLOSED":
+        if not _has_typed_reference(values["BUG"], "BUG"):
+            return False
         if not all(
             _is_actual_value(values[field])
             for field in ("Commit/MR", "TC", "Test Execution/Evidence", "Last Verified")
@@ -365,7 +383,7 @@ def _valid_active_rtm_row(row: list[str]) -> bool:
             return False
         if values["Verification Result"] != "PASS" or values["Evidence Status"] != "VERIFIED":
             return False
-        if not _is_actual_evidence(values["Test Execution/Evidence"]):
+        if not _has_typed_reference(values["Test Execution/Evidence"], "EVD"):
             return False
     if _is_actual_value(values["CR"]):
         if values["Evidence Status"] != "VERIFIED" or not _contains_artifact_id(
@@ -381,11 +399,92 @@ def _valid_active_rtm_row(row: list[str]) -> bool:
     return True
 
 
-def _is_actual_evidence(value: str) -> bool:
-    return _is_actual_value(value) and (
-        bool(re.search(r"\b[0-9a-fA-F]{7,64}\b", value))
-        or bool(re.search(r"\b(?:BG|MR|PRD|REQ|NFR|DES|ADR|TASK|TC|BUG|CR|RISK|REL|EVD)-[A-Za-z0-9._-]+\b", value))
-        or bool(re.search(r"\[[^\]]+\]\([^\s)]+(?:\s+[^)]*)?\)", value))
+def _typed_links_are_valid(values: dict[str, str], root: Path) -> bool:
+    for field, prefixes in {
+        "BG": ("BG",),
+        "PRD": ("PRD",),
+        "DES/ADR": ("DES", "ADR"),
+        "TASK": ("TASK",),
+        "CR": ("CR",),
+        "TC": ("TC",),
+        "BUG": ("BUG",),
+        "REL": ("REL",),
+    }.items():
+        if _is_actual_value(values[field]) and not _has_typed_reference(values[field], *prefixes):
+            return False
+    if _is_actual_value(values["Commit/MR"]) and not _is_commit_or_mr_reference(
+        values["Commit/MR"], root
+    ):
+        return False
+    if _is_actual_value(values["Test Execution/Evidence"]) and not _has_typed_reference(
+        values["Test Execution/Evidence"], "EVD"
+    ):
+        return False
+    return True
+
+
+def _is_actual_evidence(value: str, root: Path | None, excluded_paths: tuple[Path, ...]) -> bool:
+    if root is None or not _is_actual_value(value) or _contains_placeholder(value):
+        return False
+    references = [reference.strip() for reference in re.split(r"[;,]", value) if reference.strip()]
+    return bool(references) and all(
+        _is_valid_evidence_reference(reference, root, excluded_paths) for reference in references
+    )
+
+
+def _is_valid_evidence_reference(value: str, root: Path, excluded_paths: tuple[Path, ...]) -> bool:
+    if _is_existing_markdown_link(value, root):
+        return True
+    if re.fullmatch(r"[0-9a-fA-F]{7,40}", value):
+        return _is_current_commit(root, value)
+    if re.fullmatch(r"(?:BG|MR|PRD|REQ|NFR|DES|ADR|TASK|TC|BUG|CR|RISK|REL|EVD)-[A-Za-z0-9._-]+", value):
+        return _artifact_is_declared_elsewhere(root, value, excluded_paths)
+    return False
+
+
+def _is_existing_markdown_link(value: str, root: Path) -> bool:
+    match = re.fullmatch(r"\[[^\]]+\]\(([^\s)]+)(?:\s+[^)]*)?\)", value)
+    if match is None:
+        return False
+    target = match.group(1).split("#", maxsplit=1)[0]
+    if not target or "://" in target:
+        return False
+    return (root / target).resolve().is_file()
+
+
+def _is_current_commit(root: Path, commit_sha: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(root), "cat-file", "-e", f"{commit_sha}^{{commit}}"],
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _artifact_is_declared_elsewhere(root: Path, artifact_id: str, excluded_paths: tuple[Path, ...]) -> bool:
+    excluded = {path.resolve() for path in excluded_paths}
+    for path in root.rglob("*.md"):
+        if path.resolve() in excluded:
+            continue
+        contents = path.read_text(encoding="utf-8")
+        if any(
+            _metadata_value(contents, field) == artifact_id
+            for field in ("Record ID", "Artifact ID", "Evidence ID")
+        ):
+            return True
+    return False
+
+
+def _has_typed_reference(value: str, *prefixes: str) -> bool:
+    return _is_actual_value(value) and any(
+        re.search(rf"\b{re.escape(prefix)}-[A-Za-z0-9._-]+\b", value) is not None
+        for prefix in prefixes
+    )
+
+
+def _is_commit_or_mr_reference(value: str, root: Path) -> bool:
+    return _has_typed_reference(value, "MR") or (
+        re.fullmatch(r"[0-9a-fA-F]{7,40}", value) is not None and _is_current_commit(root, value)
     )
 
 
@@ -403,16 +502,25 @@ def _is_actual_value(value: str) -> bool:
     )
 
 
+def _contains_placeholder(value: str) -> bool:
+    normalized = value.strip().lower()
+    return (
+        any(re.search(rf"(?<!\w){re.escape(placeholder)}(?!\w)", normalized) for placeholder in PLACEHOLDER_VALUES)
+        or (normalized.startswith("{{") and normalized.endswith("}}"))
+        or (value.strip().startswith("[待") and value.strip().endswith("]"))
+    )
+
+
 def _metadata_value(contents: str, field: str) -> str | None:
     pattern = re.compile(rf"^\s*-\s*{re.escape(field)}:\s*([^\s]+)\s*$", re.MULTILINE)
-    match = pattern.search(contents)
+    match = pattern.search("\n".join(_unfenced_lines(contents)))
     return match.group(1) if match else None
 
 
 def _read_markdown_tables(path: Path) -> list[tuple[list[str], list[list[str]]]] | None:
     if not path.is_file():
         return None
-    lines = path.read_text(encoding="utf-8").splitlines()
+    lines = _unfenced_lines(path.read_text(encoding="utf-8"))
     tables = []
     index = 0
     while index < len(lines):
@@ -441,6 +549,26 @@ def _read_markdown_tables(path: Path) -> list[tuple[list[str], list[list[str]]]]
             index += 1
         tables.append((header, rows))
     return tables
+
+
+def _unfenced_lines(contents: str) -> list[str]:
+    visible = []
+    fence: str | None = None
+    for line in contents.splitlines():
+        match = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence is not None:
+            if match is not None and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence):
+                fence = None
+            continue
+        if match is not None:
+            fence = match.group(1)
+            continue
+        visible.append(line)
+    return visible
+
+
+def _rtm_path(manifest: dict) -> Path:
+    return _manifest_path(manifest, "requirement_traceability_matrix") or Path(DEFAULT_RTM_PATH)
 
 
 def _table_cells(line: str) -> list[str]:

@@ -136,6 +136,42 @@ class GovernanceContractTests(unittest.TestCase):
                     ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
                 )
 
+    def test_active_gate_pass_rejects_mixed_placeholder_or_unresolvable_evidence(self):
+        cases = ("TBD EVD-001", "EVD-999")
+        for evidence in cases:
+            with self.subTest(evidence=evidence), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                register = self._write_active_register(root)
+                self._set_gate_values(register, "G0", self._pass_gate_values(evidence))
+
+                self.assertEqual(
+                    self._codes(validate_gate_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
+                )
+
+    def test_active_gate_pass_accepts_external_declared_evidence(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            register = self._write_active_register(root)
+            self._write_evidence_document(root, "EVD-001")
+            self._set_gate_values(register, "G0", self._pass_gate_values("EVD-001"))
+
+            self.assertEqual(validate_gate_contract(root, load_manifest(root)), [])
+
+    def test_active_gate_pass_rejects_evidence_declared_by_its_own_register(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            register = self._write_active_register(root)
+            self._set_gate_values(register, "G0", self._pass_gate_values("EVD-001"))
+            register.write_text(
+                register.read_text(encoding="utf-8") + "\n- Record ID: EVD-001\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                self._codes(validate_gate_contract(root, load_manifest(root))),
+                ["GOVERNANCE_ACTIVE_REGISTER_INVALID"],
+            )
+
     def test_active_gate_register_rejects_an_extra_table_or_repeated_gate_after_blank_line(self):
         with self._temporary_governance_root(lifecycle_mode="active") as root:
             register = self._write_active_register(root)
@@ -224,6 +260,52 @@ class GovernanceContractTests(unittest.TestCase):
                 ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
             )
 
+    def test_active_rtm_rejects_wrong_typed_links_or_closed_bug_without_bug(self):
+        cases = (
+            {"Test Execution/Evidence": "BG-001"},
+            {"BG": "business goal text"},
+            {"BUG": "-", "Defect Disposition": "CLOSED"},
+        )
+        for overrides in cases:
+            with self.subTest(overrides=overrides), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                self._write_active_rtm(root, [self._complete_rtm_row(**overrides)])
+
+                self.assertEqual(
+                    self._codes(validate_rtm_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
+                )
+
+    def test_active_rtm_rejects_empty_trace_id(self):
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            self._write_active_rtm(root, [self._complete_rtm_row(**{"Trace ID": ""})])
+
+            self.assertEqual(
+                self._codes(validate_rtm_contract(root, load_manifest(root))),
+                ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
+            )
+
+    def test_active_rtm_accepts_evidence_backed_fail_or_blocked_without_release(self):
+        for result in ("FAIL", "BLOCKED"):
+            with self.subTest(result=result), self._temporary_governance_root(
+                lifecycle_mode="active"
+            ) as root:
+                self._write_active_rtm(
+                    root,
+                    [
+                        self._complete_rtm_row(
+                            **{
+                                "Verification Result": result,
+                                "REL": "",
+                                "Traceability Status": "PARTIAL",
+                            }
+                        )
+                    ],
+                )
+
+                self.assertEqual(validate_rtm_contract(root, load_manifest(root)), [])
+
     def test_active_rtm_rejects_closed_bug_without_fix_and_regression_evidence(self):
         with self._temporary_governance_root(lifecycle_mode="active") as root:
             row = self._complete_rtm_row(
@@ -268,6 +350,37 @@ class GovernanceContractTests(unittest.TestCase):
                 self._codes(validate_rtm_contract(root, load_manifest(root))),
                 ["GOVERNANCE_ACTIVE_RTM_ROW_INVALID"],
             )
+
+    def test_fenced_metadata_or_table_cannot_supply_a_governance_contract(self):
+        for fence in ("```", "~~~"):
+            with self.subTest(fence=fence, kind="metadata"), self._temporary_governance_root() as root:
+                template = root / "templates" / "gate-register-template.md"
+                template.write_text(
+                    template.read_text(encoding="utf-8").replace(
+                        "- Artifact Type: TEMPLATE",
+                        f"- Artifact Type: ACTIVE\n{fence}markdown\n- Artifact Type: TEMPLATE\n{fence}",
+                    ),
+                    encoding="utf-8",
+                )
+
+                self.assertEqual(
+                    self._codes(validate_gate_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
+                )
+
+            with self.subTest(fence=fence, kind="table"), self._temporary_governance_root() as root:
+                template = root / "templates" / "gate-register-template.md"
+                contents = template.read_text(encoding="utf-8")
+                table_start = contents.index("| Gate ID |")
+                template.write_text(
+                    contents[:table_start] + f"{fence}markdown\n" + contents[table_start:] + f"{fence}\n",
+                    encoding="utf-8",
+                )
+
+                self.assertEqual(
+                    self._codes(validate_gate_contract(root, load_manifest(root))),
+                    ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
+                )
 
     @staticmethod
     def _codes(issues):
@@ -316,7 +429,7 @@ class GovernanceContractTests(unittest.TestCase):
             "DES/ADR": "DES-001",
             "TASK": "TASK-001",
             "CR": "",
-            "Commit/MR": "ab100598",
+            "Commit/MR": "MR-001",
             "TC": "TC-001",
             "Test Execution/Evidence": "EVD-001",
             "Verification Result": "PASS",
@@ -328,6 +441,29 @@ class GovernanceContractTests(unittest.TestCase):
             "Last Verified": "2026-08-22",
         }
         return row | overrides
+
+    @staticmethod
+    def _pass_gate_values(evidence: str) -> dict[str, str]:
+        return {
+            "Gate Status": "PASS",
+            "Evaluation State": "DECIDED",
+            "Baseline": "main@ab100598",
+            "Evaluated At": "2026-08-22T19:12:05+08:00",
+            "Evaluator Role": "tester",
+            "Recorder": "recorder",
+            "Criteria Result": "criteria evaluated",
+            "Evidence IDs": evidence,
+            "Rationale": "evidence-backed rationale",
+            "Next Action": "archive the decision",
+            "Owner": "owner",
+            "Target Date": "2026-08-23",
+        }
+
+    @staticmethod
+    def _write_evidence_document(root: Path, evidence_id: str):
+        evidence = root / "docs" / "evidence" / f"{evidence_id}.md"
+        evidence.parent.mkdir(parents=True, exist_ok=True)
+        evidence.write_text(f"- Record ID: {evidence_id}\n", encoding="utf-8")
 
     def _write_active_rtm(self, root: Path, rows: list[dict[str, str]]):
         rtm = root / "docs" / "03-requirements" / "requirement-traceability-matrix.md"
