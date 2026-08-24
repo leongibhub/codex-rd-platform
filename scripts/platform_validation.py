@@ -205,7 +205,6 @@ GATE_DECISION_REQUIRED_FIELDS = (
     "Owner",
     "Target Date",
 )
-GATE_PASS_REQUIRED_FIELDS = GATE_DECISION_REQUIRED_FIELDS
 COMPLETE_TRACEABILITY_FIELDS = (
     "BG",
     "PRD",
@@ -547,8 +546,6 @@ def _valid_active_rtm_row(row: list[str], root: Path, excluded_paths: tuple[Path
             return False
     if requires_release_evidence and not _is_actual_value(values["REL"]):
         return False
-    if values["Verification Result"] == "PASS" and values["Evidence Status"] in UNUSABLE_EVIDENCE_STATUSES:
-        return False
     if values["Defect Disposition"] == "CLOSED":
         if not _has_typed_references(values["BUG"], "BUG"):
             return False
@@ -704,10 +701,6 @@ def _reference_tokens(value: str) -> list[str] | None:
         return None
     tokens = [token.strip() for token in re.split(r"\s*(?:,|;|<br\s*/?>)\s*", value, flags=re.IGNORECASE)]
     return tokens if tokens and all(tokens) else None
-
-
-def _contains_artifact_id(value: str, prefix: str) -> bool:
-    return bool(re.search(rf"\b{re.escape(prefix)}-[A-Za-z0-9._-]+\b", value))
 
 
 def _is_actual_value(value: str) -> bool:

@@ -39,7 +39,7 @@ def _issue(code: str, message: str) -> CompanyContextConfigError:
     return CompanyContextConfigError(ValidationIssue(code, message))
 
 
-def _resolve_under(root: Path, configured: str) -> Path:
+def _resolve_from_root(root: Path, configured: str) -> Path:
     return (root / configured).resolve(strict=True)
 
 
@@ -86,21 +86,21 @@ def resolve_company_context_config(root: Path) -> StdioServerParameters:
         raise _issue("MCP_ENV_VARS_INVALID", "company_context MCP environment names are invalid")
 
     try:
-        command_path = _resolve_under(root, command)
-        venv_root = _resolve_under(root, ".venv")
+        command_path = _resolve_from_root(root, command)
+        venv_root = _resolve_from_root(root, ".venv")
     except OSError:
         raise _issue("MCP_COMMAND_UNTRUSTED", "company_context command is outside repository .venv") from None
     if not command_path.is_file() or not _is_under(command_path, root) or not _is_under(venv_root, root) or not _is_under(command_path, venv_root):
         raise _issue("MCP_COMMAND_UNTRUSTED", "company_context command is outside repository .venv")
     try:
-        cwd_path = _resolve_under(root, cwd)
+        cwd_path = _resolve_from_root(root, cwd)
     except OSError:
         raise _issue("MCP_CWD_UNTRUSTED", "company_context cwd is not repository root") from None
     if not cwd_path.is_dir() or cwd_path != root:
         raise _issue("MCP_CWD_UNTRUSTED", "company_context cwd is not repository root")
     try:
-        server_path = _resolve_under(root, args[0])
-        expected_server = _resolve_under(root, "tools/mcp/company-context/server.py")
+        server_path = _resolve_from_root(root, args[0])
+        expected_server = _resolve_from_root(root, "tools/mcp/company-context/server.py")
     except OSError:
         raise _issue("MCP_SERVER_UNTRUSTED", "company_context server is not the trusted server.py") from None
     if not server_path.is_file() or not _is_under(server_path, root) or not _is_under(expected_server, root) or server_path != expected_server:
