@@ -1,11 +1,15 @@
 import json
+import os
 import shutil
+import subprocess
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from scripts.platform_validation import (
+    evaluated_gate_ids,
     load_manifest,
+    validate_manifest_contract,
     validate_gate_contract,
     validate_rtm_contract,
 )
@@ -31,6 +35,69 @@ class GovernanceContractTests(unittest.TestCase):
         self.assertEqual(manifest["lifecycle_mode"], "template")
         self.assertFalse((ROOT / manifest["active_gate_register"]).exists())
         self.assertEqual(validate_gate_contract(ROOT, manifest), [])
+
+    def test_governance_manifest_paths_must_be_canonical_repo_relative_locations(self):
+        """Catch a path validation change that permits manifest-controlled files outside the repo."""
+        expected = {
+            "gate_register_template": "templates/gate-register-template.md",
+            "active_gate_register": "docs/08-project-management/gate-register.md",
+            "requirement_traceability_matrix": "docs/03-requirements/requirement-traceability-matrix.md",
+        }
+        for key, location in expected.items():
+            with self.subTest(key=key, form="absolute"), self._temporary_governance_root() as root:
+                manifest = load_manifest(root)
+                manifest[key] = str((root / location).resolve())
+                self._write_manifest(root, manifest)
+                self.assertIn(
+                    "MANIFEST_GOVERNANCE_PATH_INVALID",
+                    self._codes(validate_manifest_contract(root)),
+                )
+                self._assert_governance_validator_rejects_invalid_path(root, manifest, key)
+
+            with self.subTest(key=key, form="parent-escape"), self._temporary_governance_root() as root:
+                manifest = load_manifest(root)
+                manifest[key] = "../outside.md"
+                self._write_manifest(root, manifest)
+                self.assertIn(
+                    "MANIFEST_GOVERNANCE_PATH_INVALID",
+                    self._codes(validate_manifest_contract(root)),
+                )
+                self._assert_governance_validator_rejects_invalid_path(root, manifest, key)
+
+    def test_template_mode_rejects_expected_active_register_path_through_symlink(self):
+        """Catch a validator that trusts the lexical active-register path after a directory link escapes root."""
+        with self._temporary_governance_root() as root, TemporaryDirectory() as outside_directory:
+            active_parent = root / "docs" / "08-project-management"
+            active_parent.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                os.symlink(outside_directory, active_parent, target_is_directory=True)
+            except OSError as error:
+                if os.name != "nt":
+                    self.skipTest(f"directory symlinks unavailable: {error}")
+                result = subprocess.run(
+                    ("cmd", "/d", "/c", "mklink", "/J", str(active_parent), outside_directory),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if result.returncode != 0:
+                    self.skipTest(f"directory links unavailable: {error}; {result.stderr}")
+
+            self.assertIn(
+                "MANIFEST_GOVERNANCE_PATH_INVALID",
+                self._codes(validate_manifest_contract(root)),
+            )
+
+    def test_evaluated_gate_ids_rejects_an_absolute_active_register(self):
+        """Catch evaluated_gate_ids reading a decided Gate from an absolute manifest path."""
+        with self._temporary_governance_root(lifecycle_mode="active") as root:
+            register = self._write_active_register(root)
+            self._set_gate_values(register, "G0", {"Evaluation State": "DECIDED"})
+            manifest = load_manifest(root)
+            manifest["active_gate_register"] = str(register.resolve())
+            self._write_manifest(root, manifest)
+
+            self.assertEqual(evaluated_gate_ids(root, manifest), [])
 
     def test_active_mode_without_central_register_returns_stable_error(self):
         with self._temporary_governance_root(lifecycle_mode="active") as root:
@@ -635,6 +702,32 @@ class GovernanceContractTests(unittest.TestCase):
 
     def _temporary_governance_root(self, lifecycle_mode: str = "template"):
         return _TemporaryGovernanceRoot(lifecycle_mode)
+
+    def _assert_governance_validator_rejects_invalid_path(
+        self, root: Path, manifest: dict, key: str
+    ):
+        if key == "gate_register_template":
+            self.assertEqual(
+                self._codes(validate_gate_contract(root, manifest)),
+                ["GOVERNANCE_GATE_TEMPLATE_INVALID"],
+            )
+        elif key == "active_gate_register":
+            manifest["lifecycle_mode"] = "active"
+            self.assertEqual(
+                self._codes(validate_gate_contract(root, manifest)),
+                ["GOVERNANCE_ACTIVE_REGISTER_MISSING"],
+            )
+        else:
+            self.assertEqual(
+                self._codes(validate_rtm_contract(root, manifest)),
+                ["GOVERNANCE_RTM_HEADER_INVALID"],
+            )
+
+    @staticmethod
+    def _write_manifest(root: Path, manifest: dict):
+        (root / "platform-manifest.json").write_text(
+            json.dumps(manifest), encoding="utf-8"
+        )
 
     @staticmethod
     def _write_active_register(root: Path) -> Path:

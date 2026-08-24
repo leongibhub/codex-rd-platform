@@ -193,6 +193,8 @@ UNUSABLE_EVIDENCE_STATUSES = {"PENDING", "NOT_AVAILABLE", "NOT_EXECUTED", "INFER
 GATE_STATUS_TOKEN = "{{PASS|FAIL|BLOCKED}}"
 EVALUATION_STATE_TOKEN = "{{NOT_EVALUATED|IN_REVIEW|DECIDED}}"
 DEFAULT_RTM_PATH = "docs/03-requirements/requirement-traceability-matrix.md"
+GATE_TEMPLATE_PATH = "templates/gate-register-template.md"
+ACTIVE_GATE_REGISTER_PATH = "docs/08-project-management/gate-register.md"
 GATE_DECISION_REQUIRED_FIELDS = (
     "Baseline",
     "Evaluated At",
@@ -327,14 +329,34 @@ def validate_manifest_contract(root: Path) -> list[ValidationIssue]:
                 "manifest lifecycle_mode must be template or active",
             )
         )
+    if any(
+        path is None
+        for path in (
+            _manifest_path(root, manifest, "gate_register_template", GATE_TEMPLATE_PATH),
+            _manifest_path(root, manifest, "active_gate_register", ACTIVE_GATE_REGISTER_PATH),
+            _manifest_path(
+                root,
+                manifest,
+                "requirement_traceability_matrix",
+                DEFAULT_RTM_PATH,
+                default=DEFAULT_RTM_PATH,
+            ),
+        )
+    ):
+        issues.append(
+            ValidationIssue(
+                "MANIFEST_GOVERNANCE_PATH_INVALID",
+                "manifest governance paths must use their canonical repository-relative locations",
+            )
+        )
 
     return issues
 
 
 def validate_gate_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
     issues = []
-    template_path = _manifest_path(manifest, "gate_register_template")
-    if template_path is None or not _valid_gate_template(root / template_path, manifest):
+    template_path = _manifest_path(root, manifest, "gate_register_template", GATE_TEMPLATE_PATH)
+    if template_path is None or not _valid_gate_template(template_path, manifest):
         issues.append(
             ValidationIssue(
                 "GOVERNANCE_GATE_TEMPLATE_INVALID",
@@ -345,15 +367,15 @@ def validate_gate_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
     if manifest.get("lifecycle_mode") != "active":
         return issues
 
-    active_path = _manifest_path(manifest, "active_gate_register")
-    if active_path is None or not (root / active_path).is_file():
+    active_path = _manifest_path(root, manifest, "active_gate_register", ACTIVE_GATE_REGISTER_PATH)
+    if active_path is None or not active_path.is_file():
         issues.append(
             ValidationIssue(
                 "GOVERNANCE_ACTIVE_REGISTER_MISSING",
                 "active lifecycle mode requires the central gate register",
             )
         )
-    elif not _valid_active_gate_register(root, root / active_path, manifest):
+    elif not _valid_active_gate_register(root, active_path, manifest):
         issues.append(
             ValidationIssue(
                 "GOVERNANCE_ACTIVE_REGISTER_INVALID",
@@ -364,8 +386,14 @@ def validate_gate_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
 
 
 def validate_rtm_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
-    rtm_path = _manifest_path(manifest, "requirement_traceability_matrix") or DEFAULT_RTM_PATH
-    rtm_document = root / rtm_path
+    rtm_document = _rtm_path(root, manifest)
+    if rtm_document is None:
+        return [
+            ValidationIssue(
+                "GOVERNANCE_RTM_HEADER_INVALID",
+                "RTM must use the canonical 19-column auditable header",
+            )
+        ]
     tables = _read_markdown_tables(rtm_document)
     if tables is None or len(tables) != 1 or tables[0][0] != RTM_TABLE_COLUMNS:
         return [
@@ -394,7 +422,16 @@ def validate_rtm_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
             )
         ]
     if not _valid_active_rtm_rows(
-        rows, root, (rtm_document, root / _manifest_path(manifest, "active_gate_register"))
+        rows,
+        root,
+        tuple(
+            path
+            for path in (
+                rtm_document,
+                _manifest_path(root, manifest, "active_gate_register", ACTIVE_GATE_REGISTER_PATH),
+            )
+            if path is not None
+        ),
     ):
         return [
             ValidationIssue(
@@ -405,11 +442,19 @@ def validate_rtm_contract(root: Path, manifest: dict) -> list[ValidationIssue]:
     return []
 
 
-def _manifest_path(manifest: dict, key: str) -> Path | None:
-    value = manifest.get(key)
-    if not isinstance(value, str) or not value:
+def _manifest_path(
+    root: Path, manifest: dict, key: str, expected: str, *, default: str | None = None
+) -> Path | None:
+    value = manifest.get(key, default)
+    if not isinstance(value, str) or value != expected:
         return None
-    return Path(value)
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved_path = (root / expected).resolve(strict=False)
+        resolved_path.relative_to(resolved_root)
+    except (OSError, ValueError):
+        return None
+    return resolved_path
 
 
 def _valid_gate_template(path: Path, manifest: dict) -> bool:
@@ -431,7 +476,9 @@ def _valid_active_gate_register(root: Path, path: Path, manifest: dict) -> bool:
         manifest,
         template=False,
         root=root,
-        excluded_paths=(path, root / _rtm_path(manifest)),
+        excluded_paths=tuple(
+            item for item in (path, _rtm_path(root, manifest)) if item is not None
+        ),
         evidence_source_path=path,
     )
 
@@ -440,10 +487,10 @@ def evaluated_gate_ids(root: Path, manifest: dict) -> list[str]:
     """Return only decided Gates from the active register's parsed canonical table."""
     if manifest.get("lifecycle_mode") != "active":
         return []
-    active_path = _manifest_path(manifest, "active_gate_register")
+    active_path = _manifest_path(root, manifest, "active_gate_register", ACTIVE_GATE_REGISTER_PATH)
     if active_path is None:
         return []
-    tables = _read_markdown_tables(root / active_path)
+    tables = _read_markdown_tables(active_path)
     if tables is None or len(tables) != 1 or tables[0][0] != GATE_TABLE_COLUMNS:
         return []
     expected_gates = manifest.get("gates")
@@ -786,8 +833,14 @@ def _unfenced_lines(contents: str) -> list[str]:
     return visible
 
 
-def _rtm_path(manifest: dict) -> Path:
-    return _manifest_path(manifest, "requirement_traceability_matrix") or Path(DEFAULT_RTM_PATH)
+def _rtm_path(root: Path, manifest: dict) -> Path | None:
+    return _manifest_path(
+        root,
+        manifest,
+        "requirement_traceability_matrix",
+        DEFAULT_RTM_PATH,
+        default=DEFAULT_RTM_PATH,
+    )
 
 
 def _table_cells(line: str) -> list[str]:

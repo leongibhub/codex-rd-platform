@@ -124,6 +124,9 @@ class ManifestContractTests(unittest.TestCase):
                     "skills": skills or ["skill"],
                     "gates": gates or [f"G{i}" for i in range(12)],
                     "lifecycle_mode": lifecycle_mode,
+                    "gate_register_template": "templates/gate-register-template.md",
+                    "active_gate_register": "docs/08-project-management/gate-register.md",
+                    "requirement_traceability_matrix": "docs/03-requirements/requirement-traceability-matrix.md",
                 }
             ),
             encoding="utf-8",
