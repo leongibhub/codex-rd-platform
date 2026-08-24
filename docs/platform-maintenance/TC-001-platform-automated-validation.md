@@ -57,6 +57,7 @@
 | Full/static validator | `ce9ca0e` | 22:53:21–22:53:24 | 0; 2 commands | PASS; full runtime executed, static runtime not executed | [16-validator-full-static-retest](evidence/2026-08-22/16-validator-full-static-retest.txt) |
 | Real stdio health, three runs | `ce9ca0e` | 22:53:41–22:53:45 | 0; 3 runs, 0 issues | PASS; exact eight tools and zero residual Python processes | [17-stdio-health-three-runs](evidence/2026-08-22/17-stdio-health-three-runs.txt) |
 | Same-process setup / failure / cleanup | `ce9ca0e` | 22:58:03–23:00:28 | see evidence | PASS for the recorded success, skip, failure, cwd, freeze, variable-boundary and cleanup assertions | [19-same-process-clone-setup-final](evidence/2026-08-22/19-same-process-clone-setup-final.txt) |
+| Final independent regression | `5b422d0` | NOT_AVAILABLE — timestamps not retained | 0; 103 tests, 0 failures, 0 errors, 0 skipped; runner 83.216 s | PASS; final tester also observed 9/9 manifest-path matrix fail-closed, full/static validation, stdio 3/3, and environment/integrity checks. Literal invocations for those additional checks were not retained. | [25-final-independent-retest](evidence/2026-08-22/25-final-independent-retest.md) |
 
 ## Exclusions and Pending Verification
 

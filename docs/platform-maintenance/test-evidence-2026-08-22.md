@@ -4,7 +4,7 @@
 - Evidence ID: EVD-T8-TEST-20260822
 - Linked Test Cases: [TC-001](TC-001-platform-automated-validation.md), [TC-002](TC-002-codex-restart-validation.md)
 - Linked BUG / Task: [BUG-001](BUG-001-platform-self-check-false-positive.md) / [TASK-001](TASK-001-platform-readiness-repair.md)
-- Scope: 独立 tester 于 `2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543` 的初始验证及独立 retester 于 `ce9ca0e2162b6612deb03209de1130330ae4c14b` 的修复后验证。
+- Scope: 独立 tester 于 `2d3ae0a90fdf73d6e2f0494d7c02f18c5b0c2543` 的初始验证、独立 retester 于 `ce9ca0e2162b6612deb03209de1130330ae4c14b` 的修复后验证，以及独立 tester 于 `5b422d0` 的最终复验。
 - Ledger rule: `Exact Command` 只逐字符转录 raw 的实际 shell invocation（`Run:`，或确实为 invocation 的 `Command:`）。描述性 label、probe、harness 或 action 写 `NOT_AVAILABLE — literal invocation not retained`，说明留在 `Notes`。`OBSERVED` 是 raw 已观察到的结果；命令字符串缺失不改写观察结果为 `NOT_AVAILABLE`，但也不提升为 `PASS`。`COMMAND_ERROR`、`HISTORICAL_BLOCKED` 和 `NOT_EXECUTED` 不计入 PASS；`NOT_AVAILABLE` 表示必需记录未保留，`N/A` 仅表示字段不适用。
 
 ## Command Ledger
@@ -56,6 +56,7 @@
 | EVD-T8-POST-A-02 | `git grep -n -I -E "sk-[A-Za-z0-9_-]{16,}|glpat-[A-Za-z0-9_-]{10,}|BEGIN [A-Z ]*PRIVATE KEY"` | 2026-08-22 23:40:32 +08:00 / 2026-08-22 23:40:32 +08:00 | wrapper 0; grep 1 | N/A | `codex/fix-BUG-001-platform-readiness` | `985f83cc17e79f6c6e546caca5a42c48689d59c8` | PASS; grep 1 is expected no-match | [22](evidence/2026-08-22/22-postcommit-evidence-verification.txt) |
 | EVD-T8-POST-A-03 | `git status --short --branch` | 2026-08-22 23:40:32 +08:00 / 2026-08-22 23:40:32 +08:00 | 0 | N/A | `codex/fix-BUG-001-platform-readiness` | `985f83cc17e79f6c6e546caca5a42c48689d59c8` | PASS; clean before log creation | [22](evidence/2026-08-22/22-postcommit-evidence-verification.txt) |
 | EVD-T8-POST-A-04 | `.\.venv\Scripts\python.exe -m unittest tests.platform.test_governance_contract tests.platform.test_manifest_contract -q` | 2026-08-22 23:40:32 +08:00 / 2026-08-22 23:40:34 +08:00 | 0 | 42 / 0 | `codex/fix-BUG-001-platform-readiness` | `985f83cc17e79f6c6e546caca5a42c48689d59c8` | PASS | [22](evidence/2026-08-22/22-postcommit-evidence-verification.txt) |
+| EVD-T8-FINAL-01 | `.\.venv\Scripts\python.exe -m unittest discover -s tests -v` | NOT_AVAILABLE — timestamps not retained | 0 | 103 / 0 failures / 0 errors / 0 skipped; runner 83.216 s | `codex/fix-BUG-001-platform-readiness` | `5b422d0` | PASS | [25](evidence/2026-08-22/25-final-independent-retest.md) | Exact full-suite invocation retained by the final independent tester. |
 
 ## Command interpretation notes
 
@@ -63,6 +64,7 @@
 - `EVD-T8-R1-07-HARNESS` is the raw [19](evidence/2026-08-22/19-same-process-clone-setup-final.txt) same-PowerShell isolated-clone setup harness. Its descriptive title is not an exact shell command, so the Exact Command cell is `NOT_AVAILABLE`. The raw records its `22:58:03`–`22:58:41` group window and harness exit `1`; it is therefore `COMMAND_ERROR`, not a PASS.
 - `EVD-T8-R1-07-DEFAULT`, `-SKIP`, `-NEGATIVE`, and `-NEGATIVE-RETRY` are observations emitted inside that harness: respectively the default setup, `-SkipDependencyInstall` setup, validator-failure setup, and a separate retry for the expected terminating failure. Raw [19](evidence/2026-08-22/19-same-process-clone-setup-final.txt) does not retain the literal invocations or individual action times. Their Exact Command and time are `NOT_AVAILABLE`; recorded outcome fields are preserved as `OBSERVED`, not promoted to PASS.
 - `EVD-T8-R1-08-SECRET`, `-DIFF`, `-FSCK`, and `-STATUS` split the later security/Git group in raw [19](evidence/2026-08-22/19-same-process-clone-setup-final.txt). The source retains only the descriptive `SecurityAndGitIntegrityCommand` group, not individual `Command:` or `Run:` invocations; therefore every Exact Command is `NOT_AVAILABLE`. The observed secret no-match, `GitDiffCheckExitCode: 0`, `GitFsckExitCode: 0`, and status output remain recorded without promotion to PASS. The raw retains only the group window `2026-08-22 23:00:27 +08:00` to `2026-08-22 23:00:28 +08:00`, not individual times.
+- Final independent retest evidence is [25](evidence/2026-08-22/25-final-independent-retest.md). Other than `EVD-T8-FINAL-01`, its final-response checks are `OBSERVED` summaries: path matrix 9/9 fail-closed; full/static strict validation; stdio 3/3; and pip/parse/compile/diff/status/secret checks. Their literal invocations and timestamps were not retained, so they are not represented as additional command-ledger PASS rows.
 
 ## Canonicalization Record
 

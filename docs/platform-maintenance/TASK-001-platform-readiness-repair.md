@@ -48,13 +48,13 @@
 | MCP runtime | stdio 启动、协议协商和严格 8 工具列表证据。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
 | Validator | 完整 validator 成功路径和故障注入结果。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
 | Setup | Windows PowerShell 前置检查和重复执行证据。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
-| Independent test | tester 的独立验证记录。 | VERIFIED; [test evidence](test-evidence-2026-08-22.md) |
-| Independent review | reviewer 的缺陷、风险和一致性结论。 | VERIFIED; initial `NEEDS_FIXES`, P2 re-review closure and P3 disposition in [review evidence](review-evidence-2026-08-22.md) |
+| Independent test | tester 的独立验证记录。 | VERIFIED; final `5b422d0` full suite `103/0/0/0` and observed final checks in [test evidence](test-evidence-2026-08-22.md) |
+| Independent review | reviewer 的缺陷、风险和一致性结论。 | VERIFIED; final whole-branch path-escape P2 closed at `5b422d0`, retained P3/PENDING disposition in [review evidence](review-evidence-2026-08-22.md) |
 | Codex restart | 新会话运行时工具可见性观察。 | NOT_EXECUTED |
 
 ## Traceability
 
-`BUG-001` → `TASK-001` → `ADR-001` / `ADR-002` / `ADR-003` → repair commit `ce9ca0e` → [TC-001](TC-001-platform-automated-validation.md) → [test evidence](test-evidence-2026-08-22.md) → [review evidence](review-evidence-2026-08-22.md) → [TC-002](TC-002-codex-restart-validation.md) (`NOT_EXECUTED`).
+`BUG-001` → `TASK-001` → `ADR-001` / `ADR-002` / `ADR-003` → repair commits `ce9ca0e` / `5b422d0` → [TC-001](TC-001-platform-automated-validation.md) → [test evidence](test-evidence-2026-08-22.md) → [review evidence](review-evidence-2026-08-22.md) → [TC-002](TC-002-codex-restart-validation.md) (`NOT_EXECUTED`).
 
 ## Constraints
 
@@ -64,4 +64,4 @@
 
 ## Current Maintenance State
 
-实施、自动化和独立 retest/re-review 证据已记录；因此本任务为 `IMPLEMENTED_PENDING_RESTART`。Codex 重启后的会话工具可见性仍未执行，外部 Redmine/RAGFlow/GitLab 调用也未执行。本记录不创建产品需求、RTM 数据行、active Gate Register 或任何 G0–G11 决策。
+实施、自动化、最终独立复验和最终整分支复审证据已记录；因此本任务为 `IMPLEMENTED_PENDING_RESTART`。Codex 重启后的会话工具可见性仍未执行，外部 Redmine/RAGFlow/GitLab 调用也未执行。本记录不创建产品需求、RTM 数据行、active Gate Register 或任何 G0–G11 决策。

@@ -9,7 +9,7 @@
 - Linked Design: [平台就绪性修复设计](../superpowers/specs/2026-08-22-platform-readiness-repair-design.md)
 - Repair / Regression Evidence Status: VERIFIED
 - Restart Evidence Status: NOT_EXECUTED
-- Repair Commit: `ce9ca0e` (`fix(platform): close readiness review P2 findings`)
+- Repair Commit: `5b422d0` (`fix(platform): confine governance manifest paths`); earlier P2 repair commit: `ce9ca0e`.
 
 ## Observed Behavior
 
@@ -54,7 +54,7 @@ EVD-BUG-001-05 demonstrates the false-green condition: the validator exited 0 wh
 
 ## Repair Evidence
 
-在 `ce9ca0e` 上，独立 retester 记录全量 `100/100`、`pip check`、五项 P2 定向契约、正确布局 junction 拒绝、full/static validator、三次实际 stdio（精确 8 工具且无残留 Python 进程）、same-process setup、秘密模式扫描和 Git 完整性为 PASS。初始独立审查的五项 P2 已在定向 re-review 中关闭（0 P0/P1/P2）。详见 [测试证据](test-evidence-2026-08-22.md) 和 [审查证据](review-evidence-2026-08-22.md)。
+在 `ce9ca0e` 上，独立 retester 记录全量 `100/100`、`pip check`、五项 P2 定向契约、正确布局 junction 拒绝、full/static validator、三次实际 stdio（精确 8 工具且无残留 Python 进程）、same-process setup、秘密模式扫描和 Git 完整性为 PASS。最终整分支审查在 `36c657f` 发现一个治理 manifest 路径越界 P2；`5b422d0` 修复后复审为 `APPROVED`，无新 P0–P3。最终独立复验在 `5b422d0` 记录全量 `103` tests、0 failures、0 errors、0 skipped（runner 83.216 s）。详见 [测试证据](test-evidence-2026-08-22.md) 和 [审查证据](review-evidence-2026-08-22.md)。
 
 历史 CLIXML 捕获诊断的因果根因仍为 `PENDING`；其不改变上述已记录的命令结果，也不被表述为已关闭。
 
@@ -64,9 +64,9 @@ EVD-BUG-001-05 demonstrates the false-green condition: the validator exited 0 wh
 
 ## Regression and Status Basis
 
-- Automated regression execution: `VERIFIED` — [TC-001](TC-001-platform-automated-validation.md) and [test evidence](test-evidence-2026-08-22.md).
-- Independent tester evidence status: `VERIFIED` — initial `2d3ae0a` and retest `ce9ca0e` results are separately recorded.
-- Independent reviewer evidence status: `VERIFIED` — initial review was `NEEDS_FIXES`; accepted P2 findings were closed in directed re-review. P3/historical dispositions remain open or pending in [review evidence](review-evidence-2026-08-22.md).
+- Automated regression execution: `VERIFIED` — [TC-001](TC-001-platform-automated-validation.md) and [test evidence](test-evidence-2026-08-22.md), including final `5b422d0` independent full-suite evidence.
+- Independent tester evidence status: `VERIFIED` — initial `2d3ae0a`, retest `ce9ca0e` and final `5b422d0` results are separately recorded.
+- Independent reviewer evidence status: `VERIFIED` — initial review was `NEEDS_FIXES`; accepted P2 findings were closed in directed re-review. Final whole-branch path-escape P2 was closed at `5b422d0`; P3/historical dispositions remain open or pending in [review evidence](review-evidence-2026-08-22.md).
 - Codex restart tool-visibility verification: `NOT_EXECUTED` — [TC-002](TC-002-codex-restart-validation.md).
 - External Redmine/RAGFlow/GitLab calls: `NOT_EXECUTED`.
 
