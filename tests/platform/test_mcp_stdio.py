@@ -28,7 +28,10 @@ class CompanyContextStdioTests(unittest.TestCase):
     def test_config_forwards_documented_env_and_is_required(self):
         config = tomllib.loads((ROOT / ".codex/config.toml").read_text(encoding="utf-8"))
         server = config["mcp_servers"]["company_context"]
-        self.assertEqual(server["cwd"], ".")
+        root = ROOT.resolve()
+        self.assertEqual(Path(server["cwd"]), root)
+        self.assertEqual(Path(server["command"]), root / ".venv" / "Scripts" / "python.exe")
+        self.assertEqual([Path(arg) for arg in server["args"]], [root / "tools" / "mcp" / "company-context" / "server.py"])
         self.assertIs(server["required"], True)
         self.assertEqual(len(server["env_vars"]), 10)
         self.assertEqual(set(server["env_vars"]), EXPECTED_ENV_NAMES)

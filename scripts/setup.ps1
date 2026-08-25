@@ -84,6 +84,7 @@ try {
         Write-Host "Persisted COMPANY_LOCAL_ROOTS for the current user."
     }
 
+    Invoke-Native "Absolute local MCP path generation" { & $VenvPython "scripts\write_local_config.py" $Root }
     Invoke-Native "Platform validation" { & $VenvPython "scripts\validate_platform.py" }
 
     if (-not (Test-Path ".gitignore")) {

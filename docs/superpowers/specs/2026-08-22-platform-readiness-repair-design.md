@@ -93,7 +93,7 @@ search_redmine
 
 ### 6.2 项目配置
 
-`.codex/config.toml` 保持安装目录可移植性，命令、参数和 `cwd` 使用项目根相对路径。配置增加：
+`.codex/config.toml` 的命令、参数和 `cwd` 使用基于仓库根的绝对路径，由 `scripts/write_local_config.py`（在 `scripts/setup.ps1` 中调用）参数化生成，避免手写死路径；解析后的目标仍限制在仓库 `.venv` 与仓库根内。配置增加：
 
 - `env_vars`：只转发文档化的本地、Redmine、RAGFlow、GitLab 环境变量名称。
 - `required = true`：平台核心 MCP 无法启动时，Codex 应显式失败。

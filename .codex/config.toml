@@ -6,11 +6,12 @@ max_concurrent_threads_per_session = 8
 url = "https://developers.openai.com/mcp"
 
 # Local Company Context MCP.
-# Run scripts/setup.ps1 first; it creates .venv and installs MCP dependencies.
+# Run scripts/setup.ps1 first; it creates .venv, installs MCP dependencies,
+# and regenerates the absolute launch paths below via scripts/write_local_config.py.
 [mcp_servers.company_context]
-command = ".venv\\Scripts\\python.exe"
-args = ["tools\\mcp\\company-context\\server.py"]
-cwd = "."
+command = "D:\\codex-rd-platform\\.venv\\Scripts\\python.exe"
+args = ["D:\\codex-rd-platform\\tools\\mcp\\company-context\\server.py"]
+cwd = "D:\\codex-rd-platform"
 required = true
 env_vars = [
   "COMPANY_LOCAL_ROOTS",
