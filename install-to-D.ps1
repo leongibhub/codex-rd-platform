@@ -7,6 +7,8 @@ $ErrorActionPreference = "Stop"
 $SourcePath = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $DestinationFull = [System.IO.Path]::GetFullPath($Destination)
 $CreatedDestination = $false
+$CanonicalKnowledgeStubPath = "knowledge/local/README.md"
+$CanonicalKnowledgeStubBlob = "f361c8f3bd3b7bb62af25fb46bb48c0965c2e263"
 
 function Test-IsSameOrDescendantPath {
     param(
@@ -79,12 +81,20 @@ try {
         throw "Source '$Source' must provide a committed Git HEAD."
     }
 
-    $blockedPaths = @(
-        & git -C $Source ls-tree -r --name-only $Commit |
-            Where-Object { $_ -match '(^|/)(\.git|\.venv|\.rd-platform|\.env|\.worktrees|\.pytest_cache|__pycache__|knowledge/local|cache)(/|$)' }
-    )
+    $committedPaths = @(& git -C $Source ls-tree -r --name-only $Commit)
     if ($LASTEXITCODE -ne 0) {
         throw "Could not inspect committed source paths."
+    }
+    $blockedPaths = @()
+    foreach ($path in $committedPaths) {
+        if ($path -ceq $CanonicalKnowledgeStubPath) {
+            $blob = (& git -C $Source rev-parse "${Commit}:$path").Trim()
+            if ($LASTEXITCODE -ne 0 -or $blob -ne $CanonicalKnowledgeStubBlob) {
+                $blockedPaths += $path
+            }
+        } elseif ($path -match '(^|/)(\.git|\.venv|\.rd-platform|\.env|\.worktrees|\.pytest_cache|__pycache__|knowledge/local|cache)(/|$)') {
+            $blockedPaths += $path
+        }
     }
     if ($blockedPaths.Count -ne 0) {
         throw "Committed source contains delivery-blocked sensitive/local path(s): $($blockedPaths -join ', ')."

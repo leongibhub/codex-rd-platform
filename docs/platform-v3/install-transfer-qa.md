@@ -3,6 +3,27 @@
 Traceability: `TASK-V3-015`, `BUG-INSTALL-001`, `NFR-V3-004`, `REQ-V3-010`.  
 Tester: `/root/v3_qa_platform`.
 
+Revision 1 evidence below is historical only. The actual full-setup preflight
+against commit `c3eb271` failed because its broad denylist rejected the
+canonical public `knowledge/local/README.md`; this is `BUG-INSTALL-002` and
+invalidated revision 1's installer conclusion. Revision 2's unit result is
+historical; its integration `run-ab766bf5940941028bd8bc2f923f02a1` was
+invalidated before evidence could be recorded. Revision 3 implementation is in
+progress; its new tests are **NOT EXECUTED**.
+
+The revision-2 fixture fixes its canonical input from the Git object
+`HEAD:knowledge/local/README.md` / blob
+`f361c8f3bd3b7bb62af25fb46bb48c0965c2e263`, using `git cat-file` bytes rather
+than working-tree text. This deliberately avoids Windows CRLF checkout
+conversion becoming the input that is both tested and accepted.
+
+Revision 3's first integration attempt, `run-d3fab938a32c4f778104df548b7aaba2`,
+is recorded by Runtime as a failed tester run. Its two failures compared a
+Windows CRLF worktree checkout to LF Git-object bytes, rather than comparing
+the delivered `HEAD:path` object identity. This was a QA fixture assertion
+defect, not product evidence of a broadened allowlist; it remains historical
+and does not supply revision-3 PASS evidence.
+
 ## Risk model
 
 The previous installer recursively copied the daily working directory with
@@ -22,6 +43,10 @@ external service.
 | TC-V3-IND-INSTALL-904 | Legacy `-Force` requests a merge/overwrite behavior. | Installer exits nonzero and does not create the destination. | PASS |
 | TC-V3-IND-INSTALL-905 | Source or destination junction/reparse point redirects operation. | Both calls exit nonzero; linked target sentinel remains unchanged and no delivery directory is created. | PASS |
 | TC-V3-IND-INSTALL-906 | A forbidden local-state path is maliciously committed instead of ignored. | Each `.env`, `.worktrees`, `.pytest_cache`, `__pycache__`, and `cache` fixture rejects before delivery; no approved payload appears at destination. | PASS |
+| TC-V3-IND-INSTALL-907 | Exact published `knowledge/local/README.md` needs to survive delivery for setup. | The independently fixed content and Git blob identity `f361c8f3bd3b7bb62af25fb46bb48c0965c2e263` are delivered; ignored private sibling remains absent. | NOT EXECUTED (revision 2) |
+| TC-V3-IND-INSTALL-908 | A same-path README is changed after the published identity is fixed. | Delivery rejects before payload copy. | NOT EXECUTED (revision 2) |
+| TC-V3-IND-INSTALL-909 | A neighbouring new `knowledge/local` file attempts to broaden the exception. | Delivery rejects before payload copy. | NOT EXECUTED (revision 2) |
+| TC-V3-IND-INSTALL-910 | A Git tree records the exact published blob under a case-variant path only. | Delivery rejects before payload copy; Windows case folding must not broaden the path exception. | NOT EXECUTED (revision 3) |
 
 The executable suite is
 `tests/independent_v3/test_install_transfer_independent.py`. It has not been

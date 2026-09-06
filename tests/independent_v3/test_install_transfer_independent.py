@@ -17,11 +17,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = ROOT / "install-to-D.ps1"
 POWERSHELL = shutil.which("powershell.exe") or shutil.which("powershell")
+CANONICAL_KNOWLEDGE_PATH = Path("knowledge/local/README.md")
+# Published identity verified from c3eb271, not derived from fixture input.
+CANONICAL_KNOWLEDGE_BLOB = "f361c8f3bd3b7bb62af25fb46bb48c0965c2e263"
+CANONICAL_KNOWLEDGE_BYTES = (
+    b"# Local knowledge\n\n"
+    b"Only commit non-sensitive knowledge that is approved for this repository.\n\n"
+    b"Do not add credentials, tokens, customer data, private documents, or other restricted material here. "
+    b"Configure private knowledge directories outside this repository with `COMPANY_LOCAL_ROOTS`.\n"
+)
 
 
 @unittest.skipUnless(POWERSHELL and shutil.which("git"), "requires PowerShell and Git")
 class IndependentInstallTransferTests(unittest.TestCase):
-    """TC-V3-IND-INSTALL-901..904 / TASK-V3-015, BUG-INSTALL-001."""
+    """TC-V3-IND-INSTALL-901..910 / TASK-V3-015, BUG-INSTALL-001/002."""
 
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="rd-platform-independent-install-")
@@ -29,6 +38,7 @@ class IndependentInstallTransferTests(unittest.TestCase):
         self.base = Path(self.temporary.name)
         self.source = self.base / "source"
         (self.source / "scripts").mkdir(parents=True)
+        self._assert_published_canonical_identity()
         shutil.copy2(INSTALLER, self.source / "install-to-D.ps1")
         # A safe setup double: it writes a marker only after proving that the
         # delivered directory has a real Git HEAD.  It does not install or
@@ -43,6 +53,9 @@ class IndependentInstallTransferTests(unittest.TestCase):
         )
         (self.source / "approved").mkdir()
         (self.source / "approved" / "payload.txt").write_text("first committed payload\n", encoding="utf-8")
+        canonical = self.source / CANONICAL_KNOWLEDGE_PATH
+        canonical.parent.mkdir(parents=True)
+        canonical.write_bytes(CANONICAL_KNOWLEDGE_BYTES)
         (self.source / ".gitignore").write_text(
             ".env\n.venv/\n.rd-platform/\n.worktrees/\nknowledge/local/\ncache/\n", encoding="utf-8"
         )
@@ -50,6 +63,7 @@ class IndependentInstallTransferTests(unittest.TestCase):
         self._git("config", "user.email", "fixture@example.invalid")
         self._git("config", "user.name", "Independent installer QA")
         self._git("add", "install-to-D.ps1", "scripts/setup.ps1", "approved/payload.txt", ".gitignore")
+        self._git("add", "-f", CANONICAL_KNOWLEDGE_PATH.as_posix())
         self._git("commit", "-m", "first committed fixture")
         (self.source / "approved" / "payload.txt").write_text("current committed payload\n", encoding="utf-8")
         self._git("add", "approved/payload.txt")
@@ -106,6 +120,62 @@ class IndependentInstallTransferTests(unittest.TestCase):
         """Decode Windows command diagnostics without letting locale bytes fail QA."""
         return (completed.stdout + completed.stderr).decode("mbcs", errors="replace")
 
+    def _variant_source(self, name: str) -> Path:
+        source = self.base / name
+        cloned = subprocess.run(
+            ["git", "clone", "--no-local", "--no-hardlinks", str(self.source), str(source)], text=True,
+            encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(cloned.returncode, 0, cloned.stderr)
+        for key, value in (("user.email", "fixture@example.invalid"), ("user.name", "Independent installer QA")):
+            configured = subprocess.run(
+                ["git", "-C", str(source), "config", key, value], text=True, encoding="utf-8",
+                errors="replace", capture_output=True, timeout=20, check=False,
+            )
+            self.assertEqual(configured.returncode, 0, configured.stderr)
+        return source
+
+    def _commit_variant(self, source: Path, relative: Path, content: bytes) -> None:
+        path = source / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        added = subprocess.run(
+            ["git", "-C", str(source), "add", "-f", relative.as_posix()], text=True, encoding="utf-8",
+            errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(added.returncode, 0, added.stderr)
+        committed = subprocess.run(
+            ["git", "-C", str(source), "commit", "-m", "fixture knowledge variant"], text=True,
+            encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(committed.returncode, 0, committed.stderr)
+
+    def _assert_published_canonical_identity(self) -> None:
+        object_id = subprocess.run(
+            ["git", "rev-parse", f"HEAD:{CANONICAL_KNOWLEDGE_PATH.as_posix()}"], cwd=ROOT, text=True,
+            encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(object_id.returncode, 0, object_id.stderr)
+        self.assertEqual(object_id.stdout.strip(), CANONICAL_KNOWLEDGE_BLOB)
+        published = subprocess.run(
+            ["git", "cat-file", "blob", CANONICAL_KNOWLEDGE_BLOB], cwd=ROOT, capture_output=True,
+            timeout=20, check=False,
+        )
+        self.assertEqual(published.returncode, 0, self._diagnostic(published))
+        self.assertEqual(published.stdout, CANONICAL_KNOWLEDGE_BYTES)
+        git_blob = hashlib.sha1(
+            b"blob " + str(len(CANONICAL_KNOWLEDGE_BYTES)).encode("ascii") + b"\0" + CANONICAL_KNOWLEDGE_BYTES
+        ).hexdigest()
+        self.assertEqual(git_blob, CANONICAL_KNOWLEDGE_BLOB)
+
+    def _head_blob(self, repository: Path, relative: Path) -> str:
+        object_id = subprocess.run(
+            ["git", "-C", str(repository), "rev-parse", f"HEAD:{relative.as_posix()}"], text=True,
+            encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(object_id.returncode, 0, object_id.stderr)
+        return object_id.stdout.strip()
+
     def test_tc_v3_ind_install_901_only_current_committed_content_and_new_git_metadata(self) -> None:
         destination = self.base / "delivered"
 
@@ -134,7 +204,8 @@ class IndependentInstallTransferTests(unittest.TestCase):
         self.assertEqual(remote.stdout.strip(), "", "delivered checkout must not retain source remote metadata")
         self.assertFalse((destination / ".git" / "hooks" / "source-only-hook").exists())
         self.assertNotIn("sourceMarker", (destination / ".git" / "config").read_text(encoding="utf-8"))
-        forbidden = (".env", ".venv", ".rd-platform", ".worktrees", "knowledge/local", "cache", "untracked-private.txt")
+        self.assertEqual(self._head_blob(destination, CANONICAL_KNOWLEDGE_PATH), CANONICAL_KNOWLEDGE_BLOB)
+        forbidden = (".env", ".venv", ".rd-platform", ".worktrees", "knowledge/local/private.txt", "cache", "untracked-private.txt")
         leaked = [entry for entry in forbidden if (destination / entry).exists()]
         self.assertEqual(leaked, [], f"delivery leaked source-local state: {leaked}")
 
@@ -230,6 +301,65 @@ class IndependentInstallTransferTests(unittest.TestCase):
 
                 self.assertNotEqual(completed.returncode, 0)
                 self.assertFalse((destination / "approved" / "payload.txt").exists())
+
+    def test_tc_v3_ind_install_907_exact_published_knowledge_stub_is_delivered(self) -> None:
+        destination = self.base / "canonical-knowledge-delivery"
+
+        completed = self._run(destination)
+
+        self.assertEqual(completed.returncode, 0, self._output(completed))
+        self.assertEqual(self._head_blob(destination, CANONICAL_KNOWLEDGE_PATH), CANONICAL_KNOWLEDGE_BLOB)
+        self.assertFalse((destination / "knowledge" / "local" / "private.txt").exists())
+
+    def test_tc_v3_ind_install_908_modified_canonical_stub_is_rejected(self) -> None:
+        source = self._variant_source("modified-canonical-source")
+        self._commit_variant(source, CANONICAL_KNOWLEDGE_PATH, CANONICAL_KNOWLEDGE_BYTES + b"modified\n")
+        destination = self.base / "modified-canonical-destination"
+
+        completed = self._run(destination, source_script=source / "install-to-D.ps1")
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertFalse((destination / "approved" / "payload.txt").exists())
+
+    def test_tc_v3_ind_install_909_adjacent_committed_knowledge_file_is_rejected(self) -> None:
+        source = self._variant_source("adjacent-knowledge-source")
+        self._commit_variant(source, Path("knowledge/local/extra-approved-looking.md"), b"not the published identity\n")
+        destination = self.base / "adjacent-knowledge-destination"
+
+        completed = self._run(destination, source_script=source / "install-to-D.ps1")
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertFalse((destination / "approved" / "payload.txt").exists())
+
+    def test_tc_v3_ind_install_910_case_variant_same_blob_is_rejected(self) -> None:
+        """A separately committed same-blob path is not the exact published path."""
+        source = self._variant_source("case-variant-source")
+        staging = Path("canonical-staging.md")
+        variant = Path("KNOWLEDGE/local/README.md")
+        for source_path, target_path in ((CANONICAL_KNOWLEDGE_PATH, staging), (staging, variant)):
+            moved = subprocess.run(
+                ["git", "-C", str(source), "mv", source_path.as_posix(), target_path.as_posix()], text=True,
+                encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+            )
+            self.assertEqual(moved.returncode, 0, moved.stderr)
+        committed = subprocess.run(
+            ["git", "-C", str(source), "commit", "-m", "fixture case-variant canonical blob"], text=True,
+            encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(committed.returncode, 0, committed.stderr)
+        tree = subprocess.run(
+            ["git", "-C", str(source), "ls-tree", "-r", "--name-only", "HEAD"], text=True,
+            encoding="utf-8", errors="replace", capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(tree.returncode, 0, tree.stderr)
+        self.assertIn(variant.as_posix(), tree.stdout.splitlines())
+        self.assertNotIn(CANONICAL_KNOWLEDGE_PATH.as_posix(), tree.stdout.splitlines())
+        destination = self.base / "case-variant-destination"
+
+        completed = self._run(destination, source_script=source / "install-to-D.ps1")
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertFalse((destination / "approved" / "payload.txt").exists())
 
     @staticmethod
     def _tree_digest(root: Path, *, exclude_git: bool = False) -> str:

@@ -30,8 +30,13 @@ directory is allowed as the caller-selected new delivery location.
 
 Before cloning, the committed tree is inspected and delivery fails closed if it
 contains `.git`, `.venv`, `.rd-platform`, `.env`, `.worktrees`,
-`.pytest_cache`, `__pycache__`, `knowledge/local`, or `cache` paths. This is a
-limited path denylist, not a general secret-scanning or DLP claim.
+`.pytest_cache`, `__pycache__`, `knowledge/local`, or `cache` paths. The only
+exception is the exact path `knowledge/local/README.md` when its Git blob is
+exactly `f361c8f3bd3b7bb62af25fb46bb48c0965c2e263`, the reviewed public rule
+stub. The Git path comparison is case-sensitive: a same-blob case variant is
+not the exception. A changed stub, any sibling/descendant local-knowledge
+file, or a file at another path remains blocked. This is a limited path
+denylist, not a general secret-scanning or DLP claim.
 `scripts/setup.ps1` remains unchanged and runs normally after a successful
 transfer; its own Git identity, Python, dependency, and validation
 preconditions still apply.
@@ -50,6 +55,7 @@ path/link and source-HEAD race classes within this local helper's scope.
 | TC-INSTALL-015-03 | path containment | Source/equal and descendant targets, source junction ancestry, and a junction/reparse target are rejected. |
 | TC-INSTALL-015-04 | sensitive tracked paths | Each committed `.env`, `.worktrees`, `.pytest_cache`, `__pycache__`, or `cache` path blocks delivery before fetch and records the new-target failure marker. |
 | TC-INSTALL-015-05 | fixed-tree race boundary | Static contract asserts that inspection, depth-one fetch, and detached checkout use the same captured SHA. |
+| TC-INSTALL-015-06 | canonical local knowledge exception | The approved stub transfers; its modified content, same-blob case-variant path, or any bystander local file is rejected before fetch. The repository fixture confirms the approved blob identity. |
 
 Executed developer command:
 
@@ -65,6 +71,19 @@ source-reparse controls (2 failures), then the repaired suite passed 8/8 in
 8.623 seconds on Windows. Every fixture native subprocess has a finite timeout;
 junction diagnostic output is decoded from bytes with the locale and replacement
 handling only for assertion messages.
+
+The actual pre-setup installer run from source `c3eb271` was correctly
+recorded as `FAIL` for `BUG-INSTALL-002`: it rejected the canonical stub and
+left the new target's `.install-failed` marker without payload. That target was
+preserved for evidence. Revision 2 implementation run
+`run-c000861b1ce84634bb40edb73102b571` added the exact path-and-blob exception;
+its RED run had 1/11 failure and its GREEN developer run passed 11/11 in
+11.948 seconds. This does not replace the separate real dependency-installing
+setup, independent QA, or review evidence.
+
+Revision 3 corrects PowerShell's default case-insensitive equality with `-ceq`.
+The new same-blob `knowledge/local/readme.md` fixture was RED before that
+change and is included in the revision-3 focused verification.
 
 This focused evidence does not execute a real dependency-installing setup,
 perform a production install, or constitute independent QA/review or system

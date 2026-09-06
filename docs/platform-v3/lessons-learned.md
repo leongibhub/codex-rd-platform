@@ -1,5 +1,15 @@
 # V3 五技术栈 Skill 实测经验与待验收边界
 
+> 下方五栈首轮记录保留为历史。后续已实际完成 Windows/Linux 原生 CI、容量基准和 Python 逐需求 G0–G8；当前状态以 [后续交付记录](completion-delivery.md)、[CI 闭环](ci-execution.md) 和 [真实安装验证](install-real-validation.md) 为准，不把历史 NOT_EXECUTED 当作当前总状态。
+
+## 后续工程验证新增经验
+
+- **安装测试必须覆盖真实仓库结构。** 原安装器的隔离小夹具通过后，实际仓库中的公开 `knowledge/local/README.md` 仍触发拒绝。安全负向用例之外，必须对固定的真实提交执行正常安装，不能仅凭 marker-only setup 判断可安装。
+- **白名单同时约束路径和内容。** 已审过的公共说明可以有精确例外，但同名私有内容、目录中的其他文件及大小写变体不能继承例外。PowerShell 的默认 `-eq` 不区分大小写，精确路径契约需要显式大小写敏感比较和真实负向用例。
+- **文档命令必须在真实起始状态执行。** single-branch clone 的 fetch 配置不同于开发者工作区；仅取得对象和远端引用不保证能建立跟踪分支。README 必须实测首次克隆、仅 main 克隆、已有本地分支且远端已前进的三种路径。
+- **干净 CI 会揭示缓存掩盖的问题。** 本机 Java 8 已存在的 classes 目录、Windows PATH 中的 GNU DLL、原机器绝对 MCP 路径，以及 Python 编码器深度差异都不能靠静态 workflow 检查证明兼容性。实际矩阵失败应产生修复和新执行，而不是降级运行时或跳过断言。
+- **不同层级的通过不能互相代替。** 本轮已观察到“fixture PASS、完整安装 FAIL”和“本机 PASS、hosted CI FAIL”；这些不是矛盾，而是测试范围不同。报告必须说明源提交、执行环境和未覆盖条件。
+
 - 文档状态：`DRAFT`
 - 记录时间：`2026-09-06T17:46:40+08:00`
 - 范围：`platform-orchestration` 在 C++、Python、Web、Java、微信五个合成小样例上的已观察过程；不把它扩展为生产 Agent 自治结论。

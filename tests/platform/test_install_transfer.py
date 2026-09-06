@@ -16,6 +16,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = ROOT / "install-to-D.ps1"
+CANONICAL_KNOWLEDGE_STUB = (
+    "# Local knowledge\n\n"
+    "Only commit non-sensitive knowledge that is approved for this repository.\n\n"
+    "Do not add credentials, tokens, customer data, private documents, or other restricted material here. "
+    "Configure private knowledge directories outside this repository with `COMPANY_LOCAL_ROOTS`.\n"
+)
+CANONICAL_KNOWLEDGE_BLOB = "f361c8f3bd3b7bb62af25fb46bb48c0965c2e263"
 
 
 @unittest.skipUnless(shutil.which("powershell"), "requires Windows PowerShell")
@@ -38,10 +45,13 @@ class InstallTransferTests(unittest.TestCase):
         (self.root / ".env").write_text("SECRET=must-not-transfer\n", encoding="utf-8")
         (self.root / ".venv").mkdir()
         (self.root / ".venv" / "state.txt").write_text("ignored\n", encoding="utf-8")
+        canonical = self.root / "knowledge" / "local" / "README.md"
+        canonical.parent.mkdir(parents=True)
+        canonical.write_text(CANONICAL_KNOWLEDGE_STUB, encoding="utf-8")
         self._git("init")
         self._git("config", "user.email", "test@example.invalid")
         self._git("config", "user.name", "Install transfer test")
-        self._git("add", "install-to-D.ps1", "scripts/setup.ps1", "tracked.txt", ".gitignore")
+        self._git("add", "install-to-D.ps1", "scripts/setup.ps1", "tracked.txt", ".gitignore", "knowledge/local/README.md")
         self._git("commit", "-m", "committed delivery")
 
     def _git(self, *args: str) -> None:
@@ -83,6 +93,7 @@ class InstallTransferTests(unittest.TestCase):
         self.assertFalse((destination / ".env").exists())
         self.assertFalse((destination / ".venv").exists())
         self.assertFalse((destination / ".rd-platform").exists())
+        self.assertEqual((destination / "knowledge" / "local" / "README.md").read_text(encoding="utf-8"), CANONICAL_KNOWLEDGE_STUB)
 
     def test_rejects_existing_nonempty_destination_without_overwrite(self) -> None:
         destination = Path(self.temp.name) / "existing"
@@ -169,6 +180,46 @@ class InstallTransferTests(unittest.TestCase):
                 self.assertIn("delivery-blocked", self._output(result))
                 self.assertTrue((destination / ".install-failed").is_file())
                 self.assertFalse((destination / "tracked.txt").exists())
+
+    def test_rejects_modified_canonical_knowledge_stub_before_fetch(self) -> None:
+        canonical = self.root / "knowledge" / "local" / "README.md"
+        canonical.write_text(CANONICAL_KNOWLEDGE_STUB + "modified\n", encoding="utf-8")
+        self._git("add", "knowledge/local/README.md")
+        self._git("commit", "-m", "modified local knowledge stub")
+
+        result = self._run(Path(self.temp.name) / "modified-stub")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("delivery-blocked", self._output(result))
+
+    def test_rejects_case_variant_of_approved_knowledge_path_before_fetch(self) -> None:
+        self._git("mv", "knowledge/local/README.md", "knowledge/local/staging.md")
+        self._git("mv", "knowledge/local/staging.md", "knowledge/local/readme.md")
+        self._git("commit", "-m", "case variant of local knowledge stub")
+
+        result = self._run(Path(self.temp.name) / "case-variant-stub")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("delivery-blocked", self._output(result))
+
+    def test_rejects_bystander_local_knowledge_file_before_fetch(self) -> None:
+        bystander = self.root / "knowledge" / "local" / "notes.md"
+        bystander.write_text("not the approved stub\n", encoding="utf-8")
+        self._git("add", "knowledge/local/notes.md")
+        self._git("commit", "-m", "bystander local knowledge")
+
+        result = self._run(Path(self.temp.name) / "bystander-local")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("delivery-blocked", self._output(result))
+
+    def test_repository_canonical_stub_has_approved_blob_identity(self) -> None:
+        blob = subprocess.run(
+            ["git", "rev-parse", "HEAD:knowledge/local/README.md"], cwd=ROOT,
+            check=True, capture_output=True, timeout=20,
+        ).stdout.decode("ascii").strip()
+
+        self.assertEqual(blob, CANONICAL_KNOWLEDGE_BLOB)
 
     def test_pinned_fetch_and_detached_checkout_are_required_by_contract(self) -> None:
         text = INSTALLER.read_text(encoding="utf-8")

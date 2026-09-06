@@ -33,3 +33,21 @@ The implementation owner reported a formal follow-up implementation Run and 8/8 
 - The original BUG-INSTALL-001 history remains material: the superseded implementation copied Git state, Runtime data, worktrees, virtual environments, local knowledge/caches, and possible secrets. The new result does not rewrite that history.
 
 The successful tests use harmless temporary setup doubles. A full dependency-installing setup in a fresh delivered checkout, hosted CI for this uncommitted change, general secret scanning, hostile concurrent filesystem mutation resistance, production installation, Gate decision, release, deployment, and human acceptance remain **NOT EXECUTED** or outside this review scope.
+
+## Revision 2 reopening — BUG-INSTALL-002
+
+- Current verdict: **FAIL / RE-REVIEW REQUIRED**. The revision-1 scoped PASS above is retained as history but is not valid for the new installation semantics.
+- Severity: **P1** for TASK-V3-015 acceptance because the first real full installation of pushed commit `c3eb271089c0599b54775b2b4d3cb1c349a62bd0` exited 1 before transfer.
+- Reproduction: the canonical committed source contains `knowledge/local/README.md`. Revision 1 rejected every committed path below `knowledge/local`, so the real repository always matched the denylist. The public policy stub is non-sensitive and has verified Git blob `f361c8f3bd3b7bb62af25fb46bb48c0965c2e263`.
+- Required contract: any exception must be limited to the exact canonical path **and** exact approved blob/content identity. A changed canonical stub, any sibling/descendant under `knowledge/local`, case/path variants, and all other blocked local-state paths must still fail before delivery.
+- The real failed install remains evidence and must not be replaced by the revision-1 fixture PASS. Revision 2 requires a new implementation, unit, integration, and review chain. GitHub Actions run `34032544002` was still running when the task was reopened and is not recorded here as PASS.
+
+### Revision 2 pre-review finding
+
+- **P2 — canonical Git path comparison was not exact.** The first revision-2 implementation used PowerShell `-eq`, which is case-insensitive. A same-blob path such as `KNOWLEDGE/local/README.md` could therefore enter the exception even though Git tree paths and the stated allow rule identify one exact case-sensitive path.
+- Required correction: use case-sensitive path equality and retain the ordinary case-insensitive denylist for every non-exact variant. Add a negative case containing the approved blob at a case-variant path and require rejection before payload delivery.
+- This finding caused revision 2 evidence to be invalidated and TASK-V3-015 to advance to revision 3. No revision-2 PASS is reused.
+
+## Revision 3 pending review
+
+The current candidate uses `-ceq` for the canonical path and includes a same-blob case-variant negative regression. It remains unapproved until a complete fresh revision-3 implementation, unit, integration, and independent review sequence finishes against one frozen source SHA.
