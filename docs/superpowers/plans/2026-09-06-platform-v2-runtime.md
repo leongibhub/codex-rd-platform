@@ -51,7 +51,7 @@ Consumes: Task1..3接口。Produces: 真实命令执行、演练、操作说明�
 - [x] 先测试真实子进程成功/失败/timeout，shell=False；集成内核记录证据。
 - [x] 小应用用真实unittest和HTTP测试；演练发生实际review FAIL→修复→retest，保留真实宿主Agent身份。
 - [x] 独立Tester执行定向单元/系统/黑盒测试；主协调执行完整回归及浏览器验收；独立Reviewer审完整分工范围，职责及证据见delivery-report。
-- [ ] 写原始输出与报告、启动说明、备份恢复/限制；提交Git，推送用户确认的GitHub origin并读回SHA。
+- [x] 写原始输出与报告、启动说明、备份恢复/限制；提交Git，推送用户确认的GitHub origin并读回SHA（89261eb，见implementation-log）。
 
 ## Preflight interface check
 

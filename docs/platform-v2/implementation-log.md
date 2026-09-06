@@ -26,3 +26,11 @@
 - 浏览器专用控件任务仍READY/0，不是假业务成果，不能为了全绿而改DONE。
 - 报告实际返回MODULE_QUALITY PASS，但traceability PARTIAL、release NO_RELEASE_EVIDENCE、deployment/human_acceptance NOT_EXECUTED；此边界符合当前范围。
 - 用户授权源代码提交与远端推送，不等于授权上线或最终验收。Git提交/推送结果以实际Git记录为准，不在这里提前签成功。
+
+## Git交付证据
+
+- 实现提交：89261ebaf361554439622c0e377ddaedefeb22f1。
+- 已执行 `git push -u origin codex/platform-v2-runtime`，exit 0。
+- `git ls-remote --heads origin refs/heads/codex/platform-v2-runtime` 返回相同完整SHA；当时工作树干净。
+- 提交后再次执行validator为TEMPLATE MODE PASS、Evaluated Gates NONE、RUNTIME CHECK EXECUTED，无dirty提示。
+- 此记录作为后续文档提交保存，不改写已经验证的实现提交；未创建PR、合并main或生产发布。
