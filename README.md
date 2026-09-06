@@ -8,7 +8,7 @@
 
 ## 当前范围与版本
 
-- V3 使用 GitHub 分支 `codex/platform-v3-lifecycle`，本轮续作基线为 `2d77904`；当前交付提交及真实 CI 结果见[后续交付记录](docs/platform-v3/completion-delivery.md)。它**尚未合并到 `main`**，默认分支 clone 不含本轮 V3 内容。
+- V3 使用 GitHub 分支 `codex/platform-v3-lifecycle`，本轮续作基线为 `2d77904`，当前已推送提交为 `62c153e8a14425ce4aa3146519129521ded25af5`；交付提交及真实 CI 结果见[后续交付记录](docs/platform-v3/completion-delivery.md)。它**尚未合并到 `main`**，默认分支 clone 不含本轮 V3 内容。
 - V2 提供项目/任务、四阶段质量 Run（implementation、unit、integration、review）、看板和受控本地命令执行；V3 加入版本化工件、追踪、测试模型/Case/Execution、工作租约、Gate assessment、release/rollback 事实、分页读取和五技术栈 Harness。
 - 已有本地源码验证、独立测试和审查记录，但它们是工程范围证据，不是正式产品验收或生产发布。见 [追踪索引](docs/platform-v3/traceability.md)、[最终本地验证 JSON](docs/platform-v3/evidence/final-local-validation.json) 与 [能力状态](docs/platform-v3/capability-status.md)。
 - 顶层 `platform-manifest.json` 仍为 `lifecycle_mode: template`。模板校验通过、任务 `DONE`、Harness `PASS` 或 Case 报告 `PASS` 都不等于任何 G0–G11 `PASS`、人工验收或发布建议。
@@ -36,25 +36,55 @@ Codex / 受信任宿主 ──真实派发、命令、进程取消──> Agent 
 ```powershell
 git clone --branch codex/platform-v3-lifecycle --single-branch https://github.com/leongibhub/codex-rd-platform.git
 Set-Location codex-rd-platform
-git rev-parse --short HEAD       # 本说明检查时为 2d77904
+git rev-parse --short HEAD       # 记录此命令的实际输出；已验证源码提交/对应 CI 见后续交付记录
 git status --short
 ```
 
-已有 clone 时：
+已有 clone 时，先将该分支加入 `origin` 的 fetch refspec。Windows PowerShell 可用：
 
 ```powershell
-git fetch origin codex/platform-v3-lifecycle
-git switch --track origin/codex/platform-v3-lifecycle
+git remote set-branches --add origin codex/platform-v3-lifecycle
+git fetch origin
+git show-ref --verify --quiet refs/heads/codex/platform-v3-lifecycle
+if ($LASTEXITCODE -eq 0) {
+  git switch codex/platform-v3-lifecycle
+  git merge --ff-only origin/codex/platform-v3-lifecycle
+} else {
+  git switch --track -c codex/platform-v3-lifecycle origin/codex/platform-v3-lifecycle
+}
 git status --short
 ```
 
-合并发生前不要把 `main` 当作本文描述的 V3 基线。改动请使用自己的分支/worktree，先检查 Git 状态和近期历史，并保留其他协作者的未提交修改。
+Linux/macOS 的 POSIX shell 使用同一 Git 逻辑：
+
+```bash
+git remote set-branches --add origin codex/platform-v3-lifecycle
+git fetch origin
+if git show-ref --verify --quiet refs/heads/codex/platform-v3-lifecycle; then
+  git switch codex/platform-v3-lifecycle
+  git merge --ff-only origin/codex/platform-v3-lifecycle
+else
+  git switch --track -c codex/platform-v3-lifecycle origin/codex/platform-v3-lifecycle
+fi
+git status --short
+```
+
+合并发生前不要把 `main` 当作本文描述的 V3 基线。已有分支路径只允许快进；若 `merge --ff-only` 因本地提交或修改失败，先保留/审阅工作后再自行处理，绝不以强制切换覆盖。改动请使用自己的分支/worktree，先检查 Git 状态和近期历史，并保留其他协作者的未提交修改。
 
 ## 安装和自检
 
 ### Windows（已提供的一键路径）
 
-前置条件：Git、PowerShell、Python 3.11+，以及仓库中的 `git user.name`、`git user.email`。
+前置条件：Git、PowerShell、Python 3.11+，以及仓库中的 `git user.name`、`git user.email`。若当前 clone 未配置，请在**本仓库**设置经批准的身份；不要写入 global 配置，也不要把真实身份复制到文档：
+
+```powershell
+git config --local user.name "YOUR_APPROVED_DISPLAY_NAME"
+git config --local user.email "your-approved-address@example.invalid"
+git config --local --get user.name
+git config --local --get user.email
+```
+
+将占位符替换为你的经批准、可审计身份；这些值只写入当前 `.git/config`，不会修改系统或全局 Git 设置。
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -66,7 +96,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 `setup.ps1` 创建或复用 `.venv`，安装 `tools/mcp/company-context/requirements.txt` 的受限依赖，运行 `pip check`，创建 `knowledge\local`，生成当前工作区 MCP 绝对路径，并运行平台校验。它默认不升级 pip，也不写用户级环境变量。仅在准备好依赖时使用 `-SkipDependencyInstall`；仅 `-PersistLocalRoot` 会持久化 `COMPANY_LOCAL_ROOTS`。
 
-需要复制到另一个**空**目录时，可从源仓库运行 `./install-to-D.ps1`。默认目标是 `D:\codex-rd-platform`；非空目标会被拒绝，`-Force` 会合并/覆盖文件，操作者必须确认目标，且不得选源目录或其子目录。
+当前不要使用 `install-to-D.ps1` 复制仓库。该脚本会递归复制源目录，现有实现可能携带 `.git`、`.venv`、`.rd-platform`、worktree/cache、`knowledge\local` 及潜在 `.env`，而 `-Force` 还会混合残留内容；在改为受审查的 allowlist 交付前，它不是安全安装入口。请用上面的 `git clone --branch ... --single-branch` 获取干净工作区，再执行 `setup.ps1`。需要离线交付时，仅由发布负责人从经审查、已追踪的文件 allowlist 生成包，绝不从日常工作副本递归复制。
 
 ### Linux（可验证的手动 venv 路径）
 
@@ -148,7 +178,7 @@ Skill 是工作方法约束而不是服务启动器。它要求宿主先做快�
 & .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db PATH test-run --project-id ID --case-id TC-ID --case-version N --executor-id REAL_TESTER --timeout 60
 ```
 
-`test-run` 只从该精确 Case 版本的 `automation.argv` 读取 argv，并以真实 tester 身份启动；它会重新校验项目、Case 版本、Test Model、需求和受试代码的锁定引用。Case 必须是 `BASELINED` 或 `APPROVED`，且自动化定义应类似：
+`test-run` 只从该精确 Case 版本的 `automation.argv` 读取 argv，并以受信任宿主声明、已登记为 tester 的 `executor-id` 启动；它会重新校验项目、Case 版本、Test Model、需求和受试代码的锁定引用。该 ID 仅校验 Runtime 中的角色，不是身份认证，也不会模拟另一个 OS 用户；独立性仍须由真实宿主派发与证据证明。Case 必须是 `BASELINED` 或 `APPROVED`，且自动化定义应类似：
 
 ```json
 {
@@ -260,7 +290,7 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 | 全量报告、只读项目导出、Case 绑定 runner | 已实现并有本机验证记录。全量报告不截断首个页面；导出拒绝覆盖且不含源码/秘密；`test-run` 只能运行已基线的版本绑定 argv，普通命令结果不等于 Gate。见 [导出说明](docs/platform-v3/project-export.md) 与 [test-run 验证](docs/platform-v3/test-run-validation.md)。 |
 | SQLite 读取容量 | 已观察到 synthetic `capacity --profile full`：100 projects、100,000 artifact versions、1,000,000 events，终端 JSON 为 PASS，129.7199 s、294,764,544 bytes、无公开读取错误。它只衡量 `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` 的本地 SQLite 读路径，不是生产吞吐、写入性能、SLO、Gate 或发布结论。见 [性能验证](docs/platform-v3/performance-validation.md)。 |
 | 8 小时 soak | 已启动，运行目录为 `.rd-platform/benchmark-soak-8h-20260906-1`；当前只有同一 run 的 checkpoint，没有 terminal JSON，因此没有完成/PASS 结论。宿主的 30 分钟 heartbeat 仅用于完成/失败通知，不替代 benchmark 结果。 |
-| GitHub Actions CI | 首次真实 Windows/Linux 运行暴露了四个兼容性问题，修复及独立重测已开展；当前线上结论以对应提交的 [CI 执行记录](docs/platform-v3/ci-execution.md) 为准，不以 workflow 文件或本机测试冒充在线通过。 |
+| GitHub Actions CI | 对 `62c153e8a14425ce4aa3146519129521ded25af5` 的真实 [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) 已于 `2026-09-06T12:01:47Z` 完成 SUCCESS，4/4 jobs SUCCESS，包含原生 Windows C++ 复验。第一、二轮失败及修复历史保留在 [CI 执行记录](docs/platform-v3/ci-execution.md)。这只覆盖 workflow 声明的阶段；Node/fake-`wx` 不等于微信 IDE、真机或发布。当前未提交的 README/installer 修改不属于该次 CI 证据。 |
 | Python 逐需求生命周期收口 | 有界的既有 Python 费用 CLI 项目已完成 37/37 当前 Case PASS、7/7 RTM `COMPLETE` 和 G0–G8 `DECIDED PASS CURRENT`；这不是 G9 人工验收、生产部署或发布建议。G9–G11 保持 `NOT_EVALUATED`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。 |
 
 容量/soak 使用专用基准脚本和隔离的全新输出目录；不要指向项目状态库或复用已有输出：

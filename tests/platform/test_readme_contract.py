@@ -19,11 +19,40 @@ BRANCH = "codex/platform-v3-lifecycle"
 
 
 class ReadmeContractTests(unittest.TestCase):
-    """TC-V3-README-001..004 / TASK-V3-009, NFR-V3-004/005."""
+    """TC-V3-README-001..005 / TASK-V3-009, NFR-V3-004/005."""
 
     @staticmethod
     def text(path: Path) -> str:
         return path.read_text(encoding="utf-8")
+
+    def git(self, *arguments: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", *arguments], cwd=cwd, text=True, encoding="utf-8",
+            capture_output=True, timeout=30, check=False,
+        )
+
+    def feature_remote(self, temporary: Path) -> tuple[str, Path]:
+        """Create a disposable remote with main and the README feature branch."""
+        source, remote = temporary / "source", temporary / "remote.git"
+        for command in (("init", str(source)),
+                        ("-C", str(source), "config", "user.name", "fixture"),
+                        ("-C", str(source), "config", "user.email", "fixture@example.test")):
+            completed = self.git(*command)
+            self.assertEqual(0, completed.returncode, completed.stderr)
+        (source / "fixture.txt").write_text("main\n", encoding="utf-8")
+        for command in (("-C", str(source), "add", "fixture.txt"),
+                        ("-C", str(source), "commit", "-m", "main fixture"),
+                        ("-C", str(source), "branch", "-M", "main"),
+                        ("-C", str(source), "switch", "-c", BRANCH)):
+            completed = self.git(*command)
+            self.assertEqual(0, completed.returncode, completed.stderr)
+        (source / "fixture.txt").write_text("feature\n", encoding="utf-8")
+        for command in (("-C", str(source), "commit", "-am", "feature fixture"),
+                        ("-C", str(source), "switch", "main"),
+                        ("clone", "--bare", str(source), str(remote))):
+            completed = self.git(*command)
+            self.assertEqual(0, completed.returncode, completed.stderr)
+        return remote.as_uri(), source
 
     def test_tc_v3_readme_001_all_local_markdown_links_resolve(self) -> None:
         """Usability: each relative Markdown document link in both guides exists."""
@@ -71,8 +100,11 @@ class ReadmeContractTests(unittest.TestCase):
                 r"git clone --branch " + re.escape(BRANCH) +
                 r" --single-branch https://github\.com/leongibhub/codex-rd-platform\.git"
             ))
-            self.assertIn("git fetch origin " + BRANCH, content)
-            self.assertIn("git switch --track origin/" + BRANCH, content)
+            self.assertIn("git remote set-branches --add origin " + BRANCH, content)
+            self.assertIn("git fetch origin", content)
+            self.assertIn("git show-ref --verify --quiet refs/heads/" + BRANCH, content)
+            self.assertIn("git switch --track -c " + BRANCH + " origin/" + BRANCH, content)
+            self.assertIn("git merge --ff-only origin/" + BRANCH, content)
             self.assertIn("tools/mcp/company-context/requirements.txt", content)
             self.assertIn("setup.ps1", content)
             self.assertRegex(content, r"Python 3\.11\+|Python 3\.11 or newer")
@@ -99,6 +131,64 @@ class ReadmeContractTests(unittest.TestCase):
             self.assertNotEqual("https://github.com/leongibhub/codex-rd-platform.git", remote.stdout.strip())
             self.assertEqual("", branch.stdout.strip())
 
+    def test_tc_v3_readme_005_feature_branch_continuation_uses_remote_mapping_and_handles_local_branch(self) -> None:
+        """Regression: old fetch-only flow REDs; documented mapping works in three clone states."""
+        with tempfile.TemporaryDirectory(prefix="readme-git-") as temporary:
+            temporary_root = Path(temporary)
+            remote, source = self.feature_remote(temporary_root)
+            fresh, main_only, existing = (temporary_root / name for name in ("fresh", "main-only", "existing"))
+
+            first = self.git("clone", "--branch", BRANCH, "--single-branch", remote, str(fresh))
+            self.assertEqual(0, first.returncode, first.stderr)
+            self.assertEqual(BRANCH, self.git("branch", "--show-current", cwd=fresh).stdout.strip())
+
+            clone = self.git("clone", "--depth", "1", "--single-branch", "--branch", "main", remote, str(main_only))
+            self.assertEqual(0, clone.returncode, clone.stderr)
+            old_fetch = self.git("fetch", "origin", BRANCH, cwd=main_only)
+            old_switch = self.git("switch", "--track", "origin/" + BRANCH, cwd=main_only)
+            self.assertEqual(0, old_fetch.returncode, old_fetch.stderr)
+            self.assertNotEqual(0, old_switch.returncode, "old flow unexpectedly created the missing remote tracking ref")
+            self.assertEqual("", self.git("branch", "-r", "--list", "origin/" + BRANCH, cwd=main_only).stdout.strip())
+
+            mapping = self.git("remote", "set-branches", "--add", "origin", BRANCH, cwd=main_only)
+            self.assertEqual(0, mapping.returncode, mapping.stderr)
+            corrected = self.git("fetch", "origin", cwd=main_only)
+            self.assertEqual(0, corrected.returncode, corrected.stderr)
+            self.assertEqual(0, self.git("show-ref", "--verify", "--quiet", "refs/remotes/origin/" + BRANCH, cwd=main_only).returncode)
+            switched = self.git("switch", "--track", "-c", BRANCH, "origin/" + BRANCH, cwd=main_only)
+            self.assertEqual(0, switched.returncode, switched.stderr)
+            self.assertEqual("origin/" + BRANCH, self.git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}", cwd=main_only).stdout.strip())
+
+            cloned_existing = self.git("clone", "--depth", "1", "--single-branch", "--branch", "main", remote, str(existing))
+            self.assertEqual(0, cloned_existing.returncode, cloned_existing.stderr)
+            self.assertEqual(0, self.git("branch", BRANCH, cwd=existing).returncode)
+
+            # The local branch exists before the remote moves.  The README's
+            # existing-branch path must therefore update it, not merely avoid
+            # the "already exists" error.
+            self.assertEqual(0, self.git("switch", BRANCH, cwd=source).returncode)
+            (source / "fixture.txt").write_text("feature newer\n", encoding="utf-8")
+            self.assertEqual(0, self.git("add", "fixture.txt", cwd=source).returncode)
+            self.assertEqual(0, self.git("commit", "-m", "feature newer", cwd=source).returncode)
+            pushed = self.git("push", remote, BRANCH, cwd=source)
+            self.assertEqual(0, pushed.returncode, pushed.stderr)
+
+            mapping_existing = self.git("remote", "set-branches", "--add", "origin", BRANCH, cwd=existing)
+            self.assertEqual(0, mapping_existing.returncode, mapping_existing.stderr)
+            fetched_existing = self.git("fetch", "origin", cwd=existing)
+            self.assertEqual(0, fetched_existing.returncode, fetched_existing.stderr)
+            remote_tip = self.git("rev-parse", "origin/" + BRANCH, cwd=existing)
+            self.assertEqual(0, remote_tip.returncode, remote_tip.stderr)
+            local_before = self.git("rev-parse", BRANCH, cwd=existing)
+            self.assertEqual(0, local_before.returncode, local_before.stderr)
+            self.assertNotEqual(remote_tip.stdout.strip(), local_before.stdout.strip())
+            continued = self.git("switch", BRANCH, cwd=existing)
+            self.assertEqual(0, continued.returncode, continued.stderr)
+            merged = self.git("merge", "--ff-only", "origin/" + BRANCH, cwd=existing)
+            self.assertEqual(0, merged.returncode, merged.stderr)
+            self.assertEqual(BRANCH, self.git("branch", "--show-current", cwd=existing).stdout.strip())
+            self.assertEqual(remote_tip.stdout.strip(), self.git("rev-parse", "HEAD", cwd=existing).stdout.strip())
+
     def test_tc_v3_readme_004_local_host_and_native_boundaries_are_explicit(self) -> None:
         """Safety: documentation must not turn self-host prompts or Node adapters into unsupported services/native evidence."""
         chinese, english = (self.text(path) for path in READMES)
@@ -116,6 +206,12 @@ class ReadmeContractTests(unittest.TestCase):
         self.assertIn("WeChat native", english)
         self.assertIn("Node fake-wx is not a substitute", english)
         self.assertIn("NOT_AVAILABLE", english)
+        self.assertIn("已登记为 tester 的 `executor-id`", chinese)
+        self.assertIn("不是身份认证", chinese)
+        self.assertIn("不会模拟另一个 OS 用户", chinese)
+        self.assertIn("declared by the trusted host and registered as a tester", english)
+        self.assertIn("not identity authentication", english)
+        self.assertIn("does not impersonate another OS user", english)
 
 
 if __name__ == "__main__":

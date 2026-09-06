@@ -1,6 +1,6 @@
 # V3 能力状态矩阵
 
-此表保留上轮观察快照。CR-V3-002 的完整报告/导出、证据新鲜度、Case runner、容量、长稳和 Python 需求级流程更新见 [后续交付记录](completion-delivery.md)。
+此表保留上轮观察快照；下方“CR-V3-002 当前事实优先级”覆盖与旧快照冲突的状态。完整报告/导出、证据新鲜度、Case runner、容量、长稳、Python 需求级流程和 CI 的后续事实见 [后续交付记录](completion-delivery.md)。
 
 - 文档状态：`DRAFT`；观察快照：`2026-09-06T17:46:40+08:00`
 - 事实输入：当前未提交 V3 源码、Runtime `snapshot`/`stack-probe`、五个 manifest、应用记录及独立报告。
@@ -38,4 +38,18 @@
 
 最终快照显示 Harness、lifecycle core、CLI/board adapter、collection query、test-model versioning 及五应用任务均 `DONE`（各 4/4 quality checks）；历史 FAIL 和 defect 记录保留。五个真实 lifecycle 项目已从 REQ/CODE_CHANGE 延伸至当前 Test Model v2、Case v2、Environment Evidence、独立 PASS Execution 与 `lifecycle-report`；其 legacy v1 来源保持 `NOT_AVAILABLE`。每个仍为 `G0 / IN_REVIEW`，G7 assessment candidate `BLOCKED`，且**没有** Gate Status/decision。聚合 v2 Case 的 report `PASS/complete_snapshot=true/recommend_release=false` 仅表示其声明范围内当前版本执行完整，不能汇总为完整需求/NFR、G7、正式关闭或发布。详见[五应用真实生命周期追踪验证](live-lifecycle-validation.md)。
 
-跨文档可追溯主链为：`CR-V3-001` → `DES-V3-001` → `REQ-V3-001..010/REQ-MATRIX-*` → `TASK-V3-001..004` → 当前工作区变更与 Runtime Run → 应用测试/审查报告 → 未来 `REL-*`。平台 lifecycle/harness/adapter 的独立验证与复审已经取得证据；链路仍为 `PARTIAL`，因为五个真实项目目前只登记聚合 Case v2，尚未覆盖完整项目设计/任务/所有需求与 NFR，且 G9/G10、真实部署、人工验收、微信原生与容量基准均无相应证据。
+跨文档可追溯主链为：`CR-V3-001` → `DES-V3-001` → `REQ-V3-001..010/REQ-MATRIX-*` → `TASK-V3-001..004` → 当前工作区变更与 Runtime Run → 应用测试/审查报告 → 未来 `REL-*`。平台 lifecycle/harness/adapter 的独立验证与复审已经取得证据；链路仍为 `PARTIAL`，因为五个真实项目目前只登记聚合 Case v2，尚未覆盖完整项目设计/任务/所有需求与 NFR，且 G9/G10、真实部署、人工验收、微信原生等仍无相应证据。容量基准不再属于“无证据”项，其范围化实测在下节说明。
+
+## CR-V3-002 当前事实优先级
+
+下列事实以已推送提交 `62c153e`、本机 Runtime/独立记录和[后续交付记录](completion-delivery.md)为准；它们不改变顶层模板 Gate，也不将模块质量状态扩大为通用产品验收。
+
+| 范围 | 当前事实 | 仍不能推导的结论 |
+| --- | --- | --- |
+| 全量生命周期报告、项目导出、Case runner | `lifecycle-report` 已从一致分页读取生成全量当前 Case 报告；`project-export` 是拒绝覆盖的只读文档索引；`test-run` 只执行已基线 Case 的版本绑定 argv，并以 path/SHA-256 锁定 `CODE_CHANGE`。实现及本机独立验证已完成。 | 导出不是源码备份、Git archive、Gate 决定或批准包；通用 argv runner 不生成性能/压力/长稳指标。 |
+| SQLite 公开读容量 | `capacity --profile full` 的实际终态为 100 项目、100,000 工件版本、1,000,000 事件，129.7199 秒、294,764,544 bytes、读取错误 0；它是合成批量 SQL 数据上的 `Runtime.lifecycle_collection` / `Runtime.lifecycle_snapshot` 读路径观察。 | 不是 Runtime 写入性能、生产负载、SLO、Gate、发布或客户验收。 |
+| 8 小时 soak | `.rd-platform/benchmark-soak-8h-20260906-1` 当前为 `RUNNING`；同 run checkpoint 可供读取，但尚无 terminal JSON。 | 没有 terminal 结果时，不得声称 8 小时完成或 PASS；即使终态产生，也只覆盖公开读路径。 |
+| Python 逐需求生命周期项目 | 有界的既有 Python 费用 CLI：37/37 CURRENT Case `PASS`、7/7 RTM `COMPLETE`，独立 Reviewer 已登记 G0–G8 `DECIDED/PASS/CURRENT`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。见 [Python 独立评审](python-lifecycle/independent-review.md)。 | G9–G11 仍 `NOT_EVALUATED`；没有 human acceptance、生产部署或发布建议。 |
+| C++、Web、Java、微信四个样例 | 四个样例保留各自实现、独立测试/审查和历史生命周期事实；它们没有像 Python 项目一样完成逐需求 G0–G8 生命周期收口。微信仍只有 Node/fake-`wx`，无 IDE/真机证据。 | 不得将 Python 的 scoped Gate 决定复制为其他四个样例的 Gate PASS、生产自治或原生微信验证。 |
+| GitHub Actions | 对 `62c153e8a14425ce4aa3146519129521ded25af5` 的真实 [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) 于 `2026-09-06T12:01:47Z` 完成 SUCCESS，4/4 jobs SUCCESS；原生 Windows C++ 已实际在线复验。第一、二轮失败和修复历史保留在 [CI 执行记录](ci-execution.md)。 | 这是 workflow 声明阶段的在线结果，不是 G10、生产部署或人工验收；Node/fake-`wx` 不等于微信 IDE、真机或发布。当前未提交 README/installer 改动不在此 CI 证据范围内。 |
+| 宿主、审批和发布 | 当前仍由 Codex 宿主实际派发 Agent；没有无人值守 cloud daemon。认证 approval provider、生产部署/回滚和真实人工验收尚无相应事实。 | 不得用本机任务 `DONE`、模板 validator、CI 或测试报告代替认证审批、部署成功或客户验收。 |

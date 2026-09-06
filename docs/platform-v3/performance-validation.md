@@ -117,8 +117,9 @@ The separate two-second soak evidence at
 `.rd-platform/benchmark-soak-20260906-2/soak-c2bc01fc5d824f2ca7e6cd7cce72dcc1-terminal.json`
 is `PASS` with two samples, no errors, a same-run checkpoint, and a
 696,320-byte DB. It is a short operational smoke, not long-term stability
-evidence. Full capacity (100/100,000/1,000,000) and the authorized 8-hour
-soak remain `NOT_EXECUTED`.
+evidence. At this initial smoke checkpoint, full capacity
+(100/100,000/1,000,000) and the authorized 8-hour soak were `NOT_EXECUTED`;
+the subsequent observations below supersede that checkpoint, not its history.
 
 After checkpoint resource-series support was added, a separate two-second
 smoke soak recorded three trend samples at
@@ -143,5 +144,16 @@ and had no public-read errors. Across one public page and snapshot per seeded
 project, collection p50/p95/p99 were 378.4251/566.6010/663.2870 ms (2.5036
 calls/s); snapshot p50/p95/p99 were 657.9398/952.4863/1267.4792 ms (1.4402
 calls/s). The final RSS was 39,088,128 bytes on the observed 16-CPU Windows
-host. This is observed synthetic SQLite read-capacity evidence only; 8-hour
-soak remains `NOT_EXECUTED`.
+host. This is observed synthetic SQLite read-capacity evidence only.
+
+## Ongoing eight-hour observation
+
+The actual soak `soak-9241634446774e1291126d1cc1c2a53b` started sampling at
+`2026-09-06T10:29:36.394136+00:00`, after the separate capacity preparation.
+Its most recently inspected checkpoint recorded 5,050.074 elapsed seconds
+against the 28,800-second target, with `reads.errors` empty. No same-run
+terminal file exists at this checkpoint: the observation is `RUNNING`, not
+an eight-hour PASS. The running process retains its original source digest
+above; later fixes are not hot-loaded. The same-thread scheduled follow-up
+will inspect this run without restarting it and record its actual terminal
+result, elapsed time, resource series, errors, and read-only scope.

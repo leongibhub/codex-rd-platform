@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "kind": "observed_github_actions_result",
+  "observed_date": "2026-09-06",
+  "repository": "leongibhub/codex-rd-platform",
+  "branch": "codex/platform-v3-lifecycle",
+  "run_id": 34031461586,
+  "source_commit": "62c153e8a14425ce4aa3146519129521ded25af5",
+  "url": "https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 101481628280,
+      "name": "multistack-manifests (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T11:52:38Z"
+    },
+    {
+      "id": 101481628347,
+      "name": "multistack-manifests (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T11:53:22Z"
+    },
+    {
+      "id": 101481628416,
+      "name": "runtime-and-platform (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T12:01:46Z"
+    },
+    {
+      "id": 101481628451,
+      "name": "runtime-and-platform (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T11:56:49Z"
+    }
+  ],
+  "unittest_observations": {
+    "ubuntu": {
+      "runtime": {
+        "total": 200,
+        "skipped": 5,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 181.2
+      },
+      "platform": {
+        "total": 106,
+        "skipped": 2,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 12.093
+      },
+      "independent_v3": {
+        "total": 59,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 66.563
+      },
+      "adapter_blackbox": {
+        "total": 4,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 0.715
+      }
+    },
+    "windows": {
+      "runtime": {
+        "total": 200,
+        "skipped": 1,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 318.056
+      },
+      "platform": {
+        "total": 115,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 69.123
+      },
+      "independent_v3": {
+        "total": 59,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 135.706
+      },
+      "adapter_blackbox": {
+        "total": 4,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 1.474
+      }
+    }
+  },
+  "scope": [
+    "C++ native build/unit/integration on both operating systems",
+    "Python build/unit",
+    "Web Node unit",
+    "Java 8 build/unit/integration",
+    "WeChat Node domain/fake-wx unit/integration",
+    "Runtime/platform/independent contracts"
+  ],
+  "excludes": [
+    "production deployment",
+    "human acceptance",
+    "native WeChat IDE/device/publication",
+    "8-hour soak result",
+    "uncommitted or later source changes"
+  ],
+  "history_preserved": [
+    34029576291,
+    34030786796
+  ]
+}

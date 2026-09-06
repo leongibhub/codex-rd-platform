@@ -12,6 +12,7 @@
 - TASK-V3-008：对既有 Python 应用进行需求级 Self-Test；不重建应用。4 REQ、3 NFR、37 个实际用例与独立评审/阶段推进。
 - TASK-V3-009：双语安装、Skill 提示、续作、运行台、控制、CLI、五栈测试、证据、备份和故障说明。
 - TASK-V3-010：基线 Case → 固定 argv → 真实执行 → 证据登记/缺陷；版本/来源失效和中断不成为 PASS；目录句柄避免 cwd 与结果路径的链接竞争。
+- TASK-V3-011..014：真实 CI 暴露的 JSON 结构预算、Java 8 干净构建、Windows GNU 链接和跨 OS MCP 启动配置缺陷，逐项修复并独立重测、评审；保留失败历史，见 [CI 缺陷闭环](ci-execution.md)。
 
 ## 已观察事实
 
@@ -23,9 +24,9 @@ Python 独立执行已得到 37/37 CURRENT/PASS，7/7 RTM COMPLETE。真实 Revi
 
 ## 当前质量结果
 
-最终本机 Runtime 回归：179 tests，178 PASS、1 平台条件 skip，0 FAIL；独立 V3 回归：46 tests，45 PASS、1 平台条件 skip，0 FAIL。Windows 平台回归 114/114 PASS（包含 9 项真实临时克隆安装测试），163.606 秒；旧任务看板示例回归 19/19 PASS；平台校验器为 `PASS (TEMPLATE MODE)`、实际 runtime health 已执行、`Evaluated Gates: NONE`。CI 在线结果仍待本轮 push 后核验。
+源码提交 `62c153e` 的最新本机 Runtime 回归：200 tests，199 PASS、1 平台条件 skip，0 FAIL，103.594 秒。上一修复提交 `ba17e35` 的 Windows 平台回归 115/115 PASS（包含 9 项真实临时克隆安装测试），105.712 秒；独立 V3 回归 59 tests，58 PASS、1 平台条件 skip，0 FAIL，51.664 秒。第三轮修复另有独立 20/20 专项回归和真实 WSL C++ 三阶段通过。旧任务看板示例回归 19/19 PASS；平台校验器曾实际执行 runtime health，结果为 `PASS (TEMPLATE MODE)`、`Evaluated Gates: NONE`，不是项目 Gate 通过。当前在线结果见 [CI 执行记录](ci-execution.md)。
 
-平台项目 `project-908e903738184820b14264adac92adda` 的六个新任务当前均为 DONE、4/4 质量检查通过。下面是各自的真实独立 review Run；失败 attempt 和修复记录保留在原 Runtime。
+平台项目 `project-908e903738184820b14264adac92adda` 的六个能力任务及四个 CI 修复任务均已经过实际 implementation/unit/integration/review，当前为 DONE；加上五个上轮任务共 15 个 DONE。下面是六个能力任务的真实独立 review Run；四个 CI 修复任务见 [CI 独立审查](ci-fix-review.md)。失败 attempt 和修复记录保留在原 Runtime。
 
 | Task | 当前 attempt | 独立 review PASS Run |
 | --- | ---: | --- |
@@ -36,7 +37,11 @@ Python 独立执行已得到 37/37 CURRENT/PASS，7/7 RTM COMPLETE。真实 Revi
 | TASK-V3-009 | 1 | `run-e8ff4871967445a9bc5c22e158b4136f` |
 | TASK-V3-010 | 1 | `run-b81a6a129e2945eca9cb0791f13dc00e` |
 
-README 的最终测试脚本另通过独立 4/4 复核，临时浅克隆 fixture 不依赖宿主 origin URL 或本地远端分支引用。Git 提交/推送与 GitHub Actions 结论将在实际发生后补入，不把生成 workflow 视作在线执行。任务 DONE 表示上述本机模块质量闭环，不意味着 8 小时观察、云端 CI 或人工验收已完成。
+README 的最终测试脚本另通过独立 4/4 复核，临时浅克隆 fixture 不依赖宿主 origin URL 或本地远端分支引用。任务 DONE 表示上述本机模块质量闭环，不意味着 8 小时观察或人工验收已完成。
+
+已实际提交并推送到 GitHub 的源码：`a55e3ce`（六项能力及双语指南）、`ba17e35`（首次 CI 修复）、`62c153e`（原生 Windows C++ 链接及跨 OS 测试输入修复）。首次和第二次 CI 均出现真实 FAIL，未覆盖或删除；第三次结果以 [CI 执行记录](ci-execution.md) 为准。没有合并 `main`、创建生产 Release 或部署到外部环境。
+
+第三次 [GitHub Actions 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) 已在 `62c153e` 源码上实际全部通过：Windows/Linux Runtime/platform 与 Windows/Linux 五应用声明阶段，4/4 jobs SUCCESS。README 后续执行审查另外发现 single-branch 续作、身份措辞和旧安装器复制问题；Task009 revision 2 / Task015 正在补齐，不能把该 CI 结论沿用到尚未提交的安装器修复。
 
 提交检查未发现数据库、压缩包、`.env`、cache 或常见凭据格式。普通 `git diff --check` 会报告 QA Markdown 的有意双空格换行，以及摘要锁定的独立评审文件末尾空行；保持不可变证据原字节，用仅排除这两种空白规则的检查验证其余格式，未为格式清理修改证据摘要。
 

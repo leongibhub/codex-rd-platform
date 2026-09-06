@@ -27,7 +27,7 @@
 
 ## 真实任务和独立性
 
-CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。以下 5 个任务是上轮基线记录，不是新任务的总计。
+CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。真实 CI 又产生 TASK-V3-011..014 / BUG-CI-001..004，修复、独立角色和在线结果见 [ci-execution.md](ci-execution.md)。当前主项目共 15 个模块任务 DONE，不能据此推导项目验收或 8h PASS。以下 5 个任务是上轮基线记录，不是新任务的总计。
 
 平台项目 `project-908e903738184820b14264adac92adda` 的 5 个任务在最终读取时均为 DONE、当前 4/4 质量检查通过：
 
@@ -49,6 +49,8 @@ CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据�
 - [真实生命周期验证](live-lifecycle-validation.md)：五项目 case v1 历史与 case v2 新 execution ID、environment/execution evidence；当前报告 PASS，但 recommend_release=false。
 - [浏览器验证](browser-validation.md)：实际 Web 用户流和看板行为，不用 Node 冒充浏览器。
 - [Skill 实战](skill-forward-validation.md)：已有应用未被重建，verification-only 路由的实测修正。
+- [逐需求 Python 实战](python-lifecycle/README.md)：既有 Python 工具的 4 REQ/3 NFR、37 个真实 CURRENT/PASS Case、7/7 COMPLETE RTM 和独立 G0–G8 PASS；其他四个应用不继承此完整度，G9–G11 仍未决定。
+- [跨平台 CI 与缺陷闭环](ci-execution.md)：源码提交 `a55e3ce` → `ba17e35` → `62c153e`，实际 Windows/Linux 作业及失败历史，不把本机结果复制为在线证据。
 - [能力状态](capability-status.md)与[发布边界](release-readiness.md)：未执行项、未来 REL、真实部署和人工验收明确保留。
 
 代码变更与以上结果由 Git 提交绑定；Git push 只是源码交付，不创建 REL、不构成 G10/G11 或生产发布。

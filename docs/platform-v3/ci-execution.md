@@ -45,3 +45,18 @@
 当前 Windows 本机完整回归为 Runtime 198 tests（197 PASS、1 skip）、平台 115/115 PASS、独立 V3 59 tests（58 PASS、1 skip）。这些本机结果不代替第三轮 hosted CI。
 
 revision 3 的独立 unit `run-aca565e9486d425b8091808dddcbbec2` 为 20/20 PASS；public C++ CLI integration `run-f57cbdee42a142c8a2f2bd8bf87c14b4` 为 build PASS、unit 5/5、integration 3/3，实际使用 WSL。独立 review `run-f61445255fd3489f9c8c4cb7419c1ea7` PASS，模块登记 DONE；hosted Windows 原生复验仍待第三轮 CI，不以模块状态替代。
+
+## 第三轮：四作业全部通过
+
+实际 [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) 对应源码 `62c153e8a14425ce4aa3146519129521ded25af5`，最终 `completed / success`。观察来自 GitHub Jobs API 和真实 job 日志；归档摘要见 [ci-validation.json](evidence/ci-validation.json)。未提交或后续变更不继承本次通过。
+
+| 作业 | 实际结果 | 观察范围 |
+| --- | --- | --- |
+| Ubuntu multistack `101481628280` | SUCCESS，11:52:38Z 完成 | 五应用 manifest 声明阶段；C++ unit 5、integration 3 |
+| Windows multistack `101481628347` | SUCCESS，11:53:22Z 完成 | 原生 Windows GNU C++ 实际运行成功；五应用声明阶段 |
+| Ubuntu Runtime/platform `101481628451` | SUCCESS，11:56:49Z 完成 | Runtime 200（5 skip）、platform 106（2 skip）、独立 V3 59、adapter blackbox 4；无失败或错误 |
+| Windows Runtime/platform `101481628416` | SUCCESS，12:01:46Z 完成 | Runtime 200（1 skip）、platform 115、独立 V3 59、adapter blackbox 4；无失败或错误 |
+
+以上时间均为 2026-09-06 UTC。BUG-CI-001..004 已有实际修复提交、独立复核及新在线回归，可在本次限定范围关闭；第一、二轮失败完整保留。第三轮原生 Windows C++ 的 `0xC0000139` 不再复现，但不据此声称已经定位某个具体冲突 DLL。
+
+CI 使用真实 Python 3.13、Node 22 和 Temurin JDK 8。Python manifest 仅 build/unit，Web 仅 Node unit，微信是 Node domain/fake-wx unit/integration；它们不构成缺失集成阶段、真实浏览器、微信 IDE/真机、生产部署或人工验收的通过证据。不同 OS 的测试集及 skip 条件不同，不把矩阵测试计数相加为唯一业务 Case 总数。

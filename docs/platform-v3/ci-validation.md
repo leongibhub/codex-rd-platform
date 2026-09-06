@@ -37,4 +37,16 @@ repository, symlink, or command trust checks.
 | AC-CI-002 | Workflow runs runtime/platform contracts and each of the five manifest adapters without treating unavailable/not-executed states as PASS. | `tests/platform/test_ci_contract.py` |
 | AC-CI-003 | C++ verification uses Windows WSL argv only on Windows and native `g++` argv on Linux. | `tests/platform/test_ci_contract.py` and Linux command execution |
 
-Local verification establishes implementation behavior only. GitHub-hosted execution, branch protection, Gate status, release readiness, and acceptance remain `NOT_EXECUTED`/unresolved until separately observed.
+Local verification establishes implementation behavior only. Hosted execution
+must be observed separately from branch protection, Gates, release, and acceptance.
+
+## Observed hosted execution
+
+The actual [third run, 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586)
+finished SUCCESS for source `62c153e8a14425ce4aa3146519129521ded25af5`:
+all four Windows/Linux jobs passed, including native Windows C++ execution.
+The [execution and defect record](ci-execution.md) preserves the first two failed
+runs, independent fix verification, exact job IDs, phase limits, and test counts.
+This establishes hosted validation of that commit only. Branch protection,
+human acceptance, production deployment, and later code changes are not
+established by this result.

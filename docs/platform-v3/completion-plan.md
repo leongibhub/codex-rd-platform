@@ -16,6 +16,7 @@
 | TASK-V3-012 | 修复 Java 8 干净构建缺陷 | 全新工作区从无 classes 目录完成 build/unit/integration，不依赖缓存，不降低 JDK 基线 |
 | TASK-V3-013 | 修复原生 Windows GNU 环境与工具探测 | 匹配编译器的运行 DLL 可解析；native C++ 和 Linux JAVA_HOME 探测准确；新在线矩阵实际执行 |
 | TASK-V3-014 | 可迁移的 MCP 启动配置与 CI bootstrap | 两 OS 用 checkout 内真实 `.venv` 与 native 命令路径重写；不放宽命令来源/目录安全限制 |
+| TASK-V3-015 | BUG-INSTALL-001：修复 README 独立审查发现的安装器递归复制风险 | 只交付已提交代码；不复制本机状态、缓存和秘密；拒绝源/子目录/链接或非空目标；不覆盖或删除已有目标；真实隔离 Git 安装及独立复核 |
 
 ## 实施约束
 
@@ -26,3 +27,5 @@
 ## 状态与证据
 
 任务的真实开始、交接和结果记录于本机 Runtime；本轮最初的环境调查与已开始的容量/README准备属于补登记，不冒称登记早于执行。完整测试与独立评审后更新 traceability、交付记录并提交到已授权 origin 的 codex/platform-v3-lifecycle 分支。
+
+README 的执行级独立审查另外复现 BUG-DOC-001（single-branch clone 续作失败）和 BUG-DOC-002（tester ID 描述超出认证能力），TASK-V3-009 通过 public modify 进入 revision 2，重新执行质量链。安装器 P1 独立进入 TASK-V3-015；不以删除风险提示或沿用旧文档 PASS 关闭新发现。

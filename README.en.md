@@ -8,7 +8,7 @@ It is not a model-calling cloud service, a continuously running background daemo
 
 ## Current scope and version
 
-- V3 uses GitHub branch `codex/platform-v3-lifecycle`; this continuation started from `2d77904`. See the [completion delivery record](docs/platform-v3/completion-delivery.md) for delivered commits and observed CI results. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
+- V3 uses GitHub branch `codex/platform-v3-lifecycle`; this continuation started from `2d77904`, and the current pushed commit is `62c153e8a14425ce4aa3146519129521ded25af5`. See the [completion delivery record](docs/platform-v3/completion-delivery.md) for delivered commits and observed CI results. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
 - V2 provides project/task management, four quality Run phases (implementation, unit, integration, review), a board, and controlled local command execution. V3 adds versioned artifacts, traceability, test models/Cases/Executions, work leases, Gate assessment, release/rollback facts, paginated reads, and a five-stack Harness.
 - Local source-validation, independent-test, and review records exist, but they are engineering-scope evidence, not formal product acceptance or a production release. See the scoped [traceability index](docs/platform-v3/traceability.md), [final local-validation JSON](docs/platform-v3/evidence/final-local-validation.json), and [capability status](docs/platform-v3/capability-status.md).
 - Top-level `platform-manifest.json` remains `lifecycle_mode: template`. A template validation pass, `DONE` task, Harness `PASS`, or Case-report `PASS` is not any G0–G11 `PASS`, human acceptance, or release recommendation.
@@ -36,25 +36,55 @@ For a first GitHub checkout, explicitly choose the feature branch:
 ```powershell
 git clone --branch codex/platform-v3-lifecycle --single-branch https://github.com/leongibhub/codex-rd-platform.git
 Set-Location codex-rd-platform
-git rev-parse --short HEAD       # 2d77904 when this guide was checked
+git rev-parse --short HEAD       # record the actual output; see the completion delivery record for verified source commits and matching CI
 git status --short
 ```
 
-For an existing clone:
+For an existing clone, first add this branch to `origin`'s fetch refspec. In Windows PowerShell:
 
 ```powershell
-git fetch origin codex/platform-v3-lifecycle
-git switch --track origin/codex/platform-v3-lifecycle
+git remote set-branches --add origin codex/platform-v3-lifecycle
+git fetch origin
+git show-ref --verify --quiet refs/heads/codex/platform-v3-lifecycle
+if ($LASTEXITCODE -eq 0) {
+  git switch codex/platform-v3-lifecycle
+  git merge --ff-only origin/codex/platform-v3-lifecycle
+} else {
+  git switch --track -c codex/platform-v3-lifecycle origin/codex/platform-v3-lifecycle
+}
 git status --short
 ```
 
-Until a merge happens, do not treat `main` as the V3 baseline described here. Work in your own branch/worktree, inspect Git status and recent history first, and preserve other collaborators’ uncommitted changes.
+In a Linux/macOS POSIX shell, use the same Git logic:
+
+```bash
+git remote set-branches --add origin codex/platform-v3-lifecycle
+git fetch origin
+if git show-ref --verify --quiet refs/heads/codex/platform-v3-lifecycle; then
+  git switch codex/platform-v3-lifecycle
+  git merge --ff-only origin/codex/platform-v3-lifecycle
+else
+  git switch --track -c codex/platform-v3-lifecycle origin/codex/platform-v3-lifecycle
+fi
+git status --short
+```
+
+Until a merge happens, do not treat `main` as the V3 baseline described here. The existing-branch path permits only a fast-forward; if `merge --ff-only` fails because of local commits or changes, preserve and review work before resolving it—never force-switch over it. Work in your own branch/worktree, inspect Git status and recent history first, and preserve other collaborators’ uncommitted changes.
 
 ## Install and verify
 
 ### Windows (provided one-step path)
 
-Prerequisites: Git, PowerShell, Python 3.11+, and configured repository `git user.name` / `git user.email`.
+Prerequisites: Git, PowerShell, Python 3.11+, and configured repository `git user.name` / `git user.email`. If this clone is not configured, set an approved identity **in this repository only**; do not alter global configuration or copy a real identity into documentation:
+
+```powershell
+git config --local user.name "YOUR_APPROVED_DISPLAY_NAME"
+git config --local user.email "your-approved-address@example.invalid"
+git config --local --get user.name
+git config --local --get user.email
+```
+
+Replace the placeholders with your approved, auditable identity. These values are written only to this clone’s `.git/config`; they do not modify system or global Git configuration.
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -66,7 +96,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 `setup.ps1` creates or reuses `.venv`, installs constrained dependencies from `tools/mcp/company-context/requirements.txt`, runs `pip check`, creates `knowledge\local`, writes current-worktree MCP absolute paths, and runs platform validation. It does not upgrade pip or persist user environment variables by default. Use `-SkipDependencyInstall` only with a prepared environment; only `-PersistLocalRoot` persists `COMPANY_LOCAL_ROOTS`.
 
-To copy the platform to another **empty** directory, run `./install-to-D.ps1` from the source repository. Its default target is `D:\codex-rd-platform`; it rejects non-empty destinations, whereas `-Force` merges/overwrites files. The operator must confirm the exact target and must not choose the source directory or a descendant.
+Do not use `install-to-D.ps1` to copy this repository at present. It recursively copies the source directory, and the current implementation can carry `.git`, `.venv`, `.rd-platform`, worktrees/caches, `knowledge\local`, and a possible `.env`; `-Force` can also mix residual content. Until it is replaced by a reviewed allowlist delivery mechanism, it is not a safe installation entry point. Use the `git clone --branch ... --single-branch` procedure above for a clean worktree, then run `setup.ps1`. For an offline delivery, a release manager must build a package from an approved, tracked-file allowlist—not recursively copy a day-to-day working copy.
 
 ### Linux (verifiable manual venv path)
 
@@ -148,7 +178,7 @@ For a versioned functional/general automated Case, invoke the public CLI below; 
 & .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db PATH test-run --project-id ID --case-id TC-ID --case-version N --executor-id REAL_TESTER --timeout 60
 ```
 
-`test-run` reads argv only from the exact Case version’s `automation.argv`, launches under a real tester identity, and rechecks the project, Case version, Test Model, requirements, and locked code references. The Case must be `BASELINED` or `APPROVED`; a suitable automation definition is:
+`test-run` reads argv only from the exact Case version’s `automation.argv` and launches under an `executor-id` declared by the trusted host and registered as a tester. That ID is only a Runtime role check: it is not identity authentication and does not impersonate another OS user. Independence still requires real host assignment and evidence. The runner rechecks the project, Case version, Test Model, requirements, and locked code references. The Case must be `BASELINED` or `APPROVED`; a suitable automation definition is:
 
 ```json
 {
@@ -260,7 +290,7 @@ To onboard an existing repository:
 | Complete report, read-only project export, Case-bound runner | Implemented with local verification records. The report is not truncated at its first page; export refuses overwrite and excludes source/secrets; `test-run` executes only baselined version-bound argv, while an ordinary command outcome is not a Gate. See [export guide](docs/platform-v3/project-export.md) and [test-run validation](docs/platform-v3/test-run-validation.md). |
 | SQLite read capacity | Synthetic `capacity --profile full` was observed: 100 projects, 100,000 artifact versions, 1,000,000 events; terminal JSON PASS in 129.7199 s at 294,764,544 bytes with no public-read errors. This measures only local SQLite `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` reads, not production throughput, write performance, SLO, Gate, or release. See [performance validation](docs/platform-v3/performance-validation.md). |
 | Eight-hour soak | Started in `.rd-platform/benchmark-soak-8h-20260906-1`; the current run has a checkpoint but no terminal JSON, so there is no completion/PASS conclusion. The host’s 30-minute heartbeat is completion/failure notification only, not a benchmark result. |
-| GitHub Actions CI | The first real Windows/Linux run exposed four compatibility issues; fixes and independent retesting are underway. Use the commit-specific [CI execution record](docs/platform-v3/ci-execution.md) for the current hosted result, not the workflow file or local tests alone. |
+| GitHub Actions CI | The real [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) for `62c153e8a14425ce4aa3146519129521ded25af5` completed SUCCESS at `2026-09-06T12:01:47Z`, with 4/4 jobs SUCCESS, including native Windows C++ revalidation. First- and second-run failures and their remediation history remain in the [CI execution record](docs/platform-v3/ci-execution.md). This covers only workflow-declared phases; Node/fake-`wx` is not WeChat IDE, device, or publication validation. Current uncommitted README/installer changes are not part of this CI evidence. |
 | Python requirement-by-requirement lifecycle closure | The scoped existing Python-expenses CLI project completed 37/37 current-Case PASS, 7/7 `COMPLETE` RTM, and G0–G8 `DECIDED PASS CURRENT`. This is not G9 human acceptance, production deployment, or release recommendation. G9–G11 remain `NOT_EVALUATED`; finalization is `G0_G8_COMPLETE_G9_PENDING`. |
 
 Capacity/soak use their specialized benchmark and a fresh isolated output directory. Do not target a project state database or reuse existing output:
