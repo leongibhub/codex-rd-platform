@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RD Platform · 本地运行台</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <header class="masthead">
+      <div><p class="eyebrow">RD PLATFORM / LOCAL CONTROL PLANE</p><h1>运行台</h1></div>
+      <div class="connection"><span class="lamp" aria-hidden="true"></span><span>本地 SQLite · 宿主模型未自动连接</span></div>
+    </header>
+    <main>
+      <section class="runway" aria-labelledby="overview-title">
+        <div><p class="eyebrow">实时快照</p><h2 id="overview-title">从任务事实开始</h2></div>
+        <div id="counters" class="counters" aria-live="polite"></div>
+        <div><button id="refresh" class="quiet" type="button">刷新快照</button><p id="refresh-status" class="refresh-status">每 3 秒在可见页面自动刷新。</p></div>
+      </section>
+
+      <details class="operations"><summary>创建与控制</summary><section class="composer" aria-label="创建控制项">
+        <form id="project-form"><h2>新建项目</h2><label>项目名称<input name="name" required maxlength="160"></label><label>初始想法<textarea name="idea" required maxlength="4000"></textarea></label><button>创建项目</button></form>
+        <form id="agent-form"><h2>登记 Agent</h2><label>Agent ID<input name="id" required maxlength="120"></label><label>角色<select name="role"><option>requirement_analyst</option><option>developer</option><option>tester</option><option>reviewer</option></select></label><button>登记 Agent</button></form>
+        <form id="task-form"><h2>新建任务</h2><label>项目<select name="project_id" id="task-project" required></select></label><label>标题<input name="title" required maxlength="200"></label><label>为什么做<textarea name="why" required maxlength="2000"></textarea></label><label>责任角色<select name="role"><option>developer</option><option>tester</option><option>reviewer</option><option>requirement_analyst</option></select></label><label>需求（每行一条）<textarea name="requirements"></textarea></label><label>依赖任务 ID（每行一条）<textarea name="dependencies"></textarea></label><label>输入 JSON（可为空）<textarea name="inputs" placeholder="{}">{}</textarea></label><button>创建任务</button></form>
+      </section>
+
+      <section class="control-strip" aria-label="任务控制">
+        <form id="control-form"><h2>任务控制</h2><label>任务<select name="task_id" id="control-task" required></select></label><label>操作<select name="action"><option>pause</option><option>resume</option><option>retry</option><option>reject</option><option>reassign</option><option>modify</option><option>skip</option></select></label><label>原因<input name="reason" required maxlength="1000"></label><label>重新分配 Agent（仅 reassign）<input name="agent_id" maxlength="120"></label><label>修改标题（仅 modify）<input name="title" maxlength="200"></label><label>修改原因（仅 modify）<input name="why" maxlength="2000"></label><button>执行控制</button></form>
+      </section></details>
+
+      <p id="notice" class="notice" role="status" aria-live="polite">正在读取本地运行事实…</p>
+      <section class="board" aria-label="任务看板">
+        <div class="board-head"><h2>项目与任务</h2><span>项目运行状态与任务当前质量阶段来自当前快照</span></div>
+        <div id="projects" class="projects"></div>
+      </section>
+      <section class="agent-panel" aria-labelledby="agent-title"><div><p class="eyebrow">职责与心跳</p><h2 id="agent-title">Agent 状态</h2></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>角色</th><th>状态</th><th>当前任务</th><th>心跳</th></tr></thead><tbody id="agents"></tbody></table></div><p class="table-note">无心跳记为“未报告”；最后心跳超过 5 分钟标记为“可能失联”，不代表远程进程已被终止。</p></section>
+      <section class="event-panel" aria-labelledby="event-title"><div><p class="eyebrow">事实时间线</p><h2 id="event-title">事件与交接</h2></div><ol id="events" class="events"></ol></section>
+    </main>
+    <template id="empty-template"><p class="empty">尚无运行记录。先创建项目，再登记职责明确的 Agent 和任务。</p></template>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

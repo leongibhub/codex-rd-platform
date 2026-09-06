@@ -40,7 +40,9 @@ Never invent:
 - deployment success
 - defect closure
 
-If evidence is missing, mark PENDING / NOT AVAILABLE / NOT EXECUTED / BLOCKED.
+Use only these Evidence Status values: PENDING / NOT_AVAILABLE / NOT_EXECUTED /
+INFERRED / OBSERVED / VERIFIED. Do not use BLOCKED for evidence; it is reserved
+for permitted Gate or verification-result domains.
 
 Before every Gate, perform an artifact completeness and consistency check.
 Before closure, generate the archive index and completeness report.

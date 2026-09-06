@@ -29,7 +29,8 @@
     "release",
     "requirement-analysis",
     "context-discovery",
-    "implementation"
+    "implementation",
+    "platform-orchestration"
   ],
   "gates": [
     "G0",

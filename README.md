@@ -5,7 +5,7 @@ A repository-first multi-agent software/product development operating system for
 ## What this package contains
 
 - 9 specialized Codex agents
-- 13 repository Skills
+- 14 repository Skills
 - lifecycle Gates G0–G11
 - full project documentation set from initiation to closure
 - requirement traceability matrix (RTM)
@@ -18,6 +18,18 @@ A repository-first multi-agent software/product development operating system for
   - GitLab project/issues
 - Windows PowerShell setup
 - platform validator
+
+## V2 local runtime
+
+The repository now includes a local task/agent/event runtime and a Chinese dashboard, in addition to the original SDLC templates. From the repository root:
+
+```powershell
+& .\.venv\Scripts\python.exe -m rd_platform serve
+```
+
+Open `http://127.0.0.1:8020`. Runtime records live in the ignored `.rd-platform/` directory. No cloud service or new dependency is required for this runtime. See [V2 operation guide](docs/platform-v2/README.md) for CLI, quality checks, backup/recovery, tests and limitations.
+
+This is a **trusted local operator / host-assisted runtime**, not an autonomous model server or a multi-user security boundary. The browser cannot execute arbitrary commands or submit verification results. Use the `platform-orchestration` Skill with real host agents to connect actual work to the board. The existing template-mode Gate rules still apply; module DONE is not release or human acceptance.
 
 ## Important evidence rule
 
@@ -47,7 +59,7 @@ Default target:
 D:\codex-rd-platform
 ```
 
-If the target already exists, the installer stops to avoid destructive overwrite.
+If the target is nonempty, the installer stops by default. `-Force` explicitly permits merge/overwrite and currently copies broad source contents; prefer working in a clean clone and running setup there. Do not target the source directory or its descendants.
 
 Then:
 
