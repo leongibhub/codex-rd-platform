@@ -60,6 +60,19 @@ jobs:
           "$VENV_PYTHON" -m unittest discover -s tests/platform -v 2>&1 | tee .rd-platform/ci/platform.txt
           "$VENV_PYTHON" -m unittest discover -s tests/independent_v3 -v 2>&1 | tee .rd-platform/ci/independent-v3.txt
           "$VENV_PYTHON" -m unittest discover -s tests/independent_multistack -p test_v3_adapter_blackbox.py -v 2>&1 | tee .rd-platform/ci/adapter-blackbox.txt
+      - name: Verify actual native Linux setup and repeat installation
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          GIT_CONFIG_COUNT: '2'
+          GIT_CONFIG_KEY_0: user.name
+          GIT_CONFIG_VALUE_0: Platform Installation Test Fixture
+          GIT_CONFIG_KEY_1: user.email
+          GIT_CONFIG_VALUE_1: installation-fixture@example.invalid
+        run: |
+          set -o pipefail
+          bash scripts/setup.sh --python-command python --skip-dependency-install 2>&1 | tee .rd-platform/ci/linux-setup-first.txt
+          bash scripts/setup.sh --python-command python --skip-dependency-install 2>&1 | tee .rd-platform/ci/linux-setup-repeat.txt
       - name: Upload validation evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
