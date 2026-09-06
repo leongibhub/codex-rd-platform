@@ -13,7 +13,7 @@ from .lifecycle_work import WorkCommands
 class LifecycleService(TestingCommands, TestModelCommands, GovernanceCommands, WorkCommands, LifecycleBase):
     COMMANDS = frozenset(('lifecycle.initialize lifecycle.control artifact.create artifact.revise '
         'evidence.register trace.link trace.invalidate test_model.create test_model.revise test_model.adopt test_case.create test_case.revise '
-        'test_execution.start test_execution.finish defect.classify defect.fix defect.resolve defect.close '
+        'test_execution.start test_execution.finish test_execution.abort defect.classify defect.fix defect.resolve defect.close '
         'gate.assess gate.decide release.create release.ready release.record_deployment release.rollback '
         'work.create work.claim work.heartbeat work.finish work.control work.reap').split())
 

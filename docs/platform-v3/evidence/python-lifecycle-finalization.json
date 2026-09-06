@@ -1,0 +1,114 @@
+{
+  "scope": "Existing Python expense CLI, local synthetic-data requirement-level lifecycle verification; not human acceptance or production release",
+  "project_id": "project-337a2843b20e407981e60c2a28c605e4",
+  "finalization": "G0_G8_COMPLETE_G9_PENDING",
+  "counts": {
+    "PASS": 37,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "NOT_EXECUTED": 0
+  },
+  "traceability": [
+    {
+      "requirement_id": "REQ-MATRIX-PY-01",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    },
+    {
+      "requirement_id": "REQ-MATRIX-PY-02",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    },
+    {
+      "requirement_id": "REQ-MATRIX-PY-03",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    },
+    {
+      "requirement_id": "REQ-MATRIX-PY-04",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    },
+    {
+      "requirement_id": "NFR-MATRIX-PY-001",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    },
+    {
+      "requirement_id": "NFR-MATRIX-PY-002",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    },
+    {
+      "requirement_id": "NFR-MATRIX-PY-003",
+      "version": 1,
+      "status": "COMPLETE",
+      "missing": []
+    }
+  ],
+  "gates": [
+    {
+      "gate_id": "G0",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G1",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G2",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G3",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G4",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G5",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G6",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G7",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G8",
+      "status": "PASS"
+    },
+    {
+      "gate_id": "G9",
+      "status": null
+    },
+    {
+      "gate_id": "G10",
+      "status": null
+    },
+    {
+      "gate_id": "G11",
+      "status": null
+    }
+  ],
+  "reviewer": "/root/v3_python_gate_review",
+  "review_evidence_ids": [
+    "EVD-PLC-INDEPENDENT-REVIEW-001"
+  ],
+  "human_acceptance": "PENDING",
+  "recommend_release": false,
+  "source": "Local finalization.json produced by the actual independent reviewer; supporting review: ../python-lifecycle/independent-review.md",
+  "source_baseline": "2d779049dc31cc785e3e7065a4dac0924c225799",
+  "harness_sha256": "74e7e8e45eff52ec959dbb5924da39501bb1f717fe76f7067a7c290934753f8a"
+}

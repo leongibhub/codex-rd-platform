@@ -1,0 +1,17 @@
+{
+  "kind": "EXISTING_SOURCE_BASELINE",
+  "original_task_id": "TASK-V3-003",
+  "git_commit": "6665bc5a5c4c441b523f9249dd860b7695daec72",
+  "working_tree_blob": "a355686929a2128263d705e381e76d3be00c11f4",
+  "source_hashes": {
+    "examples/multistack/python_expenses/expense_analyzer.py": "e5b1fd29183b182d3288feba8168d7babb5112972d67493291f8d1694151193f",
+    "examples/multistack/python_expenses/manifest.json": "34456a238a3e9ba1cfe495d4b3f2c7b958f597c6956afa94be58629e0c12fe90",
+    "examples/multistack/python_expenses/tests/test_expense_analyzer.py": "53016b1113237a79e928f2b92308a577856c6b4e8719d94e4b2d61ac76f5249d",
+    "examples/multistack/python_expenses/__pycache__/expense_analyzer.cpython-313.pyc": "7e4f6d031764d0e10e774cabf488fffb3577a9c63245509f0e49aa078dca8811",
+    "examples/multistack/python_expenses/tests/__pycache__/test_expense_analyzer.cpython-313.pyc": "ccbb49dfad612f2c5a0ec3ce0a395e95158631dc6110c5119acccd49ec466536"
+  },
+  "observed_at": "2026-09-06T10:27:12.796981+00:00",
+  "current_author_is_original_developer": false,
+  "new_application_code": false,
+  "origin": "Current Git record and existing source, not reconstructed historic approvals"
+}

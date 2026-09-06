@@ -126,6 +126,18 @@ class TestingCommands:
         self.event(c,p,'test_execution.finished',row['id'],{'result':result})
         return row
 
+    def test_execution_abort(self,c,d):
+        """End an unadmittable current run without claiming a stale PASS/FAIL."""
+        row=self.get(c,'test_executions',d.get('execution_id'))
+        self.agent(c,d.get('executor_id'),{'tester'})
+        if row['executor_id']!=d['executor_id']: raise ValueError('only original executor may abort')
+        if row['status']!='ACTIVE': raise ValueError('only active execution may abort')
+        reason=self.text(d.get('reason'),'reason')
+        row.update(status='FINISHED',result='BLOCKED',actual_result=reason,evidence_refs=[],metrics={},finished_at=self.now())
+        self.put(c,'test_executions',row)
+        self.event(c,row['project_id'],'test_execution.aborted',row['id'],{'reason':reason})
+        return row
+
     def defect_classify(self,c,d):
         bug=self.get(c,'defects',d.get('defect_id'))
         if bug['status']!='OPEN': raise ValueError('only open defect may be classified')

@@ -20,12 +20,14 @@
 | REQ-V3-009 | TASK-V3-001/004 | `lifecycle_work.py`, `lifecycle_base.py`, `lifecycle_models.py` | pause/lease/idempotency/rollback tests；独立 TC-V3-IND-301/304/502 | pause 不杀外部进程；回滚不重写历史 |
 | REQ-V3-010 | TASK-V3-002/003/004 | `stack_harness.py`；`examples/multistack/`；Skill | 五应用单测+独立黑盒+review；Skill-forward 9 current PASS 及 GREEN | 微信仅 Node domain/fake-wx，原生 NOT_AVAILABLE |
 | NFR-V3-001 | TASK-V3-001/004 | `store.py`, `lifecycle_store.py` | 原平台 98、旧样例 19、V2兼容 Runtime 回归 | 新表保留，未执行破坏性回退 |
-| NFR-V3-002 | TASK-V3-001/004 | `lifecycle_store.py`, `lifecycle_query.py` | 501 records 分页无重无漏，limit/cursor 边界 | 100项目/10万工件/100万事件容量基准 NOT_EXECUTED |
+| NFR-V3-002 | TASK-V3-001/004/005 | `lifecycle_store.py`, `lifecycle_query.py`, `scripts/benchmark_lifecycle.py` | 501 records 分页；实际 100项目/10万版本/100万事件，129.7199秒/294764544字节/0读取错误；独立预算/中断测试 | 合成只读容量已测；8小时读路径 soak RUNNING，非完整系统稳定性 |
 | NFR-V3-003 | TASK-V3-001 | `runtime.py`, `lifecycle_work.py` | 事务/幂等、租约过期与响应丢失旋转 tests | 非长时故障稳定性基准 |
 | NFR-V3-004 | TASK-V3-001/002/004 | `web.py`, `stack_harness.py`, `lifecycle_base.py` | 路径/secret/argv/HTTP tests；独立 TC-V3-IND-201..212/305/308 | Windows symlink fixture NOT_EXECUTED；Harness不是恶意代码沙箱 |
 | NFR-V3-005 | TASK-V3-001/004 | `lifecycle_governance.py`, `lifecycle_models.py`, `lifecycle_query.py` | 不可变版本/证据/历史FAIL/旧模型adopt；独立 runtime review | Git 与 Runtime 是相互链接的记录；禁止以日志充当人工签名 |
 
 ## 真实任务和独立性
+
+CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。以下 5 个任务是上轮基线记录，不是新任务的总计。
 
 平台项目 `project-908e903738184820b14264adac92adda` 的 5 个任务在最终读取时均为 DONE、当前 4/4 质量检查通过：
 

@@ -51,6 +51,15 @@ def build_parser() -> argparse.ArgumentParser:
     lifecycle_collection.add_argument("--limit", type=int, default=200)
     lifecycle_report = commands.add_parser("lifecycle-report", help="生成当前版本正式测试报告；不改变Gate")
     lifecycle_report.add_argument("--project-id", required=True)
+    project_export = commands.add_parser("project-export", help="导出独立活动项目文档；拒绝覆盖")
+    project_export.add_argument("--project-id", required=True)
+    project_export.add_argument("--output-dir", type=Path, required=True)
+    test_run = commands.add_parser("test-run", help="执行已基线化Case中的argv并登记V3真实结果")
+    test_run.add_argument("--project-id", required=True)
+    test_run.add_argument("--case-id", required=True)
+    test_run.add_argument("--case-version", required=True, type=int)
+    test_run.add_argument("--executor-id", required=True)
+    test_run.add_argument("--timeout", type=float, default=60)
     commands.add_parser("stack-probe", help="只读探测本机技术栈工具")
     for operation, description in (("stack-run", "执行可信本地应用manifest的构建/测试"),
                                    ("stack-package", "生成带摘要的本地应用交付包")):
@@ -138,8 +147,16 @@ def main(argv: list[str] | None = None) -> int:
         elif args.operation == "lifecycle-collection":
             result = runtime.lifecycle_collection(args.project_id, args.collection, limit=args.limit, after_cursor=args.after_cursor)
         elif args.operation == "lifecycle-report":
-            from .lifecycle_reporting import lifecycle_report
-            result = lifecycle_report(runtime.lifecycle_snapshot(args.project_id, limit=500))
+            from .lifecycle_reporting import lifecycle_report_from_runtime
+            result = lifecycle_report_from_runtime(runtime, args.project_id)
+        elif args.operation == "project-export":
+            from .lifecycle_export import export_project
+            result = export_project(runtime, args.project_id, args.output_dir)
+        elif args.operation == "test-run":
+            from .lifecycle_runner import run_case
+            result = run_case(runtime, project_id=args.project_id, case_id=args.case_id,
+                case_version=args.case_version, executor_id=args.executor_id, timeout=args.timeout)
+            exit_code = 0 if result['execution']['result'] == 'PASS' else 1
         elif args.operation == "discover":
             from .discovery import discover
             result = discover(args.idea)

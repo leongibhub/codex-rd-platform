@@ -1,0 +1,57 @@
+{
+  "source_terminal_sha256": "bc88515f34d61fe7ef2b48b19dba0ade626233dd53b5021a8ed37fd2abff19d3",
+  "provenance": "Actual developer full-capacity run, independently checked against terminal SHA256 and SQLite row counts; not a repeat execution by the checker.",
+  "observation": {
+    "schema_version": "lifecycle-capacity-v1",
+    "run_id": "perf-29cadeac913240c4a8a2868c36a9788e",
+    "mode": "capacity",
+    "profile": {
+      "name": "full",
+      "projects": 100,
+      "artifact_versions": 100000,
+      "events": 1000000,
+      "samples": 100
+    },
+    "seed_mode": "synthetic_batch_sql",
+    "started_at": "2026-09-06T10:13:24.751902+00:00",
+    "environment": {
+      "python": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "sqlite": "3.49.1",
+      "available_cpu_count": 16,
+      "rss_bytes": 27451392
+    },
+    "status": "PASS",
+    "exit_code": 0,
+    "seeded": {
+      "projects": 100,
+      "artifact_versions": 100000,
+      "events": 1000000
+    },
+    "reads": {
+      "collection": {
+        "count": 100,
+        "p50_ms": 378.4251,
+        "p95_ms": 566.601,
+        "p99_ms": 663.287,
+        "throughput_per_second": 2.5035893522414954
+      },
+      "snapshot": {
+        "count": 100,
+        "p50_ms": 657.9398,
+        "p95_ms": 952.4863,
+        "p99_ms": 1267.4792,
+        "throughput_per_second": 1.4402330822524114
+      },
+      "errors": []
+    },
+    "finished_at": "2026-09-06T10:15:34.466790+00:00",
+    "elapsed_seconds": 129.71990860020742,
+    "cpu_seconds": 124.4375,
+    "database_bytes": 294764544,
+    "rss_bytes": 39088128,
+    "disk_budget_bytes": 1610612736,
+    "time_budget_seconds": 600,
+    "terminal_json": "D:\\codex-rd-platform\\.rd-platform\\benchmark-full-20260906-1\\perf-29cadeac913240c4a8a2868c36a9788e-terminal.json"
+  }
+}

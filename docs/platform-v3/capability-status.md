@@ -1,5 +1,7 @@
 # V3 能力状态矩阵
 
+此表保留上轮观察快照。CR-V3-002 的完整报告/导出、证据新鲜度、Case runner、容量、长稳和 Python 需求级流程更新见 [后续交付记录](completion-delivery.md)。
+
 - 文档状态：`DRAFT`；观察快照：`2026-09-06T17:46:40+08:00`
 - 事实输入：当前未提交 V3 源码、Runtime `snapshot`/`stack-probe`、五个 manifest、应用记录及独立报告。
 - 口径：**源代码**是当前工作区观察（`OBSERVED`）；**实际执行**只列有命令/Runtime 运行记录的结果。`NOT_EXECUTED`、`NOT_AVAILABLE` 不等于失败，更不等于通过。此页不是 RTM，不改由主协调者维护的中央 RTM。

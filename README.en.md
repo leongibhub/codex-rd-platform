@@ -1,0 +1,295 @@
+# Codex R&D Platform
+
+> [中文](README.md) · English
+
+This is a local R&D control plane for **Codex host-assisted collaboration**. It stores projects, tasks, quality checks, versioned lifecycle artifacts, test executions, defects, Gate-assessment candidates, and multi-stack validation in SQLite; source and documented facts remain in the Git worktree.
+
+It is not a model-calling cloud service, a continuously running background daemon, a multi-tenant system, or a production-release platform. Codex (or another trusted host) actually dispatches Agents and runs/cancels external processes; the Runtime only validates, records, and displays work that has happened. Start with the [V3 operating guide](docs/platform-v3/README.md) and [V3 delivery record](docs/platform-v3/delivery-record.md).
+
+## Current scope and version
+
+- V3 uses GitHub branch `codex/platform-v3-lifecycle`; this continuation started from `2d77904`. See the [completion delivery record](docs/platform-v3/completion-delivery.md) for delivered commits and observed CI results. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
+- V2 provides project/task management, four quality Run phases (implementation, unit, integration, review), a board, and controlled local command execution. V3 adds versioned artifacts, traceability, test models/Cases/Executions, work leases, Gate assessment, release/rollback facts, paginated reads, and a five-stack Harness.
+- Local source-validation, independent-test, and review records exist, but they are engineering-scope evidence, not formal product acceptance or a production release. See the scoped [traceability index](docs/platform-v3/traceability.md), [final local-validation JSON](docs/platform-v3/evidence/final-local-validation.json), and [capability status](docs/platform-v3/capability-status.md).
+- Top-level `platform-manifest.json` remains `lifecycle_mode: template`. A template validation pass, `DONE` task, Harness `PASS`, or Case-report `PASS` is not any G0–G11 `PASS`, human acceptance, or release recommendation.
+
+## Architecture and responsibilities
+
+```text
+Git worktree ──source, docs, manifests, review changes──> Git / GitHub
+     │
+Codex / trusted host ──actual dispatch, commands, cancellation──> Agent / terminal / browser
+     │                                                               │
+     └──controlled Runtime commands, run evidence, lifecycle facts───┘
+                              │
+                       SQLite (.rd-platform/state.db)
+                              │
+               loopback board 127.0.0.1 (observation and limited V2 control)
+```
+
+Developers implement, testers test independently, reviewers review independently, and release managers retain real release evidence. An Agent name on the board is not a started model; `ACTIVE` is not evidence of a still-running background process.
+
+## Get the correct source
+
+For a first GitHub checkout, explicitly choose the feature branch:
+
+```powershell
+git clone --branch codex/platform-v3-lifecycle --single-branch https://github.com/leongibhub/codex-rd-platform.git
+Set-Location codex-rd-platform
+git rev-parse --short HEAD       # 2d77904 when this guide was checked
+git status --short
+```
+
+For an existing clone:
+
+```powershell
+git fetch origin codex/platform-v3-lifecycle
+git switch --track origin/codex/platform-v3-lifecycle
+git status --short
+```
+
+Until a merge happens, do not treat `main` as the V3 baseline described here. Work in your own branch/worktree, inspect Git status and recent history first, and preserve other collaborators’ uncommitted changes.
+
+## Install and verify
+
+### Windows (provided one-step path)
+
+Prerequisites: Git, PowerShell, Python 3.11+, and configured repository `git user.name` / `git user.email`.
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\setup.ps1
+& .\.venv\Scripts\python.exe -m pip check
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --help
+& .\.venv\Scripts\python.exe -X utf8 scripts\validate_platform.py
+```
+
+`setup.ps1` creates or reuses `.venv`, installs constrained dependencies from `tools/mcp/company-context/requirements.txt`, runs `pip check`, creates `knowledge\local`, writes current-worktree MCP absolute paths, and runs platform validation. It does not upgrade pip or persist user environment variables by default. Use `-SkipDependencyInstall` only with a prepared environment; only `-PersistLocalRoot` persists `COMPANY_LOCAL_ROOTS`.
+
+To copy the platform to another **empty** directory, run `./install-to-D.ps1` from the source repository. Its default target is `D:\codex-rd-platform`; it rejects non-empty destinations, whereas `-Force` merges/overwrites files. The operator must confirm the exact target and must not choose the source directory or a descendant.
+
+### Linux (verifiable manual venv path)
+
+The repository currently has **no equivalent Linux setup script and no verified Linux MCP-config generator**. `scripts/write_local_config.py` writes a Windows `.venv\Scripts\python.exe` path. These steps install Runtime/CLI/Harness dependencies only; they do not claim that MCP is configured:
+
+```bash
+python3 --version                     # must be 3.11 or newer
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r tools/mcp/company-context/requirements.txt
+python -m pip check
+python -X utf8 -m rd_platform --help
+python -X utf8 -m rd_platform stack-probe
+```
+
+To use `company_context` MCP on Linux, a local administrator must first review and create a launcher supported by that Codex client, keeping interpreter, `server.py`, and `cwd` inside this repository, then run a separate MCP health check. Do not reuse Windows `.codex/config.toml` or call the unshipped Linux configuration verified.
+
+## Start or continue in Codex
+
+Open the repository in Codex and read rules/current facts before development.
+
+Short prompt for a new project:
+
+> Use `platform-orchestration` to start a local project for “<business goal>”. Read `AGENTS.md`, current Git state, and the Runtime snapshot first; make the requirements and acceptance boundary explicit; record real host-Agent work on the board, and ask me only about material business choices.
+
+Short prompt for continuation:
+
+> Use `platform-orchestration` to continue “<goal>” in `<repository or directory>`. Read source, Git, Runtime `lifecycle`/`report`, and project documents first; do not rebuild completed work, and advance from missing evidence and unmet Gate prerequisites.
+
+The Skill is a work-method constraint, not a service launcher. It requires the host to snapshot first, use actual developer/tester/reviewer roles, and link actual results. Codex-host delegation differs from the Runtime, which does not dispatch unattended cloud Agents.
+
+You can start with a no-model requirements-discovery draft:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform discover "Build an internal test-management system"
+```
+
+`discover` results are marked `baseline_no_model`; `freeze` only makes DRAFT SRS/RTM from confirmed answers. Neither replaces stakeholder discovery, review, or human approval.
+
+## Runtime, board, and CLI
+
+The default database is `.rd-platform/state.db` in the current directory. Start the local board:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform serve
+# Open http://127.0.0.1:8020/
+```
+
+The board listens only on `127.0.0.1` and reads persisted projects, tasks, Agents, Runs, events, and V3 lifecycle summaries. The V3 view actually shows project state, current Gate, number of decided Gates (explicitly “not all passed”), artifact count, trace gaps, open defects, and paginated detail. Auto-refresh pauses while evidence is expanded, so the detail is not collapsed; refresh manually when needed. Use CLI cursors for complete rather than page-limited data.
+
+The browser is not an arbitrary-command, Run-finish, human-approval, Gate-decision, release, or deployment interface. Trusted CLI/host actions remain required after real evidence exists.
+
+Useful read-only commands; replace `PROJECT_ID` with a real ID and never invent a cursor:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform snapshot
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform snapshot --project-id PROJECT_ID
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform lifecycle --project-id PROJECT_ID --limit 200
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform lifecycle-collection --project-id PROJECT_ID artifacts --limit 200
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform lifecycle-report --project-id PROJECT_ID
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform project-export --project-id PROJECT_ID --output-dir NEW_DIRECTORY
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform report --project-id PROJECT_ID
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-probe
+```
+
+`report` is the V2 `MODULE_QUALITY` report. `lifecycle-report` captures **all** versioned lifecycle collections through a consistent, paginated Runtime read and then reports current-version declared Test Cases; its totals are not the first 500-row page. The two reports have different scope/denominator. `lifecycle-report` changes no Gate; `complete_snapshot=true` or all Cases passing alone is insufficient to recommend release. Gate, traceability, defect and release-evidence criteria must also be satisfied.
+
+### Complete reports, project export, and version-bound automated Cases
+
+`project-export` makes a read-only document-index package for an active project. `NEW_DIRECTORY` must have an existing trusted parent while the destination itself is new; the command rejects overwrite, links/traversal, and existing output. It stores indexes for artifacts/versions/traces/Gates/evidence, formal JSON/Markdown test reports, collection counts, and a project-record fingerprint from one consistent read. `export-manifest.json` must be `COMPLETE`, with each listed SHA-256, before it is a finished projection. It modifies neither source database nor Gates and deliberately excludes source files, inline artifact bodies, raw command output, and secrets. It is a **document projection, not an executable backup, Git archive, or approval package**.
+
+For a versioned functional/general automated Case, invoke the public CLI below; the command line cannot supply or override the test command:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db PATH test-run --project-id ID --case-id TC-ID --case-version N --executor-id REAL_TESTER --timeout 60
+```
+
+`test-run` reads argv only from the exact Case version’s `automation.argv`, launches under a real tester identity, and rechecks the project, Case version, Test Model, requirements, and locked code references. The Case must be `BASELINED` or `APPROVED`; a suitable automation definition is:
+
+```json
+{
+  "automation": {
+    "status": "AUTOMATED",
+    "method": "argv",
+    "tool": "python",
+    "entrypoint": "tests/assertions.py",
+    "argv": ["{python}", "tests/assertions.py"],
+    "cwd": ".",
+    "subject_refs": [{"type": "CODE_CHANGE", "id": "CODE-xxx", "version": 1}]
+  }
+}
+```
+
+Every `CODE_CHANGE` must be a `BASELINED`/`APPROVED` repository-file artifact fixed by `path` and SHA-256; inline content is not a substitute. The runner supports only declared `{python}`/`{root}` placeholders, repository-relative `cwd`, and argv; it is not an arbitrary-code sandbox. This generic runner rejects `PERFORMANCE`, `STRESS`, and `STABILITY` Cases: use a specialized metrics adapter that records measured values, never exit code zero as invented NFR metrics.
+
+Trusted CLI can record a real V2 quality Run. First create a real task, register real roles, and let the developer complete implementation; tester/reviewer self-validation is prohibited:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform run --task-id TASK_ID --agent-id TESTER_ID --phase unit --cwd . --timeout 60 -- .\.venv\Scripts\python.exe -m unittest tests.runtime.test_stack_harness -v
+```
+
+`run` executes the argv after `--` without a shell and records start, exit code, output summary, timeout, and finish status. Exit code zero only means the command succeeded; it cannot establish enough testing, Gate passage, or product acceptance.
+
+### Pause, resume, and host-process boundary
+
+- Runtime `pause` invalidates active Runs and stops later Runtime scheduling. It does **not** terminate a process already launched by Codex, terminal, WSL, browser, or a remote system.
+- Cancel external work through the real host/terminal, then record the actual result. Never equate “paused” with “process terminated”.
+- `resume` only restores a resumable pause; a FAILED task must retry. `modify` creates a revision and expires downstream results; `reject`/`skip` are never PASS.
+- Closing the board stops only the foreground HTTP process, not other writers or external Agents.
+
+Use an isolated database for rehearsal:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db .rd-platform\trial.db snapshot
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db .rd-platform\trial.db serve --port 8021
+```
+
+## Five application types: build and test
+
+Harness accepts only argv in controlled `manifest.json` files and writes build artifacts under `.rd-platform/build/<id>`. It is a trusted-local execution adapter, not a sandbox for unknown or malicious code.
+
+```powershell
+# C++: Python drives WSL Ubuntu g++; native Windows C++ is not the verified path.
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-run examples\multistack\cpp_inventory\manifest.json --phase build --phase unit --phase integration
+
+# Python: manifest declares build/unit only; undeclared integration is NOT_EXECUTED.
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-run examples\multistack\python_expenses\manifest.json
+
+# Web: Node unit test; observe real browser flow independently.
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-run examples\multistack\web_notes\manifest.json --phase unit
+Push-Location examples\multistack\web_notes; python -m http.server 8080 --bind 127.0.0.1; Pop-Location
+
+# Java: requires available javac/java; existing evidence used JDK 8.
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-run examples\multistack\java_booking\manifest.json --phase build --phase unit --phase integration
+
+# WeChat: Node domain module and fake-wx page adapter only, not native mini-program execution.
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-run examples\multistack\wechat_expenses\manifest.json --phase unit --phase integration
+```
+
+`stack-probe` checks local tools. Missing tools are `NOT_AVAILABLE`; undeclared phases are `NOT_EXECUTED`; neither is PASS. Current evidence uses WSL for C++, contains one real-browser Web user flow, and still lacks WeChat Developer Tools, device, real `wx` storage, and publication evidence. See [Harness](docs/platform-v3/stack-harness.md), [browser validation](docs/platform-v3/browser-validation.md), and [live lifecycle validation](docs/platform-v3/live-lifecycle-validation.md).
+
+To create local delivery archives (not a release):
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-package examples\multistack\cpp_inventory\manifest.json
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-package examples\multistack\python_expenses\manifest.json
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-package examples\multistack\web_notes\manifest.json
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-package examples\multistack\java_booking\manifest.json
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-package examples\multistack\wechat_expenses\manifest.json
+```
+
+Record ZIP/source/file SHA-256, Git SHA, command, environment, and operator. A successful archive is not a `REL-*`, successful deployment, or customer sign-off.
+
+## MCP, secrets, and existing-repository onboarding
+
+On Windows, `setup.ps1` rewrites `company_context` absolute paths in `.codex/config.toml`, forwarding only these **variable names**:
+
+```text
+COMPANY_LOCAL_ROOTS
+REDMINE_BASE_URL, REDMINE_API_KEY, REDMINE_PROJECT
+RAGFLOW_BASE_URL, RAGFLOW_API_KEY, RAGFLOW_DATASET_ID
+GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
+```
+
+`tools/mcp/company-context/.env.example` is only a variable inventory. Keep actual URLs, tokens, cookies, passwords, authorization headers, and private keys in secure OS environment variables or an approved secret manager—never README, example env, task evidence, terminal captures, or Git. Reopen terminal/Codex after configuration and run `scripts/validate_platform.py` for the current-machine health result. MCP reads local documents only under approved `COMPANY_LOCAL_ROOTS`; Redmine/RAGFlow/GitLab availability depends on real network, permission, and service contracts, and must be reported unavailable when not configured.
+
+To onboard an existing repository:
+
+1. Start in an independent branch/worktree; read `AGENTS.md`, requirements/design/test materials, Git state, recent commits, and evidence. Do not bulk-rewrite history.
+2. Use a separate `.rd-platform/<project>.db`; register existing artifacts with path, version, and digest, then incrementally add real REQ/DES/TASK/CODE/TC/BUG/REL links.
+3. Preserve `NOT_AVAILABLE` when historic model source is absent; explicitly adopt a new version and re-run applicable Cases. Never overwrite v1 history with a v2 result.
+4. For verification-only work on existing code, record independent testing in V3 work and `test_execution`; do not fabricate historical V2 implementation PASS to satisfy implementation→unit order.
+5. An `active` Runtime record from `lifecycle.initialize` only initializes that project’s fact model. Formal Gates still need that project’s central Gate Register, complete artifacts, resolvable evidence, and an authorized decision; it does not alter this repository’s top-level template state.
+
+## Reports, backup, recovery, and current state
+
+- `snapshot` is current Runtime state; `lifecycle` is the versioned snapshot; `lifecycle-collection` reads complete collections with cursors; `report` and `lifecycle-report` differ in scope.
+- Evidence Status is only `PENDING`, `NOT_AVAILABLE`, `NOT_EXECUTED`, `INFERRED`, `OBSERVED`, or `VERIFIED`. `BLOCKED` is only for permitted Gate or verification-result domains.
+- A Gate is assessed first and then decided by an authorized person with real, resolvable evidence. Human approval, executed tests, deployment, rollback, customer acceptance, and defect closure cannot be inferred from documentation, fixtures, model output, or exit code zero.
+- The five samples completed legacy-model v2 adoption, Case v2, and independent retest. Their reports remain `recommend_release=false`, and G0/G7 have no formal decision. See [live lifecycle validation](docs/platform-v3/live-lifecycle-validation.md).
+- The Python-expenses per-REQ/NFR local lifecycle project has 37/37 real current-Case PASS results and 7/7 `COMPLETE` RTM rows; after independent review, G0–G8 are `DECIDED PASS CURRENT`. Its finalization state is `G0_G8_COMPLETE_G9_PENDING`; G9–G11 remain `NOT_EVALUATED`, there is no human acceptance, and release is not recommended. See [Python lifecycle validation](docs/platform-v3/python-lifecycle/README.md), [independent review](docs/platform-v3/python-lifecycle/independent-review.md), and [completion delivery record](docs/platform-v3/completion-delivery.md).
+
+### Implemented features and observed evidence
+
+| Item | Current fact and boundary |
+| --- | --- |
+| Complete report, read-only project export, Case-bound runner | Implemented with local verification records. The report is not truncated at its first page; export refuses overwrite and excludes source/secrets; `test-run` executes only baselined version-bound argv, while an ordinary command outcome is not a Gate. See [export guide](docs/platform-v3/project-export.md) and [test-run validation](docs/platform-v3/test-run-validation.md). |
+| SQLite read capacity | Synthetic `capacity --profile full` was observed: 100 projects, 100,000 artifact versions, 1,000,000 events; terminal JSON PASS in 129.7199 s at 294,764,544 bytes with no public-read errors. This measures only local SQLite `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` reads, not production throughput, write performance, SLO, Gate, or release. See [performance validation](docs/platform-v3/performance-validation.md). |
+| Eight-hour soak | Started in `.rd-platform/benchmark-soak-8h-20260906-1`; the current run has a checkpoint but no terminal JSON, so there is no completion/PASS conclusion. The host’s 30-minute heartbeat is completion/failure notification only, not a benchmark result. |
+| GitHub Actions CI | Windows/Linux workflow and local contract checks are implemented. Online GitHub execution requires push and inspection of actual Actions records; until then it is `NOT_EXECUTED`, not CI PASS. See [CI validation contract](docs/platform-v3/ci-validation.md). |
+| Python requirement-by-requirement lifecycle closure | The scoped existing Python-expenses CLI project completed 37/37 current-Case PASS, 7/7 `COMPLETE` RTM, and G0–G8 `DECIDED PASS CURRENT`. This is not G9 human acceptance, production deployment, or release recommendation. G9–G11 remain `NOT_EVALUATED`; finalization is `G0_G8_COMPLETE_G9_PENDING`. |
+
+Capacity/soak use their specialized benchmark and a fresh isolated output directory. Do not target a project state database or reuse existing output:
+
+```powershell
+# Review smoke JSON first and reserve local CPU/disk before the full run.
+& .\.venv\Scripts\python.exe -X utf8 scripts\benchmark_lifecycle.py capacity --output-dir D:\perf\lifecycle-full --profile full
+
+# Start an authorized long read-path observation; terminal JSON is the completion record.
+& .\.venv\Scripts\python.exe -X utf8 scripts\benchmark_lifecycle.py soak --output-dir D:\perf\lifecycle-soak-8h --profile full --duration-seconds 28800 --interval-seconds 1
+```
+
+While running, read `<output-dir>/perf-<run-id>-checkpoint.json` (capacity) or `<output-dir>/soak-<run-id>-checkpoint.json` (soak); on completion read the same-prefix `*-terminal.json`, checking status, budgets, and `seed_mode=synthetic_batch_sql`. Long-run data still covers public reads only, not Runtime write throughput, production user flows, or whole-system stability.
+
+Before backup, stop the board, CLI, and other SQLite writers; preserve a timestamped copy of `.rd-platform/state.db`, and do not commit databases, run output, archives, or credentials. Save code Git SHA, artifact SHA-256, and external evidence locators together; after recovery compare `snapshot`, `lifecycle`, and digests. Recovery does not create test/approval facts. Roll back code with reviewed `git revert` or known-version deployment; V3 adds tables, so returning to V2 code must not delete `lc_` tables. Restore database only from a verified backup; no generic downgrade or automatic DROP-table plan exists. Once work genuinely enters release, a release manager records operator, reason, environment, and evidence using `release.rollback`; a code rollback or zero exit code is not proof of successful production rollback.
+
+| Boundary | Current state | Required before completion can be claimed |
+| --- | --- | --- |
+| Automated cloud Agent / daemon | Not implemented | Service design, authentication, queueing, monitoring, deployment, and observed operation. Today only explicit Codex-host dispatch exists. |
+| Formal G0–G11 / human acceptance | No decision | Active-project central Gate Register, complete BG→PRD→REQ→DES→TASK→CODE→TC→BUG→REL trace, real evidence, and authorized decision. |
+| Approval provider | `NOT_AVAILABLE` | Authenticated provider, real identity/authority, and verifiable human approval; default registration rejects it. |
+| Production deployment, release, rollback | `NOT_EXECUTED` | Authorized environment, `REL-*`, install/rollback instructions, known issues, real operator, and environment evidence. Git push is not a substitute. |
+| WeChat native | `NOT_AVAILABLE` | Developer Tools, authorized project, real import/run/storage validation, and device/publication authority if required. Node fake-wx is not a substitute. |
+| Production/user-flow write performance, cross-browser/cross-OS, complete security matrix | `NOT_EXECUTED` | Their own controlled environment, load/duration/metrics, raw output, and independent review; the synthetic SQLite read benchmark cannot be extrapolated. |
+| One-step Linux MCP install | Not delivered | Cross-platform launcher, config generation, and Linux health evidence. |
+
+Do not expose the loopback board to a network. Harness has path/argv constraints but is not a malicious-code sandbox; run untrusted code in a separate controlled environment. Commands, logs, and evidence must not print secrets.
+
+## Further reading
+
+- [V3 local operation and recovery](docs/platform-v3/README.md)
+- [Capability matrix and known boundaries](docs/platform-v3/capability-status.md)
+- [Release readiness](docs/platform-v3/release-readiness.md)
+- [Independent platform tests](docs/platform-v3/independent-platform-tests.md) and [Runtime review](docs/platform-v3/runtime-review.md)
+- [Five-stack lessons learned](docs/platform-v3/lessons-learned.md)
+- [V2 Runtime guide](docs/platform-v2/README.md)

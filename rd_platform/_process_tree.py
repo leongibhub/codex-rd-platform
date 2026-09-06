@@ -70,11 +70,14 @@ class WindowsJob:
 
 
 class ProcessTree:
-    def __init__(self, argv, cwd):
+    def __init__(self, argv, cwd, *, cwd_guard=None):
         self.job = WindowsJob() if os.name == 'nt' else None
         self.process = None
         try:
             options = {'creationflags': subprocess.CREATE_NO_WINDOW} if self.job else {'start_new_session': True}
+            if cwd_guard is not None:
+                cwd, inherited = cwd_guard.process_directory()
+                if not self.job: options['pass_fds'] = inherited
             # -S also disables global sitecustomize code before containment.
             command = [sys.executable, '-I', '-S', str(Path(__file__).resolve()), '--child'] if self.job else argv
             self.process = subprocess.Popen(command, cwd=cwd, stdin=subprocess.PIPE if self.job else subprocess.DEVNULL,

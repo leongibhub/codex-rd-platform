@@ -58,7 +58,7 @@ class _BoundedRedactor:
 
 
 def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
-                max_output_bytes: int = 65536, explicit_secret_values=()) -> dict:
+                max_output_bytes: int = 65536, explicit_secret_values=(), cwd_guard=None) -> dict:
     """Execute an owned local process tree with bounded in-memory evidence."""
     if not isinstance(argv, list) or not argv or not all(
         isinstance(arg, str) and '\0' not in arg for arg in argv
@@ -70,9 +70,15 @@ def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
         raise ValueError('max_output_bytes must be between 1 and 10000000')
     if isinstance(explicit_secret_values, str) or not isinstance(explicit_secret_values, (list, tuple, set)) or not all(isinstance(value, str) for value in explicit_secret_values):
         raise ValueError('explicit_secret_values must be a collection of strings')
-    workdir = Path(cwd).resolve(strict=True)
-    if not workdir.is_dir():
-        raise ValueError('cwd must be a directory')
+    if cwd_guard is None:
+        workdir = Path(cwd).resolve(strict=True)
+        if not workdir.is_dir():
+            raise ValueError('cwd must be a directory')
+    else:
+        from ._workspace_directory import DirectoryGuard
+        if not isinstance(cwd_guard, DirectoryGuard): raise ValueError('cwd_guard must be a directory guard')
+        cwd_guard.process_directory() # Fail before execution when already closed.
+        workdir = cwd_guard.path
     secrets = _secret_values(argv, explicit_secret_values)
 
     def redact(text):
@@ -112,7 +118,7 @@ def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
             reader_failed.set()
 
     try:
-        tree = ProcessTree(argv, workdir)
+        tree = ProcessTree(argv, workdir, cwd_guard=cwd_guard) if cwd_guard is not None else ProcessTree(argv, workdir)
         reader = threading.Thread(target=drain, daemon=True)
         reader.start()
         while tree.active():
