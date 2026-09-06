@@ -59,9 +59,9 @@ def probe_tools(overrides: dict | None = None) -> dict:
         "node": shutil.which("node"),
         "java": _java_tool("java"),
         "javac": _java_tool("javac"),
-        # C++ is intentionally application-specific (for example WSL), not a
-        # global host-tool promise.
-        "cxx": shutil.which("c++") if os.name != "nt" else None,
+        # Windows applications can use an already-discovered native GNU C++
+        # compiler; otherwise their adapter may explicitly choose WSL.
+        "cxx": shutil.which("c++") if os.name != "nt" else (shutil.which("g++") or shutil.which("g++.exe")),
     }
     if overrides:
         detected.update(overrides)
@@ -71,14 +71,15 @@ def probe_tools(overrides: dict | None = None) -> dict:
 def _java_tool(name: str) -> str | Path | None:
     """Use explicit Java home/PATH before the observed Windows JDK fallback."""
     home = os.environ.get("JAVA_HOME")
+    suffix = ".exe" if os.name == "nt" else ""
     if home:
-        candidate = Path(home) / "bin" / f"{name}.exe"
+        candidate = Path(home) / "bin" / f"{name}{suffix}"
         if candidate.is_file():
             return candidate
     found = shutil.which(name)
     if found:
         return found
-    return Path(rf"C:\Program Files\Java\jdk-1.8\bin\{name}.exe")
+    return Path(rf"C:\Program Files\Java\jdk-1.8\bin\{name}.exe") if os.name == "nt" else None
 
 
 def _inside(candidate: Path, parent: Path, label: str) -> Path:

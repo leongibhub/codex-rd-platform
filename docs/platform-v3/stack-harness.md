@@ -21,9 +21,14 @@ package_app(manifest_path, *, root=None) -> dict
 Tool observations always contain `python`, `node`, `java`, `javac`, and `cxx`.
 Python is the running interpreter; Node is resolved from `PATH`; Java uses the
 local `JAVA_HOME` or `PATH` before the observed `C:\Program Files\Java\jdk-1.8\bin`
-fallback; C++ is only discovered on POSIX because the Windows C++ application
-owns its WSL driver. A phase using an unavailable tool is
+fallback on Windows (a Linux `JAVA_HOME` uses unextended `java`/`javac` names).
+On Windows, `cxx` observes an available native `g++`/`g++.exe`; an adapter may
+still explicitly choose WSL only when that native compiler is absent. A phase using an unavailable tool is
 `NOT_AVAILABLE`; an absent command is `NOT_EXECUTED`, never `PASS`.
+
+`TASK-V3-013` / `BUG-CI-003` aligns this observation with the native C++ adapter
+and adds probe contracts for Windows GNU C++ and Linux `JAVA_HOME`. These are
+tool-availability observations, not evidence that a compiled program executed successfully.
 
 Only `build`, `unit`, and `integration` are executable phases. Manifest argv
 placeholders are `{python}`, `{node}`, `{java}`, `{javac}`, `{cxx}`, `{root}`,

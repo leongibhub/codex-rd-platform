@@ -70,19 +70,23 @@ To copy the platform to another **empty** directory, run `./install-to-D.ps1` fr
 
 ### Linux (verifiable manual venv path)
 
-The repository currently has **no equivalent Linux setup script and no verified Linux MCP-config generator**. `scripts/write_local_config.py` writes a Windows `.venv\Scripts\python.exe` path. These steps install Runtime/CLI/Harness dependencies only; they do not claim that MCP is configured:
+Linux uses the manual installation below; the config generator now supports native `.venv/bin/python`. Use `--copies` to keep the interpreter inside the repository for MCP's resolved-path trust checks; do not bypass them with an interpreter symlink pointing outside the checkout.
 
 ```bash
 python3 --version                     # must be 3.11 or newer
-python3 -m venv .venv
+python3 -m venv --copies .venv
 . .venv/bin/activate
 python -m pip install -r tools/mcp/company-context/requirements.txt
 python -m pip check
+mkdir -p knowledge/local
+export COMPANY_LOCAL_ROOTS="${COMPANY_LOCAL_ROOTS:-$PWD/knowledge/local}"
+python scripts/write_local_config.py "$PWD"
+python -X utf8 scripts/validate_platform.py
 python -X utf8 -m rd_platform --help
 python -X utf8 -m rd_platform stack-probe
 ```
 
-To use `company_context` MCP on Linux, a local administrator must first review and create a launcher supported by that Codex client, keeping interpreter, `server.py`, and `cwd` inside this repository, then run a separate MCP health check. Do not reuse Windows `.codex/config.toml` or call the unshipped Linux configuration verified.
+`validate_platform.py` actually starts MCP and checks its tool list; its observed health result is the evidence for your machine. Do not reuse `.codex/config.toml` from another checkout. Remote MCP services still need real network access and accounts. See the [CI execution record](docs/platform-v3/ci-execution.md) for the exact commits and hosted Linux/Windows results.
 
 ## Start or continue in Codex
 
@@ -256,7 +260,7 @@ To onboard an existing repository:
 | Complete report, read-only project export, Case-bound runner | Implemented with local verification records. The report is not truncated at its first page; export refuses overwrite and excludes source/secrets; `test-run` executes only baselined version-bound argv, while an ordinary command outcome is not a Gate. See [export guide](docs/platform-v3/project-export.md) and [test-run validation](docs/platform-v3/test-run-validation.md). |
 | SQLite read capacity | Synthetic `capacity --profile full` was observed: 100 projects, 100,000 artifact versions, 1,000,000 events; terminal JSON PASS in 129.7199 s at 294,764,544 bytes with no public-read errors. This measures only local SQLite `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` reads, not production throughput, write performance, SLO, Gate, or release. See [performance validation](docs/platform-v3/performance-validation.md). |
 | Eight-hour soak | Started in `.rd-platform/benchmark-soak-8h-20260906-1`; the current run has a checkpoint but no terminal JSON, so there is no completion/PASS conclusion. The host’s 30-minute heartbeat is completion/failure notification only, not a benchmark result. |
-| GitHub Actions CI | Windows/Linux workflow and local contract checks are implemented. Online GitHub execution requires push and inspection of actual Actions records; until then it is `NOT_EXECUTED`, not CI PASS. See [CI validation contract](docs/platform-v3/ci-validation.md). |
+| GitHub Actions CI | The first real Windows/Linux run exposed four compatibility issues; fixes and independent retesting are underway. Use the commit-specific [CI execution record](docs/platform-v3/ci-execution.md) for the current hosted result, not the workflow file or local tests alone. |
 | Python requirement-by-requirement lifecycle closure | The scoped existing Python-expenses CLI project completed 37/37 current-Case PASS, 7/7 `COMPLETE` RTM, and G0–G8 `DECIDED PASS CURRENT`. This is not G9 human acceptance, production deployment, or release recommendation. G9–G11 remain `NOT_EVALUATED`; finalization is `G0_G8_COMPLETE_G9_PENDING`. |
 
 Capacity/soak use their specialized benchmark and a fresh isolated output directory. Do not target a project state database or reuse existing output:

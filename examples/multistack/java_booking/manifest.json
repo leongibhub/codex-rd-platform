@@ -4,7 +4,7 @@
   "stack": "java",
   "requirements": ["REQ-MATRIX-JAVA"],
   "commands": {
-    "build": ["{javac}", "-encoding", "UTF-8", "-d", "{build}/classes", "{app}/src/booking/Booking.java", "{app}/src/booking/BookingException.java", "{app}/src/booking/BookingStore.java", "{app}/src/booking/BookingCli.java", "{app}/src/booking/BookingStoreTest.java", "{app}/src/booking/BookingCliProcessTest.java"],
+    "build": ["{python}", "-B", "{app}/build.py", "--javac", "{javac}", "--build", "{build}"],
     "unit": ["{java}", "-cp", "{build}/classes", "booking.BookingStoreTest", "{build}/unit-data"],
     "integration": ["{java}", "-cp", "{build}/classes", "booking.BookingCliProcessTest", "{build}/integration-data"]
   },

@@ -14,6 +14,7 @@ from pathlib import Path
 
 from mcp import StdioServerParameters
 from scripts.mcp_health_check import _check_stdio_parameters, async_check_company_context, check_company_context
+from scripts.write_local_config import venv_python
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,7 +31,7 @@ class CompanyContextStdioTests(unittest.TestCase):
         server = config["mcp_servers"]["company_context"]
         root = ROOT.resolve()
         self.assertEqual(Path(server["cwd"]), root)
-        self.assertEqual(Path(server["command"]), root / ".venv" / "Scripts" / "python.exe")
+        self.assertEqual(Path(server["command"]), venv_python(root))
         self.assertEqual([Path(arg) for arg in server["args"]], [root / "tools" / "mcp" / "company-context" / "server.py"])
         self.assertIs(server["required"], True)
         self.assertEqual(len(server["env_vars"]), 10)
@@ -203,11 +204,12 @@ class _ConfiguredRoot:
 
     def __enter__(self) -> Path:
         (self.root / ".codex").mkdir()
-        (self.root / ".venv" / "Scripts").mkdir(parents=True)
+        interpreter = venv_python(self.root)
+        interpreter.parent.mkdir(parents=True)
         (self.root / "tools" / "mcp" / "company-context").mkdir(parents=True)
-        (self.root / ".venv" / "Scripts" / "python.exe").touch()
+        interpreter.touch()
         (self.root / "tools" / "mcp" / "company-context" / "server.py").touch()
-        command = self.command if self.command is not None else ".venv/Scripts/python.exe"
+        command = self.command if self.command is not None else interpreter.relative_to(self.root).as_posix()
         args = self.args if self.args is not None else ["tools/mcp/company-context/server.py"]
         cwd = self.cwd if self.cwd is not None else "."
         env_vars = self.env_vars if self.env_vars is not None else sorted(EXPECTED_ENV_NAMES)

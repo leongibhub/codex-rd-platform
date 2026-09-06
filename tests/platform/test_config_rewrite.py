@@ -35,6 +35,7 @@ class ConfigRewriteTests(unittest.TestCase):
             self.assertEqual(config.read_bytes(), original.encode())
 
     def test_multiline_fake_keys_headers_crlf_and_indented_real_header(self):
+        module = self._module()
         for header in ('[mcp_servers.company_context]', '  [mcp_servers.company_context] # launch'):
             original = ('description = """\r\n[mcp_servers.company_context]\r\ncommand = \'fake\'\r\nargs = [\'fake\']\r\ncwd = \'fake\'\r\n"""\r\n'
                         + header + '\r\ndescription = \'\'\'\r\ncommand = "fake-inner"\r\nargs = ["fake-inner"]\r\ncwd = "fake-inner"\r\n[another.fake]\r\n\'\'\'\r\ncommand = "old" # keep\r\nargs = ["old"]\r\ncwd = "old"\r\n  [mcp_servers.other] # preserve\r\ncommand = "other"\r\n')
@@ -46,13 +47,28 @@ class ConfigRewriteTests(unittest.TestCase):
                 rewritten = config.read_bytes().decode()
                 parsed = tomllib.loads(rewritten)
                 target = parsed['mcp_servers']['company_context']
-                self.assertEqual(target['command'], str(root / '.venv' / 'Scripts' / 'python.exe'))
+                self.assertEqual(target['command'], str(module.venv_python(root)))
                 self.assertEqual(target['args'], [str(root / 'tools' / 'mcp' / 'company-context' / 'server.py')])
                 self.assertEqual(target['cwd'], str(root))
                 self.assertEqual(target['description'], tomllib.loads(original)['mcp_servers']['company_context']['description'])
                 self.assertEqual(parsed['description'], tomllib.loads(original)['description'])
                 self.assertEqual(rewritten.split('  [mcp_servers.other]')[1], original.split('  [mcp_servers.other]')[1])
                 self.assertNotIn('\n', rewritten.replace('\r\n', ''))
+
+    def test_native_venv_command_and_postcondition_cover_windows_and_posix(self):
+        module = self._module()
+        original = ('# preserve this comment\n[mcp_servers.company_context]\n'
+                    'command = "old" # command comment\nargs = ["old"]\ncwd = "old"\n')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for platform_name, expected in (("nt", root / ".venv" / "Scripts" / "python.exe"),
+                                            ("posix", root / ".venv" / "bin" / "python")):
+                with self.subTest(platform_name=platform_name):
+                    rewritten = module.rewrite_company_context(original, root, platform_name=platform_name)
+                    target = tomllib.loads(rewritten)["mcp_servers"]["company_context"]
+                    self.assertEqual(str(expected), target["command"])
+                    self.assertIn("# command comment", rewritten)
+                    self.assertTrue(module.venv_python(root, platform_name=platform_name).is_absolute())
 
     def _write_config(self, root: Path, text: str) -> Path:
         config = root / ".codex" / "config.toml"
@@ -67,6 +83,13 @@ class ConfigRewriteTests(unittest.TestCase):
             capture_output=True,
             check=False,
         )
+
+    @staticmethod
+    def _module():
+        spec = importlib.util.spec_from_file_location('tested_config_rewrite', SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
     def test_rewrites_only_company_context_and_preserves_other_mcp_bytes(self) -> None:
         original = (

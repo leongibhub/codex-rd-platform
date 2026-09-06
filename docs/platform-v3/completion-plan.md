@@ -12,6 +12,10 @@
 | TASK-V3-008 | Python 示例的完整需求级生命周期验证 | 逐 REQ/NFR 模型/用例、真实执行；独立审查前不决定 Gate；实际 G0–G8推进与不足分别记录 |
 | TASK-V3-009 | 中英文使用指南 | 从克隆正确分支、安装、Skill 简短提示、应用开发、控制、报告到五栈测试有可执行步骤；两种语言边界一致 |
 | TASK-V3-010 | 自动 V3 测试执行适配器与 CLI 集成 | 锁定版本后实际执行 argv，登记环境、结果、摘要；FAIL 进入现有缺陷流程；安全失败不会成为 PASS |
+| TASK-V3-011 | 修复真实 Ubuntu CI 暴露的 JSON 深度契约差异 | 显式深度/展开大小限制、循环拒绝；不同编码器行为不改变规则，拒绝前不写库 |
+| TASK-V3-012 | 修复 Java 8 干净构建缺陷 | 全新工作区从无 classes 目录完成 build/unit/integration，不依赖缓存，不降低 JDK 基线 |
+| TASK-V3-013 | 修复原生 Windows GNU 环境与工具探测 | 匹配编译器的运行 DLL 可解析；native C++ 和 Linux JAVA_HOME 探测准确；新在线矩阵实际执行 |
+| TASK-V3-014 | 可迁移的 MCP 启动配置与 CI bootstrap | 两 OS 用 checkout 内真实 `.venv` 与 native 命令路径重写；不放宽命令来源/目录安全限制 |
 
 ## 实施约束
 

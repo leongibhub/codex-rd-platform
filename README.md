@@ -70,19 +70,23 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 ### Linux（可验证的手动 venv 路径）
 
-仓库目前**没有 Linux 等价的一键 setup 脚本，也没有已验证的 Linux MCP 配置生成器**；`scripts/write_local_config.py` 会生成 Windows `.venv\Scripts\python.exe` 路径。下面只覆盖 Runtime/CLI/Harness 依赖，不能据此声称 MCP 已配置：
+Linux 使用下面的手动安装流程；配置生成器已支持 native `.venv/bin/python`。使用 `--copies` 将解释器保留在仓库内，满足 MCP 的真实路径来源检查；不要用指向仓库外解释器的软链接绕过检查。
 
 ```bash
 python3 --version                     # 必须为 3.11 或更高
-python3 -m venv .venv
+python3 -m venv --copies .venv
 . .venv/bin/activate
 python -m pip install -r tools/mcp/company-context/requirements.txt
 python -m pip check
+mkdir -p knowledge/local
+export COMPANY_LOCAL_ROOTS="${COMPANY_LOCAL_ROOTS:-$PWD/knowledge/local}"
+python scripts/write_local_config.py "$PWD"
+python -X utf8 scripts/validate_platform.py
 python -X utf8 -m rd_platform --help
 python -X utf8 -m rd_platform stack-probe
 ```
 
-如需 Linux `company_context` MCP，本地管理员必须先审阅并建立客户端支持的 launcher，确保解释器、`server.py` 和 `cwd` 都在仓库内，再单独执行 MCP health check。不要直接套用 Windows `.codex/config.toml`，也不要把尚未交付的 Linux 配置写成已验证。
+`validate_platform.py` 会真实启动 MCP 并检查工具集；只有它报告的健康检查才是本机结果。不要直接复用别的工作区的 `.codex/config.toml`。远程 MCP 服务仍需真实网络与账户；在线 Linux/Windows 验证的具体提交和结果见 [CI 执行记录](docs/platform-v3/ci-execution.md)。
 
 ## 在 Codex 中开始或续作
 
@@ -256,7 +260,7 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 | 全量报告、只读项目导出、Case 绑定 runner | 已实现并有本机验证记录。全量报告不截断首个页面；导出拒绝覆盖且不含源码/秘密；`test-run` 只能运行已基线的版本绑定 argv，普通命令结果不等于 Gate。见 [导出说明](docs/platform-v3/project-export.md) 与 [test-run 验证](docs/platform-v3/test-run-validation.md)。 |
 | SQLite 读取容量 | 已观察到 synthetic `capacity --profile full`：100 projects、100,000 artifact versions、1,000,000 events，终端 JSON 为 PASS，129.7199 s、294,764,544 bytes、无公开读取错误。它只衡量 `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` 的本地 SQLite 读路径，不是生产吞吐、写入性能、SLO、Gate 或发布结论。见 [性能验证](docs/platform-v3/performance-validation.md)。 |
 | 8 小时 soak | 已启动，运行目录为 `.rd-platform/benchmark-soak-8h-20260906-1`；当前只有同一 run 的 checkpoint，没有 terminal JSON，因此没有完成/PASS 结论。宿主的 30 分钟 heartbeat 仅用于完成/失败通知，不替代 benchmark 结果。 |
-| GitHub Actions CI | Windows/Linux workflow 与本机契约检查已实现；GitHub 在线执行仍需 push 后读取实际 Actions 记录，在此之前是 `NOT_EXECUTED`，不等于 CI 通过。见 [CI 验证契约](docs/platform-v3/ci-validation.md)。 |
+| GitHub Actions CI | 首次真实 Windows/Linux 运行暴露了四个兼容性问题，修复及独立重测已开展；当前线上结论以对应提交的 [CI 执行记录](docs/platform-v3/ci-execution.md) 为准，不以 workflow 文件或本机测试冒充在线通过。 |
 | Python 逐需求生命周期收口 | 有界的既有 Python 费用 CLI 项目已完成 37/37 当前 Case PASS、7/7 RTM `COMPLETE` 和 G0–G8 `DECIDED PASS CURRENT`；这不是 G9 人工验收、生产部署或发布建议。G9–G11 保持 `NOT_EVALUATED`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。 |
 
 容量/soak 使用专用基准脚本和隔离的全新输出目录；不要指向项目状态库或复用已有输出：

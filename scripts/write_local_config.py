@@ -11,6 +11,12 @@ def _toml_string(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
+def venv_python(root: Path, *, platform_name: str | None = None) -> Path:
+    """Return the in-repository interpreter path for the selected host OS."""
+    native = os.name if platform_name is None else platform_name
+    return root / ".venv" / ("Scripts" if native == "nt" else "bin") / ("python.exe" if native == "nt" else "python")
+
+
 def _value_end(section: str, start: int) -> int:
     """Return the end of one TOML value without consuming its comment/newline."""
     depth = 0
@@ -113,7 +119,7 @@ def _launch_spans(text: str) -> dict[str, tuple[int, int]]:
     return spans
 
 
-def rewrite_company_context(text: str, root: Path) -> str:
+def rewrite_company_context(text: str, root: Path, *, platform_name: str | None = None) -> str:
     """Rewrite only company_context launch values after validating the TOML input."""
     try:
         parsed = tomllib.loads(text)
@@ -131,7 +137,8 @@ def rewrite_company_context(text: str, root: Path) -> str:
         raise ValueError("company_context cwd must be a string")
 
     spans = _launch_spans(text)
-    command = _toml_string(str(root / ".venv" / "Scripts" / "python.exe"))
+    interpreter = venv_python(root, platform_name=platform_name)
+    command = _toml_string(str(interpreter))
     server = _toml_string(str(root / "tools" / "mcp" / "company-context" / "server.py"))
     cwd = _toml_string(str(root))
     replacements = dict((
@@ -146,7 +153,7 @@ def rewrite_company_context(text: str, root: Path) -> str:
         actual = tomllib.loads(rewritten)
     except tomllib.TOMLDecodeError as error:
         raise ValueError(f"rewritten config is not valid TOML: {error}") from error
-    expected = {'command': str(root / '.venv' / 'Scripts' / 'python.exe'),
+    expected = {'command': str(interpreter),
                 'args': [str(root / 'tools' / 'mcp' / 'company-context' / 'server.py')],
                 'cwd': str(root)}
     target.update(expected)

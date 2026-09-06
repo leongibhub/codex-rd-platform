@@ -3,10 +3,59 @@
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
+
+
+# Explicit data-contract limits, independent of Python encoder/decoder stacks.
+# Root containers have depth 1. Nodes count expanded JSON values, including
+# containers (object keys are not separate value nodes).
+MAX_JSON_DEPTH = 64
+MAX_JSON_NODES = 100_000
+
+
+def _validate_json_structure(value: object) -> None:
+    """Bound expanded traversal while allowing shared, non-circular containers."""
+    active: set[int] = set()
+    # Iterator frames keep memory proportional to depth, not container width.
+    frames = [(iter((value,)), 0, None)]
+    nodes = 0
+    while frames:
+        children, parent_depth, owner = frames[-1]
+        try:
+            item = next(children)
+        except StopIteration:
+            frames.pop()
+            if owner is not None:
+                active.remove(owner)
+            continue
+        nodes += 1
+        if nodes > MAX_JSON_NODES:
+            raise ValueError('JSON expanded node limit exceeded')
+        if isinstance(item, float) and not math.isfinite(item):
+            raise ValueError('non-finite JSON value')
+        if not isinstance(item, (dict, list, tuple)):
+            continue # The standard encoder retains scalar/type validation.
+        depth = parent_depth + 1
+        if depth > MAX_JSON_DEPTH:
+            raise ValueError('JSON container depth exceeds 64')
+        identity = id(item)
+        if identity in active:
+            raise ValueError('circular JSON container reference')
+        if len(item) > MAX_JSON_NODES - nodes:
+            raise ValueError('JSON expanded node limit exceeded')
+        if isinstance(item, dict):
+            for key in item:
+                if isinstance(key, float) and not math.isfinite(key):
+                    raise ValueError('non-finite JSON object key')
+            iterator = iter(item.values())
+        else:
+            iterator = iter(item)
+        active.add(identity)
+        frames.append((iterator, depth, identity))
 
 
 SCHEMA = """
@@ -64,16 +113,22 @@ class Store:
 
     @staticmethod
     def dumps(value: object) -> str:
-        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        _validate_json_structure(value)
+        try:
+            return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        except RecursionError as error:
+            raise ValueError("JSON encoding exceeded host recursion capacity") from error
 
     @staticmethod
     def loads(value: str | None, default: object = None) -> object:
         if value is None:
             return default
         try:
-            return json.loads(value, parse_constant=Store._reject_nonfinite_constant)
+            decoded = json.loads(value, parse_constant=Store._reject_nonfinite_constant)
         except RecursionError as error:
             raise ValueError("JSON nesting is too deep") from error
+        _validate_json_structure(decoded)
+        return decoded
 
     @staticmethod
     def _reject_nonfinite_constant(token: str):
