@@ -33,6 +33,9 @@
         <div><p class="eyebrow">LIFECYCLE / VERSIONED EVIDENCE</p><h2 id="lifecycle-title">生命周期与质量门禁</h2></div>
         <label>查看项目<select id="lifecycle-project"></select></label>
         <p id="lifecycle-status" role="status">尚未读取生命周期。</p>
+        <form id="lifecycle-control-form"><label>生命周期操作<select name="action"><option>pause</option><option>resume</option></select></label><label>原因<input name="reason" required maxlength="1000"></label><button>执行生命周期控制</button></form>
+        <form id="work-control-form"><label>工作单 ID<input name="work_order_id" required></label><label>操作<select name="action"><option>retry</option><option>reject</option><option>skip</option><option>reassign</option></select></label><label>重新分配 Agent<input name="agent_id"></label><label>原因<input name="reason" required maxlength="1000"></label><button>执行工作单控制</button></form>
+        <p class="table-note">仅控制既有任务。后台服务收到失效后终止自己拥有的进程；外部宿主需由其取消工具处理。审批、部署和任意命令不通过本页面执行。</p>
         <div id="lifecycle-summary" class="counters"></div>
         <div class="table-wrap"><table><thead><tr><th>Gate</th><th>评估状态</th><th>结论</th><th>当前评估</th></tr></thead><tbody id="lifecycle-gates"></tbody></table></div>
         <div id="lifecycle-details"></div>

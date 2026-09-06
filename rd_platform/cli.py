@@ -18,6 +18,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--db", type=Path, default=default_db_path(), help="SQLite 状态库路径")
     commands = parser.add_subparsers(dest="operation", required=True)
 
+    bootstrap = commands.add_parser("orchestrate-start", help="由粗略想法创建可恢复的研发工作流，不伪造批准")
+    bootstrap.add_argument("--idea", required=True)
+    bootstrap.add_argument("--name", required=True)
+    bootstrap.add_argument("--repository-root", type=Path, required=True)
+    bootstrap.add_argument("--request-id", required=True)
+    service = commands.add_parser("worker-service", help="运行真实后台工作单执行器")
+    service.add_argument("--config", type=Path, required=True)
+    service.add_argument("--once", action="store_true")
+    deploy = commands.add_parser("deploy-run", help="执行显式部署/健康/回滚清单")
+    deploy.add_argument("--config", type=Path, required=True)
+    deploy.add_argument("--action", choices=("deploy", "rollback"), default="deploy")
+    for operation in ("approval-challenge", "approval-register"):
+        approval = commands.add_parser(operation, help="生成待签挑战或验证外部签名审批")
+        approval.add_argument("--provider-config", type=Path, required=True)
+        approval.add_argument("--request", type=Path, required=True)
+        approval.add_argument("--operator", required=True)
+        approval.add_argument("--challenge", type=Path, required=True)
+        if operation == "approval-register":
+            approval.add_argument("--signature", type=Path, required=True)
+
     serve = commands.add_parser("serve", help="启动本地看板")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8020)
@@ -91,6 +111,14 @@ def _object(value: str, label: str) -> dict[str, Any]:
     return parsed
 
 
+def _config_file(path: Path) -> dict:
+    with path.open('rb') as stream:
+        raw = stream.read(1024 * 1024 + 1)
+    if len(raw) > 1024 * 1024:
+        raise ValueError('configuration exceeds 1 MiB budget')
+    return _object(raw.decode('utf-8-sig'), 'configuration')
+
+
 def main(argv: list[str] | None = None) -> int:
     # Subprocess callers consume this CLI as a JSON interface.  Windows
     # console code pages must not change the bytes of that interface.
@@ -138,7 +166,34 @@ def main(argv: list[str] | None = None) -> int:
         from .runtime import Runtime
         runtime = Runtime(args.db)
         exit_code = 0
-        if args.operation == "command":
+        if args.operation in {"approval-challenge", "approval-register"}:
+            from .approval_provider import SshApprovalProvider, create_approval_challenge, register_signed_approval
+            from .store import Store
+            provider = SshApprovalProvider(_config_file(args.provider_config))
+            runtime = Runtime(args.db, approval_provider=provider)
+            request = _config_file(args.request)
+            if args.operation == "approval-challenge":
+                challenge = create_approval_challenge(runtime, request, operator=args.operator, provider=provider)
+                with args.challenge.open('xb') as output:
+                    output.write(Store.dumps(challenge).encode('utf-8'))
+                result = {'status': 'WAITING_FOR_SIGNATURE', 'challenge': str(args.challenge.resolve()),
+                          'expires_at': challenge['expires_at'], 'approval_recorded': False}
+            else:
+                result = register_signed_approval(runtime, request, operator=args.operator, provider=provider,
+                    response={'challenge': _config_file(args.challenge), 'signature_path': str(args.signature.resolve())})
+        elif args.operation == "orchestrate-start":
+            from .orchestration import start_project
+            result = start_project(runtime, name=args.name, idea=args.idea,
+                repository_root=args.repository_root, request_id=args.request_id)
+        elif args.operation == "worker-service":
+            from .worker_service import run_service
+            result = run_service(runtime, _config_file(args.config), once=args.once)
+            exit_code = 1 if result.get('status') == 'FAIL' else 0
+        elif args.operation == "deploy-run":
+            from .deployment import execute_deployment
+            result = execute_deployment(runtime, _config_file(args.config), action=args.action)
+            exit_code = 0 if result.get('status') in {'PASS', 'TRIAL_SUCCEEDED', 'TRIAL_ROLLED_BACK'} and not result.get('formal_registration_error') else 1
+        elif args.operation == "command":
             result = runtime.execute(args.name, _object(args.data, "data"), request_id=args.request_id)
         elif args.operation == "snapshot":
             result = runtime.snapshot(args.project_id)

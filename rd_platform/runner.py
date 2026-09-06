@@ -58,7 +58,8 @@ class _BoundedRedactor:
 
 
 def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
-                max_output_bytes: int = 65536, explicit_secret_values=(), cwd_guard=None) -> dict:
+                max_output_bytes: int = 65536, explicit_secret_values=(), cwd_guard=None,
+                cancel_event=None) -> dict:
     """Execute an owned local process tree with bounded in-memory evidence."""
     if not isinstance(argv, list) or not argv or not all(
         isinstance(arg, str) and '\0' not in arg for arg in argv
@@ -70,6 +71,8 @@ def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
         raise ValueError('max_output_bytes must be between 1 and 10000000')
     if isinstance(explicit_secret_values, str) or not isinstance(explicit_secret_values, (list, tuple, set)) or not all(isinstance(value, str) for value in explicit_secret_values):
         raise ValueError('explicit_secret_values must be a collection of strings')
+    if cancel_event is not None and not callable(getattr(cancel_event, 'is_set', None)):
+        raise ValueError('cancel_event must provide is_set()')
     if cwd_guard is None:
         workdir = Path(cwd).resolve(strict=True)
         if not workdir.is_dir():
@@ -88,6 +91,7 @@ def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
 
     started = time.monotonic()
     timed_out = False
+    cancelled = False
     launch_error = None
     exit_code = None
     exceeded = threading.Event()
@@ -123,7 +127,8 @@ def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
         reader.start()
         while tree.active():
             timed_out = time.monotonic() - started >= timeout
-            if timed_out or exceeded.is_set() or reader_failed.is_set():
+            cancelled = bool(cancel_event and cancel_event.is_set())
+            if timed_out or cancelled or exceeded.is_set() or reader_failed.is_set():
                 tree.stop()
                 break
             exceeded.wait(min(0.01, max(0.001, timeout - (time.monotonic() - started))))
@@ -157,7 +162,7 @@ def run_command(argv: list[str], cwd: str | Path, *, timeout: float = 60,
         'argv': [redact(arg) for arg in argv], 'cwd': redact(str(workdir)),
         'exit_code': exit_code, 'stdout': evidence.text(),
         'duration_seconds': round(time.monotonic() - started, 6),
-        'timed_out': timed_out, 'output_truncated': truncated,
+        'timed_out': timed_out, 'cancelled': cancelled, 'output_truncated': truncated,
         'launch_error': redact(launch_error) if launch_error else None,
-        'status': 'PASS' if exit_code == 0 and not timed_out and not truncated and not launch_error else 'FAIL',
+        'status': 'PASS' if exit_code == 0 and not timed_out and not cancelled and not truncated and not launch_error else 'FAIL',
     }

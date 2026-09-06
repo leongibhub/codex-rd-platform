@@ -18,7 +18,48 @@ SCRIPT = ROOT / "scripts" / "setup.sh"
 WSL = shutil.which("wsl.exe")
 
 
+def wsl_linux_available(command: str | None, *, runner=subprocess.run) -> bool:
+    """Return whether the Windows WSL client can actually start a Linux shell."""
+    if command is None:
+        return False
+    try:
+        result = runner(
+            [command, "-e", "bash", "-lc", "printf TASK_V3_019_WSL_READY"],
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0 and result.stdout.strip() == "TASK_V3_019_WSL_READY"
+
+
+WSL_LINUX_AVAILABLE = wsl_linux_available(WSL)
+
+
 class LinuxSetupContractTests(unittest.TestCase):
+    def test_wsl_linux_availability_probe_requires_real_shell(self):
+        calls = []
+
+        def available_runner(*args, **kwargs):
+            calls.append((args, kwargs))
+            return subprocess.CompletedProcess(args[0], 0, "TASK_V3_019_WSL_READY", "")
+
+        self.assertFalse(wsl_linux_available(None))
+        self.assertTrue(wsl_linux_available("wsl.exe", runner=available_runner))
+        self.assertEqual(["wsl.exe", "-e", "bash", "-lc", "printf TASK_V3_019_WSL_READY"], calls[0][0][0])
+        self.assertEqual(10, calls[0][1]["timeout"])
+        self.assertFalse(
+            wsl_linux_available(
+                "wsl.exe",
+                runner=lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 0, "", "no distribution"),
+            )
+        )
+        self.assertFalse(
+            wsl_linux_available("wsl.exe", runner=lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 4294967295, "", ""))
+        )
+
     def test_setup_declares_safe_native_contract(self):
         text = SCRIPT.read_text(encoding="utf-8")
         self.assertTrue(os.access(SCRIPT, os.X_OK))
@@ -35,7 +76,7 @@ class LinuxSetupContractTests(unittest.TestCase):
         self.assertNotIn("git config --global", text.lower())
         self.assertNotIn("rm -rf", text.lower())
 
-    @unittest.skipUnless(WSL, "WSL is not available for the Linux integration fixture")
+    @unittest.skipUnless(WSL_LINUX_AVAILABLE, "NOT_AVAILABLE: WSL cannot start a Linux distribution for this fixture")
     def test_wsl_rejects_missing_identity_before_venv_creation(self):
         """Run the real launcher in isolated WSL Git checkouts, not a selector mock."""
         source = ROOT.as_posix().replace("D:", "/mnt/d")
@@ -60,7 +101,7 @@ grep -F "Python version must be 3.11 or newer." "$tmp/version.txt"
         result = subprocess.run([WSL, "-e", "bash", "-lc", command], text=True, capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    @unittest.skipUnless(WSL, "WSL is not available for the Linux validator-failure fixture")
+    @unittest.skipUnless(WSL_LINUX_AVAILABLE, "NOT_AVAILABLE: WSL cannot start a Linux distribution for this fixture")
     def test_wsl_fails_closed_when_health_validator_fails(self):
         """A fixture interpreter isolates dependencies; the launcher still runs real bash control flow."""
         source = ROOT.as_posix().replace("D:", "/mnt/d")
@@ -99,7 +140,7 @@ grep -F "Platform validation failed with exit code 1" "$tmp/result.txt"
         result = subprocess.run([WSL, "-e", "bash", "-lc", command], text=True, capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    @unittest.skipUnless(WSL, "WSL is not available for the Linux venv-boundary fixture")
+    @unittest.skipUnless(WSL_LINUX_AVAILABLE, "NOT_AVAILABLE: WSL cannot start a Linux distribution for this fixture")
     def test_wsl_creates_copied_venv_and_rejects_outside_reused_interpreter(self):
         """A fixture Python proves venv-copy and safe-reuse control flow in actual Linux bash."""
         source = ROOT.as_posix().replace("D:", "/mnt/d")

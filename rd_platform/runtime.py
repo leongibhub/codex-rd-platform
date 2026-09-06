@@ -92,6 +92,24 @@ class Runtime:
         with self.store.transaction() as connection:
             return LifecycleService().human_approval(connection, data, operator=operator, provider=self.approval_provider)
 
+    def human_approval_binding(self, data: dict) -> dict:
+        """Return the current immutable approval scope without recording approval."""
+        from .lifecycle import LifecycleService
+        if not isinstance(data, dict):
+            raise ValueError("approval data must be an object")
+        with self.store.transaction(write=False) as connection:
+            service = LifecycleService()
+            service.safe_json(data)
+            if data.get("kind") != "human_approval" or data.get("status") != "VERIFIED":
+                raise ValueError("verified human approval required")
+            metadata = data.get("metadata", {})
+            if not isinstance(metadata, dict):
+                raise ValueError("approval metadata must be object")
+            service.enum(metadata.get("decision"), {"APPROVE", "REJECT"}, "human decision")
+            service.enum(metadata.get("gate_id"), {"G" + str(index) for index in range(12)}, "human approval gate")
+            service.text(metadata.get("statement"), "explicit operator statement")
+            return service.approval_binding(connection, data.get("project_id"), metadata)
+
     def snapshot(self, project_id: str | None = None) -> dict:
         if project_id is not None:
             self._text(project_id, "project_id")
@@ -109,6 +127,8 @@ class Runtime:
             defects = self._related(connection, "defects", task_ids, self._defect)
             projects = [self._project(row) for row in connection.execute("SELECT * FROM projects" + ("" if project_id is None else " WHERE id = ?") + " ORDER BY created_at, id", (() if project_id is None else (project_id,)))]
             agents = [self._agent(row) for row in connection.execute("SELECT * FROM agents ORDER BY created_at, id")]
+            from .agent_projection import project_agents
+            agents = project_agents(connection, agents, project_id, self._now())
             return {"projects": projects, "agents": agents, "tasks": tasks, "runs": runs, "events": events, "defects": defects}
 
     # Commands

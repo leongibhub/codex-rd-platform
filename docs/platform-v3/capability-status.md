@@ -54,3 +54,17 @@
 | 固定提交高级安装交付 | 根 `install-to-D.ps1` revision 3 固定捕获源 `HEAD^{commit}`、fresh Git init、depth-1 fetch、detached checkout 且无 remote；拒绝 `-Force`、非空/非目录 target、源或其子目录和 reparse point。仅允许精确公开占位 `knowledge/local/README.md` 与指定 blob，其他本地数据不递归复制。独立 evidence 为 unit 12/12、integration 10/10、reviewer 22/22 PASS；提交 `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 的真实隔离安装实际完成 setup、依赖、MCP，得到 `PASS (TEMPLATE MODE)` / Gates NONE。见[独立安装交付审查](install-transfer-review.md)与[真实隔离安装验证](install-real-validation.md)。 | 首选仍是 Git clone + target 本仓 `git config --local` + setup。高级 helper 不转移源 `.git/config`，setup 必须由 target 可见的经批准 Git identity 支持；失败不会覆盖/自动清理 target，新建 target 仅留 `.install-failed` 供诊断。它不是备份、离线发布结论、生产部署、人工验收或 Gate 决定；历史 `c3eb271` 真实失败保留为 BUG-INSTALL-002。 |
 | GitHub Actions | `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 的真实 [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) 于 `2026-09-06T12:32:02Z` 完成 SUCCESS，4/4 jobs SUCCESS；Windows runtime job `101485885964` 于 `12:32:01Z` 完成。`62c153e`、`c3eb271` 的既有成功、第一/二轮失败和修复历史保留在 [CI 执行记录](ci-execution.md)。 | 该证据仅覆盖 `527dae1` 源码 workflow，不包括后续仅文档改动；workflow 成功不覆盖 `c3eb271` 随后保留的真实安装失败，也不是 G10、生产部署或人工验收。Node/fake-`wx` 不等于微信 IDE、真机或发布。 |
 | 宿主、审批和发布 | 当前仍由 Codex 宿主实际派发 Agent；没有无人值守 cloud daemon。认证 approval provider、生产部署/回滚和真实人工验收尚无相应事实。 | 不得用本机任务 `DONE`、模板 validator、CI 或测试报告代替认证审批、部署成功或客户验收。 |
+
+## CR-V3-003 当前事实优先级（追加，不改写历史）
+
+本节覆盖本页早先将执行端表述为“未实现/未交付/默认无 provider”的源码状态，但不覆盖历史执行、Gate 或 release 事实。观察对象是当前未提交工作区；Evidence Status 仍严格使用受控词汇。
+
+| 范围 | 实现 / 文档事实 | 执行与结论边界 |
+| --- | --- | --- |
+| `REQ-V3-016` / worker service | `OBSERVED`：`worker_service.py`、`worker_backends.py`、CLI `worker-service` 和受控配置契约已在当前源码；支持 lease、heartbeat、bounded trusted argv、`--once`、常驻循环和 no-tools Responses proposal transport。 | `OBSERVED`：独立安全 probe 证实 Codex auto-review 可读写 workspace 外无害 sentinel；production Codex backend 已 fail-closed 禁用，DB 路径分离不是隔离。`NOT_EXECUTED`：当前无可发布的常驻 worker 成功、live Responses 或 Responses 安全路径执行证据；宿主无 `OPENAI_API_KEY`。旧 Codex 测试不得外推为新路径 PASS。 |
+| `REQ-V3-017` / authenticated approval | `OBSERVED`：SSH Ed25519 provider、canonical challenge、外部签名验证与 `approval-challenge`/`approval-register` 已在当前源码。 | `NOT_AVAILABLE`：没有本项目受权 operator、真实外部签名、human approval 或 Gate decision。fixture keys/signatures 不是人类审批事实。 |
+| `REQ-V3-018` / deployment executor | `OBSERVED`：显式 argv、source SHA-256、health、rollback/rollback-health、append-only receipt 和 trial/formal 分域已在当前源码。 | `NOT_EXECUTED`：没有授权目标的真实 production deploy/rollback、G10 或 release acceptance。trial receipt 也不是 release 事实。 |
+| `REQ-V3-019` / Linux setup | `OBSERVED`：`scripts/setup.sh`、本仓 venv `--copies`、配置生成和 validator 调用已在当前源码。 | `OBSERVED`：GitHub Actions [Ubuntu job 101496781967](https://github.com/leongibhub/codex-rd-platform/actions/runs/34036999184/job/101496781967) 的实际 native setup 与 repeat-install 步骤均 SUCCESS；其 `setup.sh` blob 与当前文件一致。该证据只覆盖该 Ubuntu job/脚本版本，不推出全局 release、生产部署、人工验收或最终 CR PASS。 |
+| `REQ-V3-020` / integration and delivery | `OBSERVED`：新 CLI 已出现在 `--help`，根 README 已给出中英文受控配置与恢复用法。 | `PENDING`：独立 review 尚未最终结束，不能给模块、CR、Gate 或 release 统一 PASS。此前 217 runtime、1 skip 是中途快照，不是本轮 final verdict。 |
+
+追踪状态为 `PARTIAL`：`CR-V3-003 → DES-V3-003 → REQ-V3-016..020 → TASK-V3-016..020 → 当前工作区变更/测试 → 待完成独立 review → 未来 release`。本仓仍为 template lifecycle mode；本节不是中央 Gate Register，绝不产生 G0–G11 决定。

@@ -20,6 +20,7 @@ MAX_BODY_BYTES = 64 * 1024
 REQUEST_READ_TIMEOUT_SECONDS = 2.0
 HTTP_COMMANDS = frozenset({
     "project.create", "agent.register", "task.create", "task.control", "project.control",
+    "lifecycle.control", "work.control",
 })
 STATIC_ROOT = Path(__file__).with_name("static")
 
@@ -156,6 +157,10 @@ def _handler_type() -> type[BaseHTTPRequestHandler]:
                     return
                 if not isinstance(data, dict) or request_id is not None and not isinstance(request_id, str):
                     raise ValueError("data must be an object and request_id must be a string")
+                if command == 'lifecycle.control' and data.get('action') not in {'pause', 'resume'}:
+                    raise ValueError('HTTP lifecycle control supports pause/resume only')
+                if command == 'work.control' and data.get('action') not in {'retry', 'reject', 'skip', 'reassign', 'modify'}:
+                    raise ValueError('HTTP work control does not execute rollback')
                 result = self.server.runtime.execute(command, data, request_id=request_id)  # type: ignore[attr-defined]
             except (OSError, TimeoutError, RecursionError, UnicodeDecodeError, json.JSONDecodeError, KeyError, ValueError) as exc:
                 self._error(HTTPStatus.REQUEST_TIMEOUT if isinstance(exc, TimeoutError) else HTTPStatus.BAD_REQUEST, str(exc))

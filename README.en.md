@@ -4,7 +4,7 @@
 
 This is a local R&D control plane for **Codex host-assisted collaboration**. It stores projects, tasks, quality checks, versioned lifecycle artifacts, test executions, defects, Gate-assessment candidates, and multi-stack validation in SQLite; source and documented facts remain in the Git worktree.
 
-It is not a model-calling cloud service, a continuously running background daemon, a multi-tenant system, or a production-release platform. Codex (or another trusted host) actually dispatches Agents and runs/cancels external processes; the Runtime only validates, records, and displays work that has happened. Start with the [V3 operating guide](docs/platform-v3/README.md) and [V3 delivery record](docs/platform-v3/delivery-record.md).
+It is not a model-calling cloud service, a multi-tenant system, or a production-release platform. The current source includes a trusted-host resident `worker-service`, an SSH Ed25519 approval adapter, a controlled deployment executor, and a Linux setup script; they expose no anonymous remote-command surface. A confirmed safety probe showed that Codex auto-review can read/write outside its workspace, so the production Codex backend is now fail-closed disabled; separating the control DB and workspace is operational hygiene, **not** isolation. The default proposal path is moving to no-tools HTTPS Responses, where the model has no direct file/command tool and the host alone performs controlled writes and DRAFT registration. Runtime validates, records, and displays facts. The endpoints remain under independent review: there is no real human approval, production deploy/rollback, customer acceptance, successful live-Codex smoke, or live Responses execution conclusion. Start with the [V3 operating guide](docs/platform-v3/README.md) and [V3 delivery record](docs/platform-v3/delivery-record.md).
 
 ## Current scope and version
 
@@ -331,13 +331,13 @@ Before backup, stop the board, CLI, and other SQLite writers; preserve a timesta
 
 | Boundary | Current state | Required before completion can be claimed |
 | --- | --- | --- |
-| Automated cloud Agent / daemon | Not implemented | Service design, authentication, queueing, monitoring, deployment, and observed operation. Today only explicit Codex-host dispatch exists. |
+| Trusted `worker-service` (not a cloud Agent) | `OBSERVED`: current source supplies durable workers, leases/heartbeats/cancellation, controlled `argv`, and no-tools Responses file proposals; the production Codex backend is fail-closed disabled. | Requires protected configuration, real work orders, and an observable host process. There is no successful resident-worker or live Responses execution fact, so autonomous project completion is not claimed. |
 | Formal G0–G11 / human acceptance | No decision | Active-project central Gate Register, complete BG→PRD→REQ→DES→TASK→CODE→TC→BUG→REL trace, real evidence, and authorized decision. |
-| Approval provider | `NOT_AVAILABLE` | Authenticated provider, real identity/authority, and verifiable human approval; default registration rejects it. |
+| SSH approval provider | `OBSERVED`: the optional Ed25519 adapter and challenge/register CLI are in source; an unconfigured default Runtime still refuses approval. | Requires operator-protected signer/trust configuration, an external signature, and actual authority. There is no project human approval or Gate decision. |
 | Production deployment, release, rollback | `NOT_EXECUTED` | Authorized environment, `REL-*`, install/rollback instructions, known issues, real operator, and environment evidence. Git push is not a substitute. |
 | WeChat native | `NOT_AVAILABLE` | Developer Tools, authorized project, real import/run/storage validation, and device/publication authority if required. Node fake-wx is not a substitute. |
 | Production/user-flow write performance, cross-browser/cross-OS, complete security matrix | `NOT_EXECUTED` | Their own controlled environment, load/duration/metrics, raw output, and independent review; the synthetic SQLite read benchmark cannot be extrapolated. |
-| One-step Linux MCP install | Not delivered | Cross-platform launcher, config generation, and Linux health evidence. |
+| One-step Linux MCP install | `OBSERVED`: `scripts/setup.sh` creates/reuses the checkout venv, generates configuration, and invokes the validator; native setup and repeat-install both succeeded in GitHub Actions Ubuntu job `101496781967`. | That job covers only its Ubuntu script version; it cannot be extrapolated to all target Linux hosts, production deployment, release, or acceptance. |
 
 Do not expose the loopback board to a network. Harness has path/argv constraints but is not a malicious-code sandbox; run untrusted code in a separate controlled environment. Commands, logs, and evidence must not print secrets.
 
@@ -349,3 +349,113 @@ Do not expose the loopback board to a network. Harness has path/argv constraints
 - [Independent platform tests](docs/platform-v3/independent-platform-tests.md) and [Runtime review](docs/platform-v3/runtime-review.md)
 - [Five-stack lessons learned](docs/platform-v3/lessons-learned.md)
 - [V2 Runtime guide](docs/platform-v2/README.md)
+
+## CR-V3-003 execution endpoints: controlled use (implemented, pending final review)
+
+This is the current CLI/JSON contract, not a deployment claim. Keep the control plane and workspace in **different directories** for operational hygiene, but do not treat that as isolation for a model running under the same OS identity. Codex auto-review was confirmed able to read/write a harmless sentinel outside the workspace and is now fail-closed disabled in production. Replace every `PROJECT_ID`, operator, path, Git SHA, evidence ID, and hash below with current facts.
+
+### Bootstrap a resumable work list from a rough idea
+
+`orchestrate-start` is idempotent on `--request-id`: repeating the same request in one control DB returns the bootstrap fact rather than creating another G0–G11 work-order chain. It creates only a DRAFT BG, active lifecycle record, and `PLANNED` work; it creates no approval, test result, or Gate PASS.
+
+```powershell
+$controlDb = 'D:\rd-control\state.db'
+$workspace = 'D:\workspaces\inventory-service'
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb orchestrate-start `
+  --name 'Inventory service' --idea 'State the real business goal and known constraints; work items clarify unknowns.' `
+  --repository-root $workspace --request-id 'bootstrap-inventory-20260906-001'
+```
+
+Record the returned `project_id`, then repeat the identical command to exercise retry. Do not copy the control DB into `$workspace\.rd-platform`, but do not mistake separated paths for a guarantee that a model cannot access it.
+
+### Register real roles and run workers
+
+Every `agent_id` in worker configuration must first be registered in the **same control DB**, with an exact role. Supported roles are `requirement_analyst`, `researcher`, `product_manager`, `architect`, `developer`, `tester`, `reviewer`, `documentation_manager`, and `release_manager`; each ID must represent the actual host responsibility.
+
+```powershell
+$roles = 'requirement_analyst','researcher','product_manager','architect','developer','tester','reviewer','documentation_manager','release_manager'
+foreach ($role in $roles) {
+  & .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb command agent.register ("{`"id`":`"host-$role`",`"role`":`"$role`"}") --request-id "register-$role-001"
+}
+```
+
+Store this complete configuration in a protected, non-Git directory such as `D:\rd-control\worker-service.json`. The current safe default is the `responses` proposal backend: an HTTPS Responses request fixes `tools:[]` and `tool_choice:"none"`; the model returns only structured file proposals, and the controlled host checks version-bound context, path/size, and exclusive CAS creation before registering a new artifact as `DRAFT`. Every repository-relative path a worker may create or update, including a new file, must be explicitly listed in that worker's `source_paths`; an empty list cannot publish a proposal. `OPENAI_API_KEY` is currently `NOT_AVAILABLE` on this host, so this is not evidence of a completed live Responses run. `argv` is only for an already-approved trusted-host command; it is not a sandbox for unknown code.
+
+```json
+{"project_id":"PROJECT_ID","repository_root":"D:\\workspaces\\inventory-service","max_concurrency":3,"poll_interval_seconds":0.5,"workers":[
+{"agent_id":"host-requirement_analyst","role":"requirement_analyst","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/requirements.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-researcher","role":"researcher","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/research.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-product_manager","role":"product_manager","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/product.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-architect","role":"architect","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/design.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-developer","role":"developer","lease_seconds":300,"timeout_seconds":1200,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["src/app.py","docs/implementation.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-tester","role":"tester","lease_seconds":300,"timeout_seconds":1200,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["tests/system_test.py","docs/test-report.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-reviewer","role":"reviewer","lease_seconds":300,"timeout_seconds":1200,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/review.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-documentation_manager","role":"documentation_manager","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/closure.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+{"agent_id":"host-release_manager","role":"release_manager","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/release.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}}
+]}
+```
+
+Use one observable dispatch first; its `IDLE`/`DISPATCHED`/`WAITING_USER`/`FAIL` output is not a Gate conclusion:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb worker-service --config D:\rd-control\worker-service.json --once
+```
+
+Omit `--once` for a foreground resident worker. Run it through an approved service manager or controlled terminal and protect secret-free stdout/stderr logs. Production Codex `auto-review` is disabled: no `approval_mode`, `persist_session`, path separation, or extra CLI flag may re-enable it. The Responses proposal path grants the model no file/command tool; only the host writes after CAS, hash/path, and version checks, then creates a DRAFT artifact. On stop, pause, or invalidation, reconcile `lifecycle`/`work.reap` with the real process state; neither OS termination nor `pause` proves cancellation. An expired lease with unknown side effects is retried only when `safe_to_retry: true`.
+
+### External SSH-signature approval
+
+This is an unsigned request, with no private key. The canonical bytes are the UTF-8 `Store.dumps` challenge emitted by the CLI: never reformat, edit, reserialize, or reuse the signature after changing the request.
+
+```json
+{"project_id":"PROJECT_ID","kind":"human_approval","status":"VERIFIED","locator":{"inline_json":{"external_record":"APPROVAL-RECORD-REFERENCE"}},"observed_at":"2026-09-06T12:00:00+00:00","metadata":{"gate_id":"G9","decision":"APPROVE","statement":"Actual authorized decision text.","artifact_refs":[{"type":"REQ","id":"REQ-001","version":1}]}}
+```
+
+Keep `provider.json` protected, with actual project IDs and authorized operators; `allowed_signers` contains public keys only:
+
+```json
+{"provider_id":"corp-approval-ssh-2026","allowed_signers":"D:\\secure\\approval\\allowed_signers","ssh_keygen":"C:\\Windows\\System32\\OpenSSH\\ssh-keygen.exe","authorizations":[{"operator":"approved-operator","projects":["PROJECT_ID"],"gates":["G9","G10","G11"]}],"challenge_ttl_seconds":300,"timeout_seconds":10,"max_output_bytes":4096}
+```
+
+```powershell
+$req='D:\secure\approval\request.json'; $provider='D:\secure\approval\provider.json'; $challenge='D:\secure\approval\challenge.json'
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb approval-challenge --provider-config $provider --request $req --operator approved-operator --challenge $challenge
+# A human signs outside the platform. Do not record private-key material, path, or passphrase.
+ssh-keygen -Y sign -f PATH_TO_PRIVATE_ED25519_KEY -n rd-platform-approval $challenge
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb approval-register --provider-config $provider --request $req --operator approved-operator --challenge $challenge --signature "$challenge.sig"
+```
+
+A challenge only means “waiting for signature”. Registration recomputes current project/Gate/decision/artifact-version/policy binding and rejects expiry, replay, unauthorized scope, a same-named Agent, or drift. Signature authentication also does not decide a Gate or prove customer acceptance.
+
+### Trial deployment, formal deployment, and rollback
+
+`deploy-run` runs only explicit configured argv; it does not derive commands from an environment label, HTTP, or model output. `trial` keeps durable receipts but never writes release/deployment truth. This is the complete trial shape; scripts live under `cwd`, and every `source_hashes` value is SHA-256 computed from the real pre-run file.
+
+```json
+{"project_id":"PROJECT_ID","environment":"isolated-local","mode":"trial","operation_id":"trial-20260906-001","cwd":"D:\\workspaces\\inventory-service\\ops","source_hashes":{"deploy.ps1":"ACTUAL_SHA256","rollback.ps1":"ACTUAL_SHA256","health.ps1":"ACTUAL_SHA256","rollback-health.ps1":"ACTUAL_SHA256"},"deploy":{"argv":["powershell","-NoProfile","-File","deploy.ps1"],"timeout_seconds":300,"output_limit_bytes":65536,"idempotent":true},"health":{"argv":["powershell","-NoProfile","-File","health.ps1"],"timeout_seconds":60,"output_limit_bytes":16384},"rollback":{"argv":["powershell","-NoProfile","-File","rollback.ps1"],"timeout_seconds":300,"output_limit_bytes":65536},"rollback_health":{"argv":["powershell","-NoProfile","-File","rollback-health.ps1"],"timeout_seconds":60,"output_limit_bytes":16384},"receipt_dir":"D:\\workspaces\\inventory-service\\.rd-platform\\deployment-receipts"}
+```
+
+Update hashes with `Get-FileHash`, then execute. The same `operation_id` may read only a completed matching fingerprint; drift or a leftover `STARTED` receipt requires human reconciliation, never blind replay:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb deploy-run --config D:\rd-control\trial-deploy.json --action deploy
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb deploy-run --config D:\rd-control\trial-rollback.json --action rollback
+```
+
+`formal` additionally requires `release_id`, a non-Agent human `operator`, a registered release-manager `executor_id`, current `G10 PASS`, a `READY` release, `environment_ref`, and nonempty `evidence_artifact_refs`. Runtime checks again around the physical action. Trial/exit-0/health success does not satisfy these conditions or prove production success. On health failure, the declared rollback and separate `rollback_health` run; their actual results stay in receipts.
+
+### Native Linux setup
+
+Run inside the target Linux checkout (no sudo, global Git/Python change, or deletion of existing data):
+
+```bash
+git config --local user.name 'YOUR_APPROVED_DISPLAY_NAME'
+git config --local user.email 'your-approved-address@example.invalid'
+./scripts/setup.sh --python-command python3.11
+./scripts/setup.sh --skip-dependency-install  # dependencies already installed; regenerate config and health-check
+.venv/bin/python -X utf8 -m rd_platform --help
+```
+
+The script first verifies Git identity and Python 3.11+, then creates/reuses the checkout `.venv`, runs `pip check`, `write_local_config.py`, and `validate_platform.py`. Only real successful validator output plus `Setup complete.` is installation/health evidence for that machine. Failure retains diagnostics and can be corrected/re-run.
+
+Source, CLI help, and developer/independent test records for the endpoints are observable, but final review is pending; this change publishes no global PASS. The failed live Codex smoke remains read-only history and is not rewritten as success. See the [execution design](docs/platform-v3/completion-execution-design.md), [worker service](docs/platform-v3/worker-service.md), [approval provider](docs/platform-v3/approval-provider.md), [deployment executor](docs/platform-v3/deployment-executor.md), and [Linux setup](docs/platform-v3/linux-setup.md).

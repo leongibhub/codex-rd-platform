@@ -76,3 +76,5 @@ Preflight: tasks 016/017/018 expose independent modules consumed by 020; shared 
 Ruling: user has delegated ordinary design decisions; do not pause for routine design approval. AGENTS.md explicitly asks independent parallel work, so nonoverlapping subsystem implementation may proceed concurrently; shared integration remains serial. No approval or terminal test result is implied by this ruling.
 
 Current status: design and plan recorded; implementations NOT_EXECUTED.
+
+Historical planning status above is retained. Current implementation, failure/retry and test facts are recorded in [completion-execution-delivery.md](completion-execution-delivery.md), [CR-V3-004](CR-V3-004-safe-model-execution.md), and the independent test/review reports. The original Codex-backend plan is superseded by the explicitly documented safe proposal transport decision; unchecked planning boxes are not execution evidence.

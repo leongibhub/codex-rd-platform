@@ -95,3 +95,19 @@ Push-Location examples\multistack\web_notes; python -m http.server 8080 --bind 1
 - 证据和命令输出不得含 token、cookie、password、authorization 或私钥；仅保存脱敏文本、摘要或外部 secret reference。
 - Gate 先 `gate.assess` 后由有权人 `gate.decide`。需要人工批准的 Gate 只能引用真实 `human_approval` 证据；模型、Agent 或文档作者不能代签。
 - 当前默认没有已认证 approval provider，人工批准登记为 `NOT_AVAILABLE`；不能用本机任意 Python 调用、测试 fixture 或普通 host 字符串生成 `VERIFIED` approval。
+
+## CR-V3-003 执行端（当前事实优先级）
+
+当前工作区源码已出现 `orchestrate-start`、`worker-service`、`approval-challenge`、`approval-register` 和 `deploy-run` CLI，以及 Worker、SSH Ed25519 审批、部署和 Linux setup 适配器。这些是受信任宿主的本地执行边界，不是 HTTP/云端 Agent 命令面。已确认 Codex auto-review 能读写 workspace 外无害 sentinel，因此生产 Codex backend 已 fail-closed 禁用；控制 DB 与可写 workspace 分离只是运维措施，不是安全隔离。默认提案路径是 no-tools Responses HTTPS，模型仅返回文件提案，由宿主 CAS 落盘和 DRAFT 登记。
+
+从粗略业务目标建立可恢复工作清单时，使用 `--db` 指向 workspace 外控制库、`--repository-root` 指向既存项目工作区，并用稳定 `--request-id` 重试：
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db D:\rd-control\state.db orchestrate-start --name 'Actual project name' --idea 'Actual business goal and constraints' --repository-root D:\workspaces\actual-project --request-id bootstrap-actual-project-001
+```
+
+该命令只产生 DRAFT BG、active lifecycle 和 `PLANNED` G0–G11 work order；它不是需求批准、测试执行、Gate PASS 或 release。登记 `agent.register` 后，worker 配置必须让 `agent_id` 与 role 精确匹配，可用 role 是九个生命周期职责：`requirement_analyst`、`researcher`、`product_manager`、`architect`、`developer`、`tester`、`reviewer`、`documentation_manager`、`release_manager`。运行 `worker-service --config CONFIG --once` 只做一轮可观察认领；去掉 `--once` 才常驻。过期租约默认不重放，只有配置明确 `safe_to_retry: true` 才允许重试未知副作用。详尽中英文 worker 配置、九角色登记、后台控制、审批、部署和 Linux 命令见根目录 [中文 README](../../README.md#cr-v3-003-执行端受控使用当前实现待最终复审) / [English README](../../README.en.md#cr-v3-003-execution-endpoints-controlled-use-implemented-pending-final-review)。
+
+审批的 canonical bytes 是 CLI 创建的 challenge UTF-8 `Store.dumps` 输出；真实人必须在平台外用 SSH 私钥签名，随后才调用 `approval-register`。challenge 不是批准，签名不是 Gate 决定或客户验收。`deploy-run` 的 `trial` 和 `formal` 是不同域：trial 只保留 receipt；formal 还需要 READY release、当前 G10 PASS、真实非 Agent operator、release-manager executor、environment/evidence 引用，且命令和每个项目本地脚本都必须由配置及 SHA-256 绑定。健康失败后的 rollback/rollback-health 也必须从 receipt 实际验证。
+
+`scripts/setup.sh` 已提供 Linux 本仓 venv、MCP 配置生成与 validator 流程；Task-V3-019 的 venv `--copies` 修复在 GitHub Actions Ubuntu job `101496781967` 已实际完成 native setup 与 repeat-install（均 SUCCESS，且 `setup.sh` blob 与当前文件一致）。该证据只覆盖该 job/脚本版本，不等于所有 Linux、生产部署、release 或验收。当前新模块仍在独立 review；不得把源码出现、CLI help、fixture/开发者测试、历史 Runtime 217/1 skip、旧 Codex 测试，或失败的 live Codex smoke，写成最终 PASS、成功后台运行、人工批准、生产部署/回滚、Responses 安全路径通过或验收。当前宿主无 `OPENAI_API_KEY`，live Responses 是 `NOT_EXECUTED`。详见本轮 [执行端使用指南](completion-execution-guide.md)。

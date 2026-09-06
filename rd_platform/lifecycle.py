@@ -63,8 +63,8 @@ class LifecycleService(TestingCommands, TestModelCommands, GovernanceCommands, W
                     self.put(c,'work_orders',w)
                     self.event(c,p['id'],'work.invalidated',w['id'],{'reason':reason,'external_process_cancelled':False})
         else:
-            if p['state'] != 'PAUSED': raise ValueError('only paused lifecycle may resume')
-            p['state'] = p.pop('resume_state','ACTIVE')
+            if p['state'] not in {'PAUSED', 'WAITING_USER'}: raise ValueError('only paused or waiting-user lifecycle may resume')
+            p['state'] = p.pop('resume_state','ACTIVE') if p['state'] == 'PAUSED' else 'ACTIVE'
         self.put(c,'projects',p); self.event(c,p['id'],'lifecycle.'+action,p['id'],{'reason':reason})
         return p
 

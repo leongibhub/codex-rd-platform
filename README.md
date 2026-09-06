@@ -4,7 +4,7 @@
 
 这是一个供 **Codex 宿主协作** 使用的本地研发控制面：它将项目、任务、质量检查、版本化生命周期工件、测试执行、缺陷、Gate 候选评估和多技术栈验证存入 SQLite；源代码和文档事实仍在 Git 工作区中。
 
-它不是自动调用模型的云服务、持续运行的后台 daemon、多租户系统或生产发布平台。Codex（或另一受信任宿主）实际派发 Agent、运行和取消外部进程；Runtime 只校验、记录和展示已经发生的工作。请先阅读 [V3 运行说明](docs/platform-v3/README.md) 与 [V3 交付记录](docs/platform-v3/delivery-record.md)。
+它不是自动调用模型的云服务、多租户系统或生产发布平台。当前源码包含受信任宿主启动的常驻 `worker-service`、SSH Ed25519 审批适配器、受控部署执行器和 Linux 安装脚本；它们不暴露匿名远程命令接口。已确认的安全 probe 证明 Codex auto-review 可读写 workspace 外路径，因此生产 Codex backend 现已 fail-closed 禁用；控制库与 workspace 分目录只是运维卫生，**不是**隔离边界。默认提案路径正改为 no-tools Responses HTTPS 调用，模型不直接拥有文件/命令工具，宿主才会受控落盘和登记 DRAFT。Runtime 校验、记录和展示事实；新执行端仍在独立复审，尚无真实人类审批、生产部署/回滚、客户验收、成功的 live Codex smoke 或 live Responses 执行结论。请先阅读 [V3 运行说明](docs/platform-v3/README.md) 与 [V3 交付记录](docs/platform-v3/delivery-record.md)。
 
 ## 当前范围与版本
 
@@ -331,13 +331,13 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 
 | 边界 | 当前状态 | 声称完成前必须具备 |
 | --- | --- | --- |
-| 自动云端 Agent / daemon | 未实现 | 服务设计、认证、队列、监控、部署和实际运行证据；当前仅 Codex 宿主显式派发。 |
+| 受信任 worker-service（非云端 Agent） | `OBSERVED`：当前源码提供持久 worker、租约/心跳/取消、受控 `argv` 与 no-tools Responses 文件提案；生产 Codex backend 已 fail-closed 禁用。 | 需要受保护配置、真实工作项和可观察的宿主进程；当前无成功常驻 worker 或 live Responses 执行事实，不能声称自动完成项目。 |
 | 正式 G0–G11 / 人工验收 | 未决定 | active 项目中央 Gate Register、完整 BG→PRD→REQ→DES→TASK→CODE→TC→BUG→REL 追踪、真实证据和有权决定。 |
-| 审批 provider | `NOT_AVAILABLE` | 已认证 provider、真实身份/授权和可验证 human approval；默认拒绝登记。 |
+| SSH 审批 provider | `OBSERVED`：可选 Ed25519 适配器和 challenge/register CLI 已在源码中；无配置的默认 Runtime 仍拒绝。 | 需要操作员保护的 signer/trust 配置、外部签名和真实授权；当前没有本项目人工批准或 Gate 决定。 |
 | 生产部署、发布、回滚 | `NOT_EXECUTED` | 授权环境、`REL-*`、安装/回滚步骤、已知问题、真实操作者和环境证据；Git push 不替代。 |
 | 微信原生 | `NOT_AVAILABLE` | 开发者工具、授权项目、真实导入/运行/存储验证，必要时真机和发布权限；Node fake-wx 不替代。 |
 | 生产/用户流写入性能、跨浏览器/跨 OS、完整安全矩阵 | `NOT_EXECUTED` | 各自的受控环境、负载/时长/指标、原始输出和独立复核；不可用 synthetic SQLite 读取 benchmark 外推。 |
-| Linux MCP 一键安装 | 未交付 | 跨平台 launcher、配置生成和 Linux health 证据。 |
+| Linux MCP 一键安装 | `OBSERVED`：`scripts/setup.sh` 已实现本仓 venv、配置生成和 validator 调用；GitHub Actions Ubuntu job `101496781967` 的 native setup 与 repeat-install 均 SUCCESS。 | 该 job 仅覆盖其 Ubuntu 脚本版本；仍不能外推为全部目标 Linux、生产部署、release 或验收。 |
 
 不要将 loopback 看板暴露到网络。Harness 有路径/argv 约束但不是恶意代码沙箱；不可信代码应在独立受控环境运行。命令、日志和证据均不得打印秘密。
 
@@ -349,3 +349,129 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 - [独立平台测试](docs/platform-v3/independent-platform-tests.md) 与 [Runtime 审查](docs/platform-v3/runtime-review.md)
 - [五栈样例经验](docs/platform-v3/lessons-learned.md)
 - [V2 Runtime 使用说明](docs/platform-v2/README.md)
+
+## CR-V3-003 执行端：受控使用（当前实现，待最终复审）
+
+本节是新执行端的当前 CLI/JSON 契约，不是“已部署”声明。控制面和项目工作区仍应使用**不同目录**，但这只是降低误操作/备份混淆的运维措施，不能隔离同一 OS 身份下的模型。已确认 Codex auto-review 可越过 workspace 边界读写无害 sentinel，故生产 Codex backend 已 fail-closed 禁用。以下 `PROJECT_ID`、操作员、路径、Git SHA、证据 ID 与 hash 都是占位符，必须替换为本次真实值。
+
+### 从粗略想法创建可恢复工作清单
+
+`orchestrate-start` 以 `--request-id` 幂等：同一控制库中对相同请求重跑会返回已创建的启动事实，不会再造第二套 G0–G11 work order。它只建立 DRAFT BG、active 生命周期和 `PLANNED` 工作清单；不会创建批准、测试结果或 Gate PASS。
+
+```powershell
+$controlDb = 'D:\rd-control\state.db'                 # 不在项目 workspace 内
+$workspace = 'D:\workspaces\inventory-service'        # 已存在、受信任的 Git 工作区
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb orchestrate-start `
+  --name 'Inventory service' `
+  --idea '给出真实业务目标及已知约束；未知项由需求工作项澄清' `
+  --repository-root $workspace `
+  --request-id 'bootstrap-inventory-20260906-001'
+```
+
+保存返回的 `project_id`，再以相同参数/`request-id` 演练重试。不要将控制库复制进 `$workspace\.rd-platform`；但不要把路径分离误认为模型不可访问的安全保证。
+
+### 登记实际角色并启动 Worker
+
+Worker 配置中的每一位 `agent_id` 必须先在**同一控制库**登记，且 role 精确匹配。可接受的实际 role 为 `requirement_analyst`、`researcher`、`product_manager`、`architect`、`developer`、`tester`、`reviewer`、`documentation_manager`、`release_manager`。例如（每个 ID 应对应实际宿主责任，而不是假冒的人）：
+
+```powershell
+$roles = 'requirement_analyst','researcher','product_manager','architect','developer','tester','reviewer','documentation_manager','release_manager'
+foreach ($role in $roles) {
+  & .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb command agent.register ("{`"id`":`"host-$role`",`"role`":`"$role`"}") --request-id "register-$role-001"
+}
+```
+
+将如下文件保存到控制库所在、权限受限而且**不提交 Git**的位置，例如 `D:\rd-control\worker-service.json`。当前安全默认是 `responses` proposal backend：HTTPS Responses 请求固定 `tools:[]`、`tool_choice:"none"`，模型只返回结构化文件提案；受控宿主校验版本绑定上下文、路径/大小和 CAS 独占创建后，才登记新 artifact 为 `DRAFT`。每个可能 create 或 update 的仓库相对路径（包括尚不存在的新文件）都必须显式列入对应 worker 的 `source_paths`；空列表不能发布提案。`OPENAI_API_KEY` 当前在本机为 `NOT_AVAILABLE`，所以不得把该示例写成已实际完成的 live Responses run。`argv` 仅用于可信宿主已批准的命令，仍不是未知代码沙箱。
+
+```json
+{
+  "project_id": "PROJECT_ID",
+  "repository_root": "D:\\workspaces\\inventory-service",
+  "max_concurrency": 3,
+  "poll_interval_seconds": 0.5,
+  "workers": [
+    {"agent_id":"host-requirement_analyst","role":"requirement_analyst","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/requirements.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-researcher","role":"researcher","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/research.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-product_manager","role":"product_manager","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/product.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-architect","role":"architect","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/design.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-developer","role":"developer","lease_seconds":300,"timeout_seconds":1200,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["src/app.py","docs/implementation.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-tester","role":"tester","lease_seconds":300,"timeout_seconds":1200,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["tests/system_test.py","docs/test-report.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-reviewer","role":"reviewer","lease_seconds":300,"timeout_seconds":1200,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/review.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-documentation_manager","role":"documentation_manager","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/closure.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}},
+    {"agent_id":"host-release_manager","role":"release_manager","lease_seconds":300,"timeout_seconds":900,"max_output_bytes":65536,"safe_to_retry":false,"source_paths":["docs/release.md"],"backend":{"type":"responses","model":"MODEL_ID","api_key_env":"OPENAI_API_KEY","endpoint":"https://api.openai.com/v1/responses","max_output_tokens":2048}}
+  ]
+}
+```
+
+先运行一轮可观察调度；它至多处理当时可认领的工作项，输出 `IDLE`/`DISPATCHED`/`WAITING_USER`/`FAIL` 不是 Gate 结论：
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb worker-service --config D:\rd-control\worker-service.json --once
+```
+
+省略 `--once` 才是前台常驻服务；以经批准的服务管理器或受控终端运行，并将 stdout/stderr 写到不含秘密的受保护日志。生产 Codex `auto-review` 已禁用，不能通过 `approval_mode`、`persist_session`、路径分离或额外 CLI flag 恢复它。Responses proposal 不给模型文件或命令工具；宿主在 CAS 写入、hash/路径/版本校验成功后才建 DRAFT artifact。停机、暂停或工作项失效时，应核对 `lifecycle`/`work.reap` 及实际进程状态；不能把 OS 进程终止或 `pause` 自动写成取消成功。未知副作用的过期租约只有 `safe_to_retry: true` 时才会重试。
+
+### 外部 SSH 签名审批
+
+下面的 JSON 是待签审批请求，不含私钥。`canonical bytes` 是 CLI 写出的 challenge 的 UTF-8 `Store.dumps` 字节，不能重新格式化、手改、重新序列化或替换请求后再使用同一个签名。
+
+```json
+{
+  "project_id": "PROJECT_ID",
+  "kind": "human_approval",
+  "status": "VERIFIED",
+  "locator": {"inline_json": {"external_record": "APPROVAL-RECORD-REFERENCE"}},
+  "observed_at": "2026-09-06T12:00:00+00:00",
+  "metadata": {"gate_id": "G9", "decision": "APPROVE", "statement": "Actual authorized decision text.", "artifact_refs": [{"type": "REQ", "id": "REQ-001", "version": 1}]}
+}
+```
+
+`provider.json` 留在受保护目录，包含真实项目 ID、受权人和只含**公钥**的 `allowed_signers`；私钥、passphrase、token 不进入本平台或 Git：
+
+```json
+{"provider_id":"corp-approval-ssh-2026","allowed_signers":"D:\\secure\\approval\\allowed_signers","ssh_keygen":"C:\\Windows\\System32\\OpenSSH\\ssh-keygen.exe","authorizations":[{"operator":"approved-operator","projects":["PROJECT_ID"],"gates":["G9","G10","G11"]}],"challenge_ttl_seconds":300,"timeout_seconds":10,"max_output_bytes":4096}
+```
+
+```powershell
+$req = 'D:\secure\approval\request.json'; $provider = 'D:\secure\approval\provider.json'; $challenge = 'D:\secure\approval\challenge.json'
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb approval-challenge --provider-config $provider --request $req --operator approved-operator --challenge $challenge
+# 人在平台外、经 SSH 私钥进行签名；不要把 key/path/passphrase 写到平台配置或日志。
+ssh-keygen -Y sign -f PATH_TO_PRIVATE_ED25519_KEY -n rd-platform-approval $challenge
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb approval-register --provider-config $provider --request $req --operator approved-operator --challenge $challenge --signature "$challenge.sig"
+```
+
+challenge 只表示“等待签名”。register 时会重新计算当前项目/Gate/决定/工件版本/策略 binding，拒绝过期、重放、未授权、Agent 同名身份或任一漂移；签名认证也不替代 Gate 决定和客户验收。
+
+### 试用部署、正式部署与回滚
+
+`deploy-run` 只运行配置中明确 argv；不会从环境名、HTTP 或模型输出拼命令。`trial` 保存 durable receipt，但永远不写 release/deployment 事实。下面是**字段完整**的 trial 形状；所有脚本必须在 `cwd` 下，所有 `source_hashes` 必须是运行前由真实文件计算的 SHA-256。receipt 目录必须是明确、可恢复的本地目录；formal 模式还要求其位于项目根内，才能将 receipt 作为 Runtime 受控引用。
+
+```json
+{"project_id":"PROJECT_ID","environment":"isolated-local","mode":"trial","operation_id":"trial-20260906-001","cwd":"D:\\workspaces\\inventory-service\\ops","source_hashes":{"deploy.ps1":"ACTUAL_SHA256","health.ps1":"ACTUAL_SHA256","rollback.ps1":"ACTUAL_SHA256","rollback-health.ps1":"ACTUAL_SHA256"},"deploy":{"argv":["powershell","-NoProfile","-File","deploy.ps1"],"timeout_seconds":300,"output_limit_bytes":65536,"idempotent":true},"health":{"argv":["powershell","-NoProfile","-File","health.ps1"],"timeout_seconds":60,"output_limit_bytes":16384},"rollback":{"argv":["powershell","-NoProfile","-File","rollback.ps1"],"timeout_seconds":300,"output_limit_bytes":65536},"rollback_health":{"argv":["powershell","-NoProfile","-File","rollback-health.ps1"],"timeout_seconds":60,"output_limit_bytes":16384},"receipt_dir":"D:\\workspaces\\inventory-service\\.rd-platform\\deployment-receipts"}
+```
+
+先用 `Get-FileHash` 更新每个脚本 hash，然后执行；相同 `operation_id` 和相同 fingerprint 才允许读取已完成 receipt，任何漂移或遗留 `STARTED` 记录都必须人工协调，不能盲目重跑：
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb deploy-run --config D:\rd-control\trial-deploy.json --action deploy
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb deploy-run --config D:\rd-control\trial-rollback.json --action rollback
+```
+
+`formal` 在上述字段外还必须有 `release_id`、非 Agent 的 `operator`、已登记 `release_manager` 的 `executor_id`、当前 `G10 PASS`、`READY` release、`environment_ref`（例如 `{"type":"EVIDENCE","id":"EVD-ENV-001","version":1}`，且证据 kind 为 `deployment_environment`）和非空 `evidence_artifact_refs`（例如 `[{"type":"DOC","id":"DOC-REL-001","version":1}]`）；Runtime 会在物理命令前后再次校验。试用成功、exit 0 或 health 成功均不满足这些条件，也不等于生产成功。健康失败会执行已声明的 rollback 与独立 `rollback_health`；两者的真实结果保留在 receipt，不能以“已尝试”改写为成功。
+
+### Linux 原生安装
+
+在目标 Linux checkout 内执行（不使用 sudo、不写 global Git/Python、不会删除已有数据）：
+
+```bash
+git config --local user.name 'YOUR_APPROVED_DISPLAY_NAME'
+git config --local user.email 'your-approved-address@example.invalid'
+./scripts/setup.sh --python-command python3.11
+# 已有依赖、只需要重新生成本地 MCP 配置和 health 时：
+./scripts/setup.sh --skip-dependency-install
+.venv/bin/python -X utf8 -m rd_platform --help
+```
+
+脚本会先验证 Git 身份与 Python 3.11+，再创建/复用本仓 `.venv`，运行 `pip check`、`write_local_config.py` 与 `validate_platform.py`。只有实际输出 `Setup complete.` 且 validator 成功才是该机器的安装/health 证据；失败保留诊断，修复后可重跑。
+
+新端点的源码、CLI help 和开发者/独立测试记录可观察，但 review 尚未最终完成；本轮不发布全局 PASS。当前 live Codex smoke 的失败保持只读历史，不在此处改写为成功。详见 [执行端设计](docs/platform-v3/completion-execution-design.md)、[worker service](docs/platform-v3/worker-service.md)、[审批提供方](docs/platform-v3/approval-provider.md)、[部署执行器](docs/platform-v3/deployment-executor.md) 和 [Linux 安装](docs/platform-v3/linux-setup.md)。

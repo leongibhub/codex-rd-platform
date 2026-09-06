@@ -42,3 +42,12 @@ venv 会失败并保留原状，须由操作者明确修复。它将通过当前
 fixture 的本地 Git identity 仅用于测试，绝不表示人工批准。成功路径必须在
 Python 3.11+ Linux 主机执行，且以 `PLATFORM VALIDATION: PASS` 的实际输出为准。
 当前不把静态断言或低版本 Python 的失败路径当作 MCP health 通过证据。
+
+Windows 上的 fixture 不以 `wsl.exe` 文件存在作为可执行证据；它先尝试启动
+Linux `bash` 并校验就绪标记。没有已安装或可启动 distribution 时，测试以
+`NOT_AVAILABLE` skip，保留该宿主诊断，不把 Windows 的 WSL 能力缺失误报成
+Linux 安装失败。该 skip 也不取代 Linux runner 的真实证据：GitHub Actions run
+`34036999184` 的 Ubuntu `runtime-and-platform` job `101496781967` 于
+2026-09-06 执行的 “Verify actual native Linux setup and repeat installation” 为
+`success`；同一 run 的整体 `failure` 来自 Windows runtime/platform contracts，
+不是该 Linux setup 步骤。此为观察到的 CI 执行记录，不是 Gate 或人工验收。

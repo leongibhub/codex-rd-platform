@@ -127,7 +127,27 @@ function renderTask(task) {
   return article;
 }
 
-function renderAgents() { const root = byId("agents"); clear(root); if (!snapshot.agents.length) { const row = element("tr"); const cell = element("td", "尚未登记 Agent。", "empty"); cell.colSpan = 5; row.append(cell); root.append(row); return; } const tasks = new Map(snapshot.tasks.map((task) => [task.id, task])); snapshot.agents.forEach((agent) => { const row = element("tr"); const task = tasks.get(agent.task_id); let heartbeat = agent.heartbeat_at || "未报告"; if (agent.status === "BUSY" && agent.heartbeat_at && Date.now() - Date.parse(agent.heartbeat_at) > 300000) heartbeat = `可能失联（最后报告 ${agent.heartbeat_at}）`; [agent.id, agent.role, agent.status || "未记录", task ? `${task.id} · ${task.title}` : (agent.task_id || "无"), heartbeat].forEach((value) => row.append(element("td", value))); root.append(row); }); }
+function renderAgents() {
+  const root = byId("agents"); clear(root);
+  if (!snapshot.agents.length) { const row = element("tr"); const cell = element("td", "尚未登记 Agent。", "empty"); cell.colSpan = 5; row.append(cell); root.append(row); return; }
+  const tasks = new Map(snapshot.tasks.map((task) => [task.id, task]));
+  snapshot.agents.forEach((agent) => {
+    const row = element("tr"); const task = tasks.get(agent.task_id); const work = agent.current_work;
+    let heartbeat = work?.heartbeat_at || agent.heartbeat_at || "未报告";
+    if ((agent.status === "BUSY" || work?.lease_until) && Date.now() - Date.parse(heartbeat) > 300000) heartbeat = `可能失联（最后报告 ${heartbeat}）`;
+    [agent.id, agent.role, agent.effective_status || agent.status || "未记录"].forEach((v) => row.append(element("td", v)));
+    const content = element("td");
+    if (work) {
+      content.append(element("p", `${work.gate_id} · ${work.id} · ${work.activity}`), element("p", `原因：${work.why}`),
+        element("p", `进度：${work.progress_percent === null ? "未报告百分比" : `${work.progress_percent}%`}；版本 ${work.version} / 尝试 ${work.attempt}`));
+      if (work.blocked_reason) content.append(element("p", `需处理：${work.blocked_reason}`));
+      const details = element("details"); details.append(element("summary", "输入、输出与下一次交接"),
+        element("pre", JSON.stringify({ inputs: work.input_refs, outputs: work.output_refs || [], next: work.next_handoff }, null, 2)));
+      content.append(details);
+    } else content.textContent = task ? `${task.id} · ${task.title}` : (agent.task_id || "无");
+    row.append(content, element("td", heartbeat)); root.append(row);
+  });
+}
 
 function renderEvents() {
   const root = byId("events"); clear(root);
@@ -153,6 +173,8 @@ function bindForm(id, command, convert) {
 }
 
 bindForm("project-form", "project.create", (data) => data);
+bindForm("lifecycle-control-form", "lifecycle.control", (data) => ({...data, project_id: byId("lifecycle-project").value}));
+bindForm("work-control-form", "work.control", (data) => { if (!data.agent_id) delete data.agent_id; return data; });
 bindForm("agent-form", "agent.register", (data) => data);
 bindForm("task-form", "task.create", (data) => ({ ...data, requirements: lines(data.requirements), dependencies: lines(data.dependencies), inputs: JSON.parse(data.inputs || "{}") }));
 bindForm("control-form", "task.control", (data) => {
