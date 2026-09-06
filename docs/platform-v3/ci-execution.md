@@ -31,3 +31,17 @@
 另保留两个 TEST_SCRIPT 失败：TASK012 首次 unit `run-3bc7d50bf08f44ceb9578409b206da7d` 为隐藏 Windows 进程中中文 `mklink` 输出错误解码，并非 Java 产品缺陷或已证实的 Mock 干扰；TASK014 首次 integration `run-db0d478ee2e44510bd341eaefe6d02cc` 为 Tester 新夹具 SyntaxError、产品断言未执行。两者均正常 retry，重新从 implementation、unit、integration 到 review；未把先前 PASS 直接复制到新 attempt。
 
 首次运行记录永久保留。只有实际修复提交、独立复核和新 CI 结果均已发生后，才能补记当前通过并关闭对应 Bug。将既有应用 manifest/源码纳入本次修复会产生新的源摘要；历史五应用执行结果仍是旧摘要的观察，不能自动沿用为当前证据。
+
+## 第二轮：保留未解决问题
+
+实际 [run 34030786796](https://github.com/leongibhub/codex-rd-platform/actions/runs/34030786796) 对应修复提交 `ba17e3524c41c75b17219b4a7c71a6d2b4e35631`。
+
+- Ubuntu multistack job `101479775168`：SUCCESS，五应用声明阶段均真实执行；Java 8 从干净目录构建问题已通过在线复验。
+- Ubuntu Runtime 198 tests：PASS，5 个 OS 条件 skip；MCP 的 repo-local POSIX 配置和 stdio health 未失败。随后平台 106 tests 有 1 ERROR、2 skips：测试脚本模拟 WSL 时仍对真实 Linux root 做 Windows 盘符映射。修复该测试输入，不修改或跳过产品断言。
+- Windows multistack job `101479775294`：GNU DLL 目录配置步骤 PASS，但 C++ unit 仍为同一个 `0xC0000139`。仅调整 PATH 没有消除问题，BUG-CI-003 未关闭。
+- Windows Runtime/platform job `101479775360`：SUCCESS，2026-09-06T11:46:02Z 完成；真实 repo-local venv、配置重写和 MCP health 已通过在线复验。
+- TASK013 因真实在线失败重新修改为 revision 3：原生 Windows 两个 C++ 程序静态链接 `libstdc++`/`libgcc`，避免这两个运行库受其他 PATH 项的 DLL 影响；不修改 Linux/WSL 链接方式，也不声称已查明具体冲突 DLL。
+
+当前 Windows 本机完整回归为 Runtime 198 tests（197 PASS、1 skip）、平台 115/115 PASS、独立 V3 59 tests（58 PASS、1 skip）。这些本机结果不代替第三轮 hosted CI。
+
+revision 3 的独立 unit `run-aca565e9486d425b8091808dddcbbec2` 为 20/20 PASS；public C++ CLI integration `run-f57cbdee42a142c8a2f2bd8bf87c14b4` 为 build PASS、unit 5/5、integration 3/3，实际使用 WSL。独立 review `run-f61445255fd3489f9c8c4cb7419c1ea7` PASS，模块登记 DONE；hosted Windows 原生复验仍待第三轮 CI，不以模块状态替代。

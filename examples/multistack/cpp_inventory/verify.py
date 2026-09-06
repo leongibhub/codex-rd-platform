@@ -33,6 +33,11 @@ def tool_path(path: Path) -> str:
     return wsl_path(path) if use_wsl() else str(path)
 
 
+def compiler_runtime_flags() -> list[str]:
+    """Avoid Windows GNU runtime-DLL selection from an unrelated PATH entry."""
+    return ["-static-libstdc++", "-static-libgcc"] if os.name == "nt" and not use_wsl() else []
+
+
 def invoke(arguments: list[str]) -> None:
     command = ["wsl.exe", "--cd", wsl_path(APP), "--", *arguments] if use_wsl() else arguments
     completed = subprocess.run(command, cwd=None if use_wsl() else APP, check=False)
@@ -43,14 +48,14 @@ def invoke(arguments: list[str]) -> None:
 def compile_application() -> Path:
     BUILD.mkdir(parents=True, exist_ok=True)
     executable = BUILD / ("inventory.exe" if os.name == "nt" and not use_wsl() else "inventory")
-    invoke(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "inventory.cpp", "main.cpp", "-o", tool_path(executable)])
+    invoke(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", *compiler_runtime_flags(), "inventory.cpp", "main.cpp", "-o", tool_path(executable)])
     return executable
 
 
 def compile_unit_tests() -> Path:
     BUILD.mkdir(parents=True, exist_ok=True)
     executable = BUILD / ("test_inventory.exe" if os.name == "nt" and not use_wsl() else "test_inventory")
-    invoke(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "inventory.cpp", "test_inventory.cpp", "-o", tool_path(executable)])
+    invoke(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", *compiler_runtime_flags(), "inventory.cpp", "test_inventory.cpp", "-o", tool_path(executable)])
     return executable
 
 

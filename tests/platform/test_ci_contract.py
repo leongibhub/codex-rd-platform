@@ -69,10 +69,13 @@ class CiContractTests(unittest.TestCase):
             verify.invoke(['g++', '--version'])
             self.assertEqual(['g++', '--version'], run.call_args.args[0])
             self.assertEqual(verify.APP, run.call_args.kwargs['cwd'])
-        with patch.object(verify.os, 'name', 'nt'), patch.object(verify.shutil, 'which', return_value=None), patch.object(verify.subprocess, 'run') as run:
+        with patch.object(verify.os, 'name', 'nt'), patch.object(verify.shutil, 'which', return_value=None), patch.object(
+            verify, 'wsl_path', return_value='/mnt/d/cpp_inventory'
+        ) as wsl_path, patch.object(verify.subprocess, 'run') as run:
             run.return_value.returncode = 0
             verify.invoke(['g++', '--version'])
             self.assertEqual('wsl.exe', run.call_args.args[0][0])
+            wsl_path.assert_called_once_with(verify.APP)
         with patch.object(verify.os, 'name', 'nt'), patch.object(verify.shutil, 'which', return_value='C:/msys64/ucrt64/bin/g++.exe'), patch.object(verify.subprocess, 'run') as run:
             run.return_value.returncode = 0
             verify.invoke(['g++', '--version'])

@@ -3,7 +3,7 @@
 - Reviewer: `/root/v3_review_runtime`
 - Date: 2026-09-06
 - Scope: `TASK-V3-011` through `TASK-V3-014`, created from the four failures in actual GitHub Actions run `34029576291`
-- State: **IN PROGRESS — TASK-V3-011/012/014 approved; TASK-V3-013 awaiting corrected independent QA evidence**
+- State: **COMPLETE — TASK-V3-011/012/013/014 implementation fixes approved; repaired hosted CI rerun remains pending**
 - Evidence boundary: this review does not rewrite the first CI run, claim a hosted rerun, close a Bug, decide a lifecycle Gate, or grant human/release acceptance.
 
 ## TASK-V3-011 / BUG-CI-001 — APPROVED
@@ -45,6 +45,20 @@ Independent executions comprised 17 config/MCP checks, 27 validator checks, and 
 
 No P0–P3 product finding remains in this scoped fix. The review host's WSL provides Python 3.10, below the platform's declared Python 3.11 minimum, so it was not used to fabricate POSIX success. A repaired hosted POSIX workflow and stdio health run remain `NOT_EXECUTED`.
 
-## Pending increments
+## TASK-V3-013 / BUG-CI-003 — REVISION 3 APPROVED; ONLINE RETEST PENDING
 
-- `TASK-V3-013` / `BUG-CI-003`: Windows native GNU runtime and tool probing — production source is frozen, but review awaits a fresh integration run of the corrected current-OS test. The earlier tester run exercised a WSL-only fixture and cannot bind the subsequently changed test source.
+Reviewed source: `.github/workflows/platform-validation.yml`, `rd_platform/stack_harness.py`, the existing C++ adapter, `tests/runtime/test_native_tool_probe.py`, `tests/platform/test_ci_contract.py`, the stack-harness regressions, and independent TC1204/1205.
+
+Windows tool probing now recognizes an existing `g++`/`g++.exe` as `cxx` while the application adapter retains its prior WSL fallback when native GNU C++ is absent. Java resolution appends `.exe` only on Windows, so each matrix OS tests its native `JAVA_HOME/bin` spelling. Both workflow jobs declare Java 8 and Node 22. Before the Windows manifests run, PowerShell locates the exact `g++.exe`, asks that compiler for `libstdc++-6.dll`, requires the reported DLL to exist, and writes both compiler and runtime directories to `GITHUB_PATH`. GitHub's documented workflow-command contract prepends such directories to `PATH` for subsequent steps, where the real C++ build/unit/integration executes: <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-system-path>.
+
+Independent revision-2 review reran the two native-tool checks, three workflow contracts, thirteen stack-harness regressions, and corrected current-OS TC1204/1205: 20/20 PASS. Actual Runtime review `run-bc28f89da2314e889d1249338c50bfd0` approved only that scoped implementation. Revision-1 integration `run-377e593ecc8c4653b98f956d772c530b` remains historical/superseded because its fixture incorrectly required WSL on Windows; it was not reused as revision-2 evidence.
+
+The second actual workflow, GitHub Actions run `34030786796` at commit `ba17e3524c41c75b17219b4a7c71a6d2b4e35631`, again built native Windows C++ successfully but the unit executable returned `0xC0000139`. That result is authoritative evidence that revision 2's PATH-only implementation did not recover the Bug; the old review PASS was not online validation and is not reused as closure.
+
+Revision 3 adds `-static-libstdc++` and `-static-libgcc` to both native-Windows link commands only. POSIX and Windows-WSL compilation retain their prior flags. Independent review reran the frozen 20 unit/contracts (20/20 PASS), then forced `os=nt` plus the WSL branch and inspected both application/unit link argv: neither contained the Windows static flags. A separate actual public `stack-run` used the host's WSL fallback because native `cxx` was `NOT_AVAILABLE`; build PASS, unit reported five tests, and integration reported three checks. This proves WSL regression safety, not native Windows recovery.
+
+Actual revision-3 Runtime review: `run-f61445255fd3489f9c8c4cb7419c1ea7`; task `task-ef5124d4909940758962ca113a8854b4` revision 3 is DONE. No P0–P3 implementation finding remains. Acceptance of the new static flags by the hosted Windows GNU compiler and recovery from `0xC0000139` remain `NOT_EXECUTED` until the third hosted workflow.
+
+## Remaining external verification
+
+All four scoped implementation tasks are DONE. A third GitHub Actions run must still execute the repaired commit on Linux and Windows before the actual CI recovery can be concluded. A successful local review is not that hosted result and alters neither the first four-job FAILURE record nor the second Windows `0xC0000139` failure.
