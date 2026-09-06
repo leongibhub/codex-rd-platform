@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "kind": "observed_github_actions_result",
+  "observed_date": "2026-09-06",
+  "repository": "leongibhub/codex-rd-platform",
+  "branch": "codex/platform-v3-lifecycle",
+  "run_id": 34032990521,
+  "source_commit": "527dae1b7f75d6b526682d1c5a6407c1b3fc6a53",
+  "url": "https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 101485885964,
+      "name": "runtime-and-platform (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T12:32:01Z"
+    },
+    {
+      "id": 101485886090,
+      "name": "multistack-manifests (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T12:25:35Z"
+    },
+    {
+      "id": 101485886151,
+      "name": "runtime-and-platform (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T12:28:44Z"
+    },
+    {
+      "id": 101485886215,
+      "name": "multistack-manifests (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-09-06T12:24:42Z"
+    }
+  ],
+  "unittest_observations": {
+    "ubuntu": {
+      "runtime": {
+        "total": 200,
+        "skipped": 5,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 172.496
+      },
+      "platform": {
+        "total": 119,
+        "skipped": 14,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 11.164
+      },
+      "independent_v3": {
+        "total": 69,
+        "skipped": 10,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 62.384
+      },
+      "adapter_blackbox": {
+        "total": 4,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 0.691
+      }
+    },
+    "windows": {
+      "runtime": {
+        "total": 200,
+        "skipped": 1,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 199.865
+      },
+      "platform": {
+        "total": 128,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 74.35
+      },
+      "independent_v3": {
+        "total": 69,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 156.052
+      },
+      "adapter_blackbox": {
+        "total": 4,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 2.019
+      }
+    }
+  },
+  "scope": [
+    "Runtime/platform/independent contracts",
+    "All five sample manifest-declared phases on Windows and Linux"
+  ],
+  "excludes": [
+    "Native WeChat IDE/device/publication",
+    "Production deployment",
+    "Human acceptance",
+    "8-hour soak result",
+    "Later documentation changes"
+  ],
+  "related_real_installation": "docs/platform-v3/install-real-validation.md"
+}

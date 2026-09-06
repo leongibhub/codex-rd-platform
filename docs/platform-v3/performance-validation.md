@@ -150,10 +150,12 @@ host. This is observed synthetic SQLite read-capacity evidence only.
 
 The actual soak `soak-9241634446774e1291126d1cc1c2a53b` started sampling at
 `2026-09-06T10:29:36.394136+00:00`, after the separate capacity preparation.
-Its most recently inspected checkpoint recorded 5,050.074 elapsed seconds
+Its most recently inspected checkpoint recorded 7,276.976 elapsed seconds
 against the 28,800-second target, with `reads.errors` empty. No same-run
 terminal file exists at this checkpoint: the observation is `RUNNING`, not
 an eight-hour PASS. The running process retains its original source digest
 above; later fixes are not hot-loaded. The same-thread scheduled follow-up
 will inspect this run without restarting it and record its actual terminal
-result, elapsed time, resource series, errors, and read-only scope.
+result, elapsed time, resource series, errors, and read-only scope. The follow-up
+also inspects sampling coverage and long gaps: wall-clock duration or a terminal
+label alone cannot establish continuous eight-hour coverage after host sleep.

@@ -60,3 +60,16 @@ revision 3 的独立 unit `run-aca565e9486d425b8091808dddcbbec2` 为 20/20 PASS�
 以上时间均为 2026-09-06 UTC。BUG-CI-001..004 已有实际修复提交、独立复核及新在线回归，可在本次限定范围关闭；第一、二轮失败完整保留。第三轮原生 Windows C++ 的 `0xC0000139` 不再复现，但不据此声称已经定位某个具体冲突 DLL。
 
 CI 使用真实 Python 3.13、Node 22 和 Temurin JDK 8。Python manifest 仅 build/unit，Web 仅 Node unit，微信是 Node domain/fake-wx unit/integration；它们不构成缺失集成阶段、真实浏览器、微信 IDE/真机、生产部署或人工验收的通过证据。不同 OS 的测试集及 skip 条件不同，不把矩阵测试计数相加为唯一业务 Case 总数。
+
+## README 与安装器修复后的最终代码验证
+
+`c3eb271` 的 [run 34032544002](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032544002) 实际 SUCCESS，但真实安装仍发现公共知识模板误拦截。该发现进入 BUG-INSTALL-002，不能用该次 CI 关闭安装缺陷。其后修复为 `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53`，并取得 [正常完整安装 PASS](install-real-validation.md) 以及新的独立质量链；QA CRLF/LF 夹具 FAIL/重试仍保留。
+
+最终代码 [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) 对应 `527dae1`，4/4 作业 SUCCESS，2026-09-06T12:32:02Z 为最终成功状态。实际 Jobs API 和 job 日志摘要见 [ci-validation-final-code.json](evidence/ci-validation-final-code.json)。
+
+| 平台 | Runtime | Platform | Independent V3 | Adapter black-box |
+| --- | --- | --- | --- | --- |
+| Windows | 200 tests，1 skip，0 fail/error | 128/128 PASS | 69/69 PASS | 4/4 PASS |
+| Ubuntu | 200 tests，5 skips，0 fail/error | 119 tests，14 skips，0 fail/error | 69 tests，10 skips，0 fail/error | 4/4 PASS |
+
+Windows 专用安装器/链接测试在 Ubuntu 标注 skip，不冒充执行；Windows job 实际执行这些用例。两 OS 的五应用声明阶段也均实际通过。后续仅 README/报告等文档提交以本段明确的代码 SHA 为验证基准，文档自身另做链接/CLI/使用步骤检查，不声称未来提交已经包含在该 CI 中。

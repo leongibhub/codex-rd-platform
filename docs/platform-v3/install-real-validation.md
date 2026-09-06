@@ -33,3 +33,30 @@ exact reviewed public path and content, while rejecting modified stubs and all
 other prohibited local knowledge/state. The initial failure and previous
 scoped fixture results remain history. A new committed-source attempt must run
 the normal setup before this document can record real installation PASS.
+
+## Second attempt: normal setup actually PASS
+
+- Source: committed and pushed `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53`.
+- Entry script SHA-256:
+  `F99EFF0AC23E15D8386ABF7E428C0EB0FA150CBCEC5F92172053F52C20DEEB3C`.
+- Target basename: `codex-rd-install-verified-784e29c27e8a41b3ba23ed095a3227e4`.
+- Same process-only synthetic identity and target-local knowledge environment
+  as the first attempt; global Git identity was not configured or changed.
+- The installer fetched the exact source commit and ran the **normal**
+  `scripts/setup.ps1`, not a marker stub and not `-SkipDependencyInstall`.
+- A new target-local virtual environment was created, constrained dependencies
+  were actually installed (cached package downloads were available), and
+  `pip check` returned `No broken requirements found`.
+- Absolute company-context paths were regenerated for the new directory.
+- Actual platform result: `PASS (TEMPLATE MODE)`, `RUNTIME CHECK: EXECUTED`,
+  `Evaluated Gates: NONE`. Setup emitted the expected dirty-worktree warning
+  after regenerating the local tracked configuration; it did not ignore a
+  validation error or create a Gate decision.
+- Final exit: `0`; `Setup complete` and the new target's `Installed at` were
+  observed. The source Runtime database was not copied.
+
+This establishes one successful real Windows temporary installation for this
+commit and environment. It does not establish offline dependency installation,
+installation on every host, hosted CI of later changes, production deployment,
+release, or human acceptance. Both temporary targets remain available for local
+inspection; no user data was deleted to obtain this result.

@@ -3,7 +3,8 @@
 - Reviewer: `/root/v3_review_runtime`
 - Role: independent reviewer; not the implementation or QA owner
 - Scope: `install-to-D.ps1`, its TASK-V3-015 design/QA records, and focused installer tests
-- Frozen implementation SHA-256: `D70F2B23D803A01C96959344D539D27DFC6996AF3505A958B8C6754B7E24F978`
+- Revision-1 implementation SHA-256: `D70F2B23D803A01C96959344D539D27DFC6996AF3505A958B8C6754B7E24F978`
+- Current revision-3 implementation SHA-256: `F99EFF0AC23E15D8386ABF7E428C0EB0FA150CBCEC5F92172053F52C20DEEB3C`
 - Traceability: `TASK-V3-015`, `BUG-INSTALL-001`, `NFR-V3-004`, `REQ-V3-010`
 - Pre-review state: **IN REVIEW**; no PASS is recorded before independent unit/integration evidence and the actual Runtime review phase
 
@@ -48,6 +49,12 @@ The successful tests use harmless temporary setup doubles. A full dependency-ins
 - Required correction: use case-sensitive path equality and retain the ordinary case-insensitive denylist for every non-exact variant. Add a negative case containing the approved blob at a case-variant path and require rejection before payload delivery.
 - This finding caused revision 2 evidence to be invalidated and TASK-V3-015 to advance to revision 3. No revision-2 PASS is reused.
 
-## Revision 3 pending review
+## Revision 3 final review
 
-The current candidate uses `-ceq` for the canonical path and includes a same-blob case-variant negative regression. It remains unapproved until a complete fresh revision-3 implementation, unit, integration, and independent review sequence finishes against one frozen source SHA.
+- Final current verdict: **APPROVED** for TASK-V3-015 revision 3 attempt 2; no unresolved P0-P2 finding remains in the frozen committed-source transfer implementation.
+- The candidate uses `-ceq` for the canonical Git path. Only `knowledge/local/README.md` with blob `f361c8f3bd3b7bb62af25fb46bb48c0965c2e263` is exempted. Modified same-path content, a sibling, and a same-blob case-variant Git path are rejected before payload delivery.
+- Fresh tester evidence: unit `run-3a171d0744de43b7b72d15ed6b08135c` reported 12/12 PASS; integration `run-7bd040f6d7614590a6958aa8bc9cc9b6` reported 10/10 PASS. The earlier CRLF assertion failure `run-d3fab938a32c4f778104df548b7aaba2` remains a historical TEST_SCRIPT failure, and revision-2 evidence remains invalidated.
+- Fresh reviewer execution: `run-177f1e06e28745f1be954b63d9170efc`, revision 3 attempt 2, reported 22/22 PASS in 33.769 seconds, exit 0. Runtime task `task-7bec21bef03742fb950cac713497d128` then reported `DONE`, 4/4 quality checks.
+- Read-only inspection of the real installed target corroborated the separate real-install record: `HEAD=527dae1b7f75d6b526682d1c5a6407c1b3fc6a53`, history depth 1, no configured remote, no `.rd-platform`, `.env`, `.worktrees`, `cache`, or `.install-failed`, a repository-local virtual environment and canonical knowledge stub present, and only `.codex/config.toml` modified. Its validator reported `PASS (TEMPLATE MODE)`, `Evaluated Gates: NONE`, and runtime MCP check executed.
+
+This approval supersedes the reopened state only for revision 3 attempt 2. It does not erase BUG-INSTALL-001, BUG-INSTALL-002, the revision-2 exact-path finding, or the failed/invalidated test records. One successful temporary full installation is not general Windows compatibility, production deployment, release, human acceptance, or a Gate decision. Hosted CI for the new revision must be recorded separately.

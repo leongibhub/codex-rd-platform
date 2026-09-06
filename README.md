@@ -8,7 +8,7 @@
 
 ## 当前范围与版本
 
-- V3 使用 GitHub 分支 `codex/platform-v3-lifecycle`，本轮续作基线为 `2d77904`，当前已推送提交为 `62c153e8a14425ce4aa3146519129521ded25af5`；交付提交及真实 CI 结果见[后续交付记录](docs/platform-v3/completion-delivery.md)。它**尚未合并到 `main`**，默认分支 clone 不含本轮 V3 内容。
+- V3 使用 GitHub 分支 `codex/platform-v3-lifecycle`，本轮续作基线为 `2d77904`；经验证的源码提交及对应 CI 见[后续交付记录](docs/platform-v3/completion-delivery.md)。它**尚未合并到 `main`**，默认分支 clone 不含本轮 V3 内容。
 - V2 提供项目/任务、四阶段质量 Run（implementation、unit、integration、review）、看板和受控本地命令执行；V3 加入版本化工件、追踪、测试模型/Case/Execution、工作租约、Gate assessment、release/rollback 事实、分页读取和五技术栈 Harness。
 - 已有本地源码验证、独立测试和审查记录，但它们是工程范围证据，不是正式产品验收或生产发布。见 [追踪索引](docs/platform-v3/traceability.md)、[最终本地验证 JSON](docs/platform-v3/evidence/final-local-validation.json) 与 [能力状态](docs/platform-v3/capability-status.md)。
 - 顶层 `platform-manifest.json` 仍为 `lifecycle_mode: template`。模板校验通过、任务 `DONE`、Harness `PASS` 或 Case 报告 `PASS` 都不等于任何 G0–G11 `PASS`、人工验收或发布建议。
@@ -96,7 +96,29 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 `setup.ps1` 创建或复用 `.venv`，安装 `tools/mcp/company-context/requirements.txt` 的受限依赖，运行 `pip check`，创建 `knowledge\local`，生成当前工作区 MCP 绝对路径，并运行平台校验。它默认不升级 pip，也不写用户级环境变量。仅在准备好依赖时使用 `-SkipDependencyInstall`；仅 `-PersistLocalRoot` 会持久化 `COMPANY_LOCAL_ROOTS`。
 
-当前不要使用 `install-to-D.ps1` 复制仓库。该脚本会递归复制源目录，现有实现可能携带 `.git`、`.venv`、`.rd-platform`、worktree/cache、`knowledge\local` 及潜在 `.env`，而 `-Force` 还会混合残留内容；在改为受审查的 allowlist 交付前，它不是安全安装入口。请用上面的 `git clone --branch ... --single-branch` 获取干净工作区，再执行 `setup.ps1`。需要离线交付时，仅由发布负责人从经审查、已追踪的文件 allowlist 生成包，绝不从日常工作副本递归复制。
+常规且**首选**的安装路径仍是上面的 `git clone --branch ... --single-branch`、本仓库 `git config --local`，再运行 `setup.ps1`。这样 target 自己拥有可审计 Git 身份和分支历史；不要将源工作区的本地 Git 配置复制到其他位置。
+
+#### 可选：Windows 固定提交高级交付 helper
+
+仅当不能使用 GitHub clone、且交付者能核对固定提交时，才使用根目录 `install-to-D.ps1`。它不是日常同步、增量更新或备份工具：它在 target 新建 Git 仓库，从源 `HEAD^{commit}` 作 depth-1 fetch 并 detached checkout，**不配置 remote**，然后才运行 target 的 `setup.ps1`。因此它不递归复制源 `.git`、忽略/未跟踪文件、`.venv`、`.rd-platform`、worktree、cache、`.env` 或本地知识；唯一严格例外是已提交的公开占位文件 `knowledge/local/README.md`，且必须同时匹配 blob `f361c8f3bd3b7bb62af25fb46bb48c0965c2e263`。它不是本地数据迁移。
+
+前提和拒绝条件：
+
+- target 必须是新目录或已有的**空**普通目录；helper 拒绝 `-Force`、非空目录、源目录本身或其子目录，以及源/目标祖先路径中的 reparse point。它从不合并、覆盖或删除已有 target。
+- fresh target 不继承源 `.git/config`。`setup.ps1` 仍需在 target 进程中看到 `git user.name` 和 `git user.email`；优先改用首选 clone 路径并执行上面的本仓 `--local` 配置。若组织允许且只能用该 helper，可为**当前 PowerShell 进程**提供经批准的身份（不写 global/system 配置）：
+
+```powershell
+$env:GIT_CONFIG_COUNT = "2"
+$env:GIT_CONFIG_KEY_0 = "user.name"
+$env:GIT_CONFIG_VALUE_0 = "YOUR_APPROVED_DISPLAY_NAME"
+$env:GIT_CONFIG_KEY_1 = "user.email"
+$env:GIT_CONFIG_VALUE_1 = "your-approved-address@example.invalid"
+.\install-to-D.ps1 -Destination "D:\your-empty-target"
+```
+
+将占位符改为经批准、可审计的身份；这些环境变量只影响从该 PowerShell 启动的 Git 子进程，并不将身份写进源或 target 的 Git 配置。若安装初始化、fetch、checkout 或 setup 失败，helper 不会打印成功信息、不会自动清理或复用目录；若该 target 由本次调用新建，它会留下 `.install-failed` 供诊断。保留错误和 target 后，由操作者审阅，再选择新的空目录或显式清理后重试。
+
+该 revision-3 helper 的独立审查记录为 unit 12/12、integration 10/10 和 reviewer 22/22 PASS；真实隔离安装从提交 `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 执行完整 setup、依赖与 MCP 检查，记录的是 `PASS (TEMPLATE MODE)`、`Evaluated Gates: NONE`。详见[独立安装交付审查](docs/platform-v3/install-transfer-review.md)和[真实隔离安装验证](docs/platform-v3/install-real-validation.md)。此前递归复制实现是保留的历史 BUG-INSTALL-001；`c3eb271` 的实际 public-stub 拒绝失败是 BUG-INSTALL-002。两者都不应作为本 helper 的行为或发布/人工验收结论。
 
 ### Linux（可验证的手动 venv 路径）
 
@@ -290,7 +312,7 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 | 全量报告、只读项目导出、Case 绑定 runner | 已实现并有本机验证记录。全量报告不截断首个页面；导出拒绝覆盖且不含源码/秘密；`test-run` 只能运行已基线的版本绑定 argv，普通命令结果不等于 Gate。见 [导出说明](docs/platform-v3/project-export.md) 与 [test-run 验证](docs/platform-v3/test-run-validation.md)。 |
 | SQLite 读取容量 | 已观察到 synthetic `capacity --profile full`：100 projects、100,000 artifact versions、1,000,000 events，终端 JSON 为 PASS，129.7199 s、294,764,544 bytes、无公开读取错误。它只衡量 `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` 的本地 SQLite 读路径，不是生产吞吐、写入性能、SLO、Gate 或发布结论。见 [性能验证](docs/platform-v3/performance-validation.md)。 |
 | 8 小时 soak | 已启动，运行目录为 `.rd-platform/benchmark-soak-8h-20260906-1`；当前只有同一 run 的 checkpoint，没有 terminal JSON，因此没有完成/PASS 结论。宿主的 30 分钟 heartbeat 仅用于完成/失败通知，不替代 benchmark 结果。 |
-| GitHub Actions CI | 对 `62c153e8a14425ce4aa3146519129521ded25af5` 的真实 [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) 已于 `2026-09-06T12:01:47Z` 完成 SUCCESS，4/4 jobs SUCCESS，包含原生 Windows C++ 复验。第一、二轮失败及修复历史保留在 [CI 执行记录](docs/platform-v3/ci-execution.md)。这只覆盖 workflow 声明的阶段；Node/fake-`wx` 不等于微信 IDE、真机或发布。当前未提交的 README/installer 修改不属于该次 CI 证据。 |
+| GitHub Actions CI | `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 的真实 [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) 于 `2026-09-06T12:32:02Z` 完成 SUCCESS，4/4 jobs SUCCESS（Windows runtime job `101485885964` 于 `12:32:01Z` 完成）。`62c153e` 与 `c3eb271` 的既有成功、第一/二轮失败和修复历史保留在 [CI 执行记录](docs/platform-v3/ci-execution.md)；`c3eb271` 的 workflow 成功也不覆盖其随后保留的真实安装失败。本行仅覆盖该源码 workflow，后续仅文档改动不在其中；Node/fake-`wx` 不等于微信 IDE、真机或发布。 |
 | Python 逐需求生命周期收口 | 有界的既有 Python 费用 CLI 项目已完成 37/37 当前 Case PASS、7/7 RTM `COMPLETE` 和 G0–G8 `DECIDED PASS CURRENT`；这不是 G9 人工验收、生产部署或发布建议。G9–G11 保持 `NOT_EVALUATED`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。 |
 
 容量/soak 使用专用基准脚本和隔离的全新输出目录；不要指向项目状态库或复用已有输出：

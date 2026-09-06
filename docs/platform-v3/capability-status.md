@@ -42,7 +42,7 @@
 
 ## CR-V3-002 当前事实优先级
 
-下列事实以已推送提交 `62c153e`、本机 Runtime/独立记录和[后续交付记录](completion-delivery.md)为准；它们不改变顶层模板 Gate，也不将模块质量状态扩大为通用产品验收。
+下列事实以已推送 `62c153e`、`c3eb271`、`527dae1` 的记录、本机 Runtime/独立记录和[后续交付记录](completion-delivery.md)为准；它们不改变顶层模板 Gate，也不将模块质量状态扩大为通用产品验收。
 
 | 范围 | 当前事实 | 仍不能推导的结论 |
 | --- | --- | --- |
@@ -51,5 +51,6 @@
 | 8 小时 soak | `.rd-platform/benchmark-soak-8h-20260906-1` 当前为 `RUNNING`；同 run checkpoint 可供读取，但尚无 terminal JSON。 | 没有 terminal 结果时，不得声称 8 小时完成或 PASS；即使终态产生，也只覆盖公开读路径。 |
 | Python 逐需求生命周期项目 | 有界的既有 Python 费用 CLI：37/37 CURRENT Case `PASS`、7/7 RTM `COMPLETE`，独立 Reviewer 已登记 G0–G8 `DECIDED/PASS/CURRENT`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。见 [Python 独立评审](python-lifecycle/independent-review.md)。 | G9–G11 仍 `NOT_EVALUATED`；没有 human acceptance、生产部署或发布建议。 |
 | C++、Web、Java、微信四个样例 | 四个样例保留各自实现、独立测试/审查和历史生命周期事实；它们没有像 Python 项目一样完成逐需求 G0–G8 生命周期收口。微信仍只有 Node/fake-`wx`，无 IDE/真机证据。 | 不得将 Python 的 scoped Gate 决定复制为其他四个样例的 Gate PASS、生产自治或原生微信验证。 |
-| GitHub Actions | 对 `62c153e8a14425ce4aa3146519129521ded25af5` 的真实 [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) 于 `2026-09-06T12:01:47Z` 完成 SUCCESS，4/4 jobs SUCCESS；原生 Windows C++ 已实际在线复验。第一、二轮失败和修复历史保留在 [CI 执行记录](ci-execution.md)。 | 这是 workflow 声明阶段的在线结果，不是 G10、生产部署或人工验收；Node/fake-`wx` 不等于微信 IDE、真机或发布。当前未提交 README/installer 改动不在此 CI 证据范围内。 |
+| 固定提交高级安装交付 | 根 `install-to-D.ps1` revision 3 固定捕获源 `HEAD^{commit}`、fresh Git init、depth-1 fetch、detached checkout 且无 remote；拒绝 `-Force`、非空/非目录 target、源或其子目录和 reparse point。仅允许精确公开占位 `knowledge/local/README.md` 与指定 blob，其他本地数据不递归复制。独立 evidence 为 unit 12/12、integration 10/10、reviewer 22/22 PASS；提交 `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 的真实隔离安装实际完成 setup、依赖、MCP，得到 `PASS (TEMPLATE MODE)` / Gates NONE。见[独立安装交付审查](install-transfer-review.md)与[真实隔离安装验证](install-real-validation.md)。 | 首选仍是 Git clone + target 本仓 `git config --local` + setup。高级 helper 不转移源 `.git/config`，setup 必须由 target 可见的经批准 Git identity 支持；失败不会覆盖/自动清理 target，新建 target 仅留 `.install-failed` 供诊断。它不是备份、离线发布结论、生产部署、人工验收或 Gate 决定；历史 `c3eb271` 真实失败保留为 BUG-INSTALL-002。 |
+| GitHub Actions | `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 的真实 [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) 于 `2026-09-06T12:32:02Z` 完成 SUCCESS，4/4 jobs SUCCESS；Windows runtime job `101485885964` 于 `12:32:01Z` 完成。`62c153e`、`c3eb271` 的既有成功、第一/二轮失败和修复历史保留在 [CI 执行记录](ci-execution.md)。 | 该证据仅覆盖 `527dae1` 源码 workflow，不包括后续仅文档改动；workflow 成功不覆盖 `c3eb271` 随后保留的真实安装失败，也不是 G10、生产部署或人工验收。Node/fake-`wx` 不等于微信 IDE、真机或发布。 |
 | 宿主、审批和发布 | 当前仍由 Codex 宿主实际派发 Agent；没有无人值守 cloud daemon。认证 approval provider、生产部署/回滚和真实人工验收尚无相应事实。 | 不得用本机任务 `DONE`、模板 validator、CI 或测试报告代替认证审批、部署成功或客户验收。 |

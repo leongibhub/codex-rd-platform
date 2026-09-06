@@ -27,7 +27,7 @@
 
 ## 真实任务和独立性
 
-CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。真实 CI 又产生 TASK-V3-011..014 / BUG-CI-001..004，修复、独立角色和在线结果见 [ci-execution.md](ci-execution.md)。当前主项目共 15 个模块任务 DONE，不能据此推导项目验收或 8h PASS。以下 5 个任务是上轮基线记录，不是新任务的总计。
+CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。真实 CI 又产生 TASK-V3-011..014 / BUG-CI-001..004，修复、独立角色和在线结果见 [ci-execution.md](ci-execution.md)。README 执行审查还产生 TASK009 revision 2 与 TASK-V3-015 / BUG-INSTALL-001..002；真实安装首次失败与修复后正常 setup 通过见 [install-real-validation.md](install-real-validation.md)，当前独立审查见 [install-transfer-review.md](install-transfer-review.md)。模块状态不能推导项目验收或 8h PASS。以下 5 个任务是上轮基线记录，不是新任务的总计。
 
 平台项目 `project-908e903738184820b14264adac92adda` 的 5 个任务在最终读取时均为 DONE、当前 4/4 质量检查通过：
 

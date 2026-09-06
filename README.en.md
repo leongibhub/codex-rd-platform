@@ -8,7 +8,7 @@ It is not a model-calling cloud service, a continuously running background daemo
 
 ## Current scope and version
 
-- V3 uses GitHub branch `codex/platform-v3-lifecycle`; this continuation started from `2d77904`, and the current pushed commit is `62c153e8a14425ce4aa3146519129521ded25af5`. See the [completion delivery record](docs/platform-v3/completion-delivery.md) for delivered commits and observed CI results. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
+- V3 uses GitHub branch `codex/platform-v3-lifecycle`; this continuation started from `2d77904`. See the [completion delivery record](docs/platform-v3/completion-delivery.md) for verified source commits and corresponding CI. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
 - V2 provides project/task management, four quality Run phases (implementation, unit, integration, review), a board, and controlled local command execution. V3 adds versioned artifacts, traceability, test models/Cases/Executions, work leases, Gate assessment, release/rollback facts, paginated reads, and a five-stack Harness.
 - Local source-validation, independent-test, and review records exist, but they are engineering-scope evidence, not formal product acceptance or a production release. See the scoped [traceability index](docs/platform-v3/traceability.md), [final local-validation JSON](docs/platform-v3/evidence/final-local-validation.json), and [capability status](docs/platform-v3/capability-status.md).
 - Top-level `platform-manifest.json` remains `lifecycle_mode: template`. A template validation pass, `DONE` task, Harness `PASS`, or Case-report `PASS` is not any G0–G11 `PASS`, human acceptance, or release recommendation.
@@ -96,7 +96,29 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 `setup.ps1` creates or reuses `.venv`, installs constrained dependencies from `tools/mcp/company-context/requirements.txt`, runs `pip check`, creates `knowledge\local`, writes current-worktree MCP absolute paths, and runs platform validation. It does not upgrade pip or persist user environment variables by default. Use `-SkipDependencyInstall` only with a prepared environment; only `-PersistLocalRoot` persists `COMPANY_LOCAL_ROOTS`.
 
-Do not use `install-to-D.ps1` to copy this repository at present. It recursively copies the source directory, and the current implementation can carry `.git`, `.venv`, `.rd-platform`, worktrees/caches, `knowledge\local`, and a possible `.env`; `-Force` can also mix residual content. Until it is replaced by a reviewed allowlist delivery mechanism, it is not a safe installation entry point. Use the `git clone --branch ... --single-branch` procedure above for a clean worktree, then run `setup.ps1`. For an offline delivery, a release manager must build a package from an approved, tracked-file allowlist—not recursively copy a day-to-day working copy.
+The normal and **recommended** installation path remains `git clone --branch ... --single-branch` above, repository-local `git config --local`, then `setup.ps1`. That gives the target its own auditable Git identity and branch history; do not copy a source worktree's local Git configuration into another location.
+
+#### Optional: Windows fixed-commit advanced delivery helper
+
+Use root-level `install-to-D.ps1` only when a GitHub clone is unavailable and the delivery operator can verify a fixed commit. It is not a routine sync, incremental-update, or backup tool: it initializes a Git repository in the target, depth-1 fetches source `HEAD^{commit}`, makes a detached checkout with **no configured remote**, and only then runs target `setup.ps1`. It does not recursively copy the source `.git`, ignored/untracked files, `.venv`, `.rd-platform`, worktrees, caches, `.env`, or local knowledge. The sole narrow exception is committed public stub `knowledge/local/README.md`, which must also match blob `f361c8f3bd3b7bb62af25fb46bb48c0965c2e263`. This is not local-data migration.
+
+Prerequisites and rejections:
+
+- The target must be a new directory or an existing **empty** ordinary directory. The helper rejects `-Force`, a non-empty directory, the source itself or a source descendant, and a reparse point in either source/target ancestor path. It never merges with, overwrites, or deletes an existing target.
+- A fresh target does not inherit source `.git/config`. `setup.ps1` must still see `git user.name` and `git user.email` in the target process. Prefer the recommended clone path and its repository-local configuration above. If organizational policy allows and this helper is the only option, provide an approved identity for the **current PowerShell process** (not global/system configuration):
+
+```powershell
+$env:GIT_CONFIG_COUNT = "2"
+$env:GIT_CONFIG_KEY_0 = "user.name"
+$env:GIT_CONFIG_VALUE_0 = "YOUR_APPROVED_DISPLAY_NAME"
+$env:GIT_CONFIG_KEY_1 = "user.email"
+$env:GIT_CONFIG_VALUE_1 = "your-approved-address@example.invalid"
+.\install-to-D.ps1 -Destination "D:\your-empty-target"
+```
+
+Replace the placeholders with an approved, auditable identity. Those environment variables affect only Git child processes launched from this PowerShell; they do not write the identity into source or target Git configuration. If initialization, fetch, checkout, or setup fails, the helper prints no success message and does not automatically clean or reuse the directory. When this invocation created the target, it leaves `.install-failed` for diagnosis. Preserve the error and target, review them, then choose a new empty target or explicitly clean up before retrying.
+
+The revision-3 helper has independent evidence of unit 12/12, integration 10/10, and reviewer 22/22 PASS. A real isolated installation from `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` ran full setup, dependencies, and MCP checks; its recorded result is `PASS (TEMPLATE MODE)` with `Evaluated Gates: NONE`. See the [independent installation-transfer review](docs/platform-v3/install-transfer-review.md) and [real isolated-install validation](docs/platform-v3/install-real-validation.md). The former recursive-copy implementation is retained historical BUG-INSTALL-001; the real `c3eb271` public-stub rejection is BUG-INSTALL-002. Neither describes this helper's behavior nor proves release or human acceptance.
 
 ### Linux (verifiable manual venv path)
 
@@ -290,7 +312,7 @@ To onboard an existing repository:
 | Complete report, read-only project export, Case-bound runner | Implemented with local verification records. The report is not truncated at its first page; export refuses overwrite and excludes source/secrets; `test-run` executes only baselined version-bound argv, while an ordinary command outcome is not a Gate. See [export guide](docs/platform-v3/project-export.md) and [test-run validation](docs/platform-v3/test-run-validation.md). |
 | SQLite read capacity | Synthetic `capacity --profile full` was observed: 100 projects, 100,000 artifact versions, 1,000,000 events; terminal JSON PASS in 129.7199 s at 294,764,544 bytes with no public-read errors. This measures only local SQLite `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` reads, not production throughput, write performance, SLO, Gate, or release. See [performance validation](docs/platform-v3/performance-validation.md). |
 | Eight-hour soak | Started in `.rd-platform/benchmark-soak-8h-20260906-1`; the current run has a checkpoint but no terminal JSON, so there is no completion/PASS conclusion. The host’s 30-minute heartbeat is completion/failure notification only, not a benchmark result. |
-| GitHub Actions CI | The real [run 34031461586](https://github.com/leongibhub/codex-rd-platform/actions/runs/34031461586) for `62c153e8a14425ce4aa3146519129521ded25af5` completed SUCCESS at `2026-09-06T12:01:47Z`, with 4/4 jobs SUCCESS, including native Windows C++ revalidation. First- and second-run failures and their remediation history remain in the [CI execution record](docs/platform-v3/ci-execution.md). This covers only workflow-declared phases; Node/fake-`wx` is not WeChat IDE, device, or publication validation. Current uncommitted README/installer changes are not part of this CI evidence. |
+| GitHub Actions CI | The real [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) for `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` completed SUCCESS at `2026-09-06T12:32:02Z`, with 4/4 jobs SUCCESS (Windows runtime job `101485885964` completed at `12:32:01Z`). Earlier success for `62c153e` and `c3eb271`, first-/second-run failures, and remediation remain in the [CI execution record](docs/platform-v3/ci-execution.md); `c3eb271` workflow success does not erase its later retained real-install failure. This row covers only that source workflow, not subsequent documentation-only changes; Node/fake-`wx` is not WeChat IDE, device, or publication validation. |
 | Python requirement-by-requirement lifecycle closure | The scoped existing Python-expenses CLI project completed 37/37 current-Case PASS, 7/7 `COMPLETE` RTM, and G0–G8 `DECIDED PASS CURRENT`. This is not G9 human acceptance, production deployment, or release recommendation. G9–G11 remain `NOT_EVALUATED`; finalization is `G0_G8_COMPLETE_G9_PENDING`. |
 
 Capacity/soak use their specialized benchmark and a fresh isolated output directory. Do not target a project state database or reuse existing output:
