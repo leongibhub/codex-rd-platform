@@ -1,5 +1,7 @@
 # 平台 V3：本地运行、操作与恢复说明
 
+最终源码提交、远端核验、实测结果和使用入口见[交付记录](delivery-record.md)，逐项实现追踪见[追踪索引](traceability.md)。下文的观察时间保留原始检查口径。
+
 - 文档状态：`DRAFT`
 - 变更：`CR-V3-001`；设计基线：[V3 设计](../superpowers/specs/2026-09-06-platform-v3-design.md)
 - 本页不作 Gate、发布、生产部署或人工验收决定。顶层 `platform-manifest.json` 当前仍为 `lifecycle_mode: template`；V3 Runtime 中的活动记录不把模板项目的任何 G0–G11 变为 `PASS`。

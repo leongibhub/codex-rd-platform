@@ -21,6 +21,8 @@ A repository-first multi-agent software/product development operating system for
 
 ## V3 lifecycle runtime and five-stack Skill validation
 
+Verified source delivery: [V3 delivery record](docs/platform-v3/delivery-record.md) and [implementation traceability](docs/platform-v3/traceability.md).
+
 The local runtime now adds versioned requirements/design/test artifacts, typed traceability, risk-led test models, real execution evidence, G0–G11 policies, human-control work leases, and release/rollback records. The same `platform-orchestration` Skill was used to build and independently test C++, Python, Web, Java and WeChat samples.
 
 Start with the [V3 operation guide](docs/platform-v3/README.md), [capability status](docs/platform-v3/capability-status.md), and [independent app results](docs/platform-v3/independent-app-tests.md). Native WeChat, authenticated human approval, external deployment and long-duration stability results must not be inferred from local test passes. Models still run through the actual Codex host; there is no secretly connected autonomous cloud daemon.
