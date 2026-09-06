@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "wechat_expenses",
+  "stack": "wechat-miniprogram-native-node-tests",
+  "requirements": ["REQ-MATRIX-WECHAT"],
+  "commands": {
+    "unit": ["{node}", "--test", "{app}/test/expense-domain.test.js"],
+    "integration": ["{node}", "--test", "{app}/test/page-adapter.test.js"]
+  },
+  "native_validation": "NOT_AVAILABLE: 微信开发者工具和真机在当前环境不可用。Node tests cover the business module and explicit wx test double only; import, native runtime, real wx storage, device, and publication are unexecuted.",
+  "entrypoint": "app.json"
+}

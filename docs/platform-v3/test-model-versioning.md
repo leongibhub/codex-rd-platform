@@ -1,0 +1,11 @@
+# V3 test-model versioning
+
+Record: `TASK-V3-001`; requirements `REQ-V3-002`, `REQ-V3-005`, `REQ-V3-009`; design `DES-V3-001` / `CR-V3-001`.
+
+`test_model.create` requires a registered-agent `source` and creates the `TEST_MODEL` artifact, its immutable `lc_artifact_versions` v1 record, and the current model in one transaction. The backing artifact content is the actual structured model definition; it is never a synthetic placeholder. The model exposes its `version`, document `state`, and source.
+
+`test_model.revise` requires `expected_version` and a nonempty reason. A material revision requires a same-project `CR-xxx`; it advances the current model version and appends its backing artifact history in `lc_artifact_versions`, never changing an earlier record. Generic `artifact.create` and `artifact.revise` reject `TEST_MODEL`, so the two current-version fields cannot diverge through a second write path. It invalidates dependent cases, work, traces, Gate assessments and releases through the existing lifecycle invalidation flow. Dependent cases become `REVIEW_REQUIRED`, retain their previous model version for history, and must be revised before their new case version can bind the current model version. `state: OBSOLETE` is available through revision; no test-model history is deleted.
+
+Legacy `lc_test_models` rows without backing artifact provenance remain readable, but cannot be silently promoted, revised, used to create/revise cases, or used for a new execution. Historical execution rows are retained as facts and are not rewritten. An authorized maintainer may use the explicit `test_model.adopt` command with the legacy `expected_version`, reason, current registered `source`, and desired state. Adoption imports the exact legacy structured body as immutable artifact version 1 with `legacy_source_status: NOT_AVAILABLE`, creates a current version 2 backed by the maintainer's declared source, and invalidates dependent cases for review. It represents present maintenance responsibility, not a claim about the original author or a human approval.
+
+Developer verification: `.venv/Scripts/python.exe -X utf8 -m unittest discover -s tests/runtime -p test_lifecycle_models.py -v` (run results are recorded with the implementation task; this document does not claim independent testing, Gate PASS, acceptance, or release).

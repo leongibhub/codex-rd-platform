@@ -40,6 +40,26 @@ def build_parser() -> argparse.ArgumentParser:
     report = commands.add_parser("report", help="从真实快照生成报告 JSON")
     report.add_argument("--project-id")
 
+    lifecycle = commands.add_parser("lifecycle", help="读取版本化生命周期、Gate、追踪与测试事实")
+    lifecycle.add_argument("--project-id", required=True)
+    lifecycle.add_argument("--after-sequence", type=int, default=0)
+    lifecycle.add_argument("--limit", type=int, default=200)
+    lifecycle_collection = commands.add_parser("lifecycle-collection", help="分页读取一个公开生命周期集合")
+    lifecycle_collection.add_argument("--project-id", required=True)
+    lifecycle_collection.add_argument("collection")
+    lifecycle_collection.add_argument("--after-cursor")
+    lifecycle_collection.add_argument("--limit", type=int, default=200)
+    lifecycle_report = commands.add_parser("lifecycle-report", help="生成当前版本正式测试报告；不改变Gate")
+    lifecycle_report.add_argument("--project-id", required=True)
+    commands.add_parser("stack-probe", help="只读探测本机技术栈工具")
+    for operation, description in (("stack-run", "执行可信本地应用manifest的构建/测试"),
+                                   ("stack-package", "生成带摘要的本地应用交付包")):
+        stack = commands.add_parser(operation, help=description)
+        stack.add_argument("manifest", type=Path)
+        stack.add_argument("--root", type=Path, default=Path.cwd())
+        if operation == "stack-run":
+            stack.add_argument("--phase", action="append", choices=("build", "unit", "integration"))
+
     run = commands.add_parser("run", help="由可信 CLI 执行命令并记录运行证据")
     run.add_argument("--task-id", required=True)
     run.add_argument("--agent-id", required=True)
@@ -95,6 +115,17 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(freeze(_object(args.model, "model"), _object(args.answers, "answers")), ensure_ascii=False, allow_nan=False, indent=2))
             return 0
 
+        if args.operation in {"stack-probe", "stack-run", "stack-package"}:
+            from .stack_harness import probe_tools, run_matrix, package_app
+            if args.operation == "stack-probe":
+                result = probe_tools()
+            elif args.operation == "stack-run":
+                result = run_matrix(args.manifest, root=args.root, phases=args.phase)
+            else:
+                result = package_app(args.manifest, root=args.root)
+            print(json.dumps(result, ensure_ascii=False, allow_nan=False, indent=2))
+            return 0 if args.operation == "stack-probe" or result.get("status") == "PASS" else 1
+
         from .runtime import Runtime
         runtime = Runtime(args.db)
         exit_code = 0
@@ -102,6 +133,13 @@ def main(argv: list[str] | None = None) -> int:
             result = runtime.execute(args.name, _object(args.data, "data"), request_id=args.request_id)
         elif args.operation == "snapshot":
             result = runtime.snapshot(args.project_id)
+        elif args.operation == "lifecycle":
+            result = runtime.lifecycle_snapshot(args.project_id, after_sequence=args.after_sequence, limit=args.limit)
+        elif args.operation == "lifecycle-collection":
+            result = runtime.lifecycle_collection(args.project_id, args.collection, limit=args.limit, after_cursor=args.after_cursor)
+        elif args.operation == "lifecycle-report":
+            from .lifecycle_reporting import lifecycle_report
+            result = lifecycle_report(runtime.lifecycle_snapshot(args.project_id, limit=500))
         elif args.operation == "discover":
             from .discovery import discover
             result = discover(args.idea)

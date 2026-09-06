@@ -1,0 +1,9 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "本地记账本",
+    "navigationBarBackgroundColor": "#1f6f5b",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f7f6"
+  }
+}

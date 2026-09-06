@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "web_notes",
+  "stack": "web-native-esm",
+  "requirements": ["REQ-MATRIX-WEB"],
+  "commands": {
+    "unit": ["{node}", "--test", "{app}/tests/notes.test.js"]
+  },
+  "native_validation": "Serve with `python -m http.server 8080 --bind 127.0.0.1` from {app}, then independently exercise create, edit, search, delete, reload persistence, validation, and literal rendering of HTML-like text in a real browser.",
+  "entrypoint": "{app}/index.html"
+}

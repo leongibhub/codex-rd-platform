@@ -29,6 +29,15 @@
       </section></details>
 
       <p id="notice" class="notice" role="status" aria-live="polite">正在读取本地运行事实…</p>
+      <section class="agent-panel" aria-labelledby="lifecycle-title">
+        <div><p class="eyebrow">LIFECYCLE / VERSIONED EVIDENCE</p><h2 id="lifecycle-title">生命周期与质量门禁</h2></div>
+        <label>查看项目<select id="lifecycle-project"></select></label>
+        <p id="lifecycle-status" role="status">尚未读取生命周期。</p>
+        <div id="lifecycle-summary" class="counters"></div>
+        <div class="table-wrap"><table><thead><tr><th>Gate</th><th>评估状态</th><th>结论</th><th>当前评估</th></tr></thead><tbody id="lifecycle-gates"></tbody></table></div>
+        <div id="lifecycle-details"></div>
+        <p class="table-note">没有初始化或未评估不等于 PASS。历史执行与当前有效版本分开记录；人工批准、运行证据和发布操作不开放给浏览器。</p>
+      </section>
       <section class="board" aria-label="任务看板">
         <div class="board-head"><h2>项目与任务</h2><span>项目运行状态与任务当前质量阶段来自当前快照</span></div>
         <div id="projects" class="projects"></div>

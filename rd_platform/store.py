@@ -43,6 +43,9 @@ class Store:
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self.transaction() as connection:
             connection.executescript(SCHEMA)
+        from .lifecycle_store import migrate
+        with self.transaction() as connection:
+            migrate(connection)
 
     @contextmanager
     def transaction(self, *, write: bool = True) -> Iterator[sqlite3.Connection]:

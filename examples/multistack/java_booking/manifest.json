@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "java_booking",
+  "stack": "java",
+  "requirements": ["REQ-MATRIX-JAVA"],
+  "commands": {
+    "build": ["{javac}", "-encoding", "UTF-8", "-d", "{build}/classes", "{app}/src/booking/Booking.java", "{app}/src/booking/BookingException.java", "{app}/src/booking/BookingStore.java", "{app}/src/booking/BookingCli.java", "{app}/src/booking/BookingStoreTest.java", "{app}/src/booking/BookingCliProcessTest.java"],
+    "unit": ["{java}", "-cp", "{build}/classes", "booking.BookingStoreTest", "{build}/unit-data"],
+    "integration": ["{java}", "-cp", "{build}/classes", "booking.BookingCliProcessTest", "{build}/integration-data"]
+  },
+  "native_validation": "Compile with a real Java 8 JDK. Unit tests exercise domain/store behaviour; integration tests spawn fresh Java CLI processes to verify command parsing and file durability. Independent QA and review are separate phases.",
+  "entrypoint": "booking.BookingCli"
+}

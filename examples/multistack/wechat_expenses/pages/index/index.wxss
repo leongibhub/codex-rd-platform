@@ -1,0 +1,8 @@
+.input { border: 2rpx solid #c8d8d1; border-radius: 12rpx; box-sizing: border-box; margin-bottom: 18rpx; padding: 18rpx; width: 100%; }
+.add { background: #1f6f5b; color: #fff; }
+.error { color: #b3261e; font-size: 26rpx; margin-top: 16rpx; }
+.total { align-items: center; display: flex; justify-content: space-between; }
+.amount { color: #1f6f5b; font-size: 44rpx; font-weight: 700; }
+.item { align-items: center; border-bottom: 1rpx solid #e2ebe6; display: flex; justify-content: space-between; padding: 20rpx 0; }
+.item:last-child { border-bottom: 0; }
+.category { font-weight: 600; }.time { color: #6b8178; font-size: 22rpx; margin-top: 8rpx; }.item-right { align-items: center; display: flex; gap: 16rpx; }.delete { color: #b3261e; font-size: 24rpx; margin: 0; padding: 0; }.empty { color: #6b8178; padding: 64rpx 0; text-align: center; }

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "python_expenses",
+  "stack": "python-stdlib",
+  "requirements": [
+    "REQ-MATRIX-PY"
+  ],
+  "commands": {
+    "build": [
+      "{python}",
+      "-X",
+      "pycache_prefix={build}/pycache",
+      "-m",
+      "compileall",
+      "-q",
+      "{app}"
+    ],
+    "unit": [
+      "{python}",
+      "-X",
+      "pycache_prefix={build}/pycache",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "{app}/tests",
+      "-v"
+    ]
+  },
+  "native_validation": "Run the standard-library CLI against UTF-8 CSV files; successful output is exact Decimal totals serialized as JSON strings, and invalid input exits nonzero with an error on stderr.",
+  "entrypoint": "expense_analyzer.py"
+}

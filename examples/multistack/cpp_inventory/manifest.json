@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "cpp_inventory",
+  "stack": "C++17 (WSL Ubuntu g++ 11.4)",
+  "requirements": [
+    "REQ-MATRIX-CPP",
+    "REQ-MATRIX-CPP-01",
+    "REQ-MATRIX-CPP-02",
+    "REQ-MATRIX-CPP-03",
+    "REQ-MATRIX-CPP-04",
+    "REQ-MATRIX-CPP-05",
+    "REQ-MATRIX-CPP-06"
+  ],
+  "commands": {
+    "build": ["{python}", "{app}/verify.py", "--phase", "build"],
+    "unit": ["{python}", "{app}/verify.py", "--phase", "unit"],
+    "integration": ["{python}", "{app}/verify.py", "--phase", "integration"]
+  },
+  "native_validation": "Actual compilation and execution use WSL Ubuntu 22.04 /usr/bin/g++ 11.4 because no Windows C++ compiler was available. verify.py invokes WSL with argv (no shell) and confines generated artifacts to .rd-platform/build/cpp_inventory.",
+  "entrypoint": "{build}/inventory <data-file> <add|deduct|get|list> [arguments]"
+}

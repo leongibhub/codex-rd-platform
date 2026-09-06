@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import re
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -49,6 +50,40 @@ def _handler_type() -> type[BaseHTTPRequestHandler]:
                 self._error(HTTPStatus.BAD_REQUEST, "Host must be this loopback server")
                 return
             request = urlsplit(self.path)
+            if request.path == "/api/lifecycle/collection":
+                query = parse_qs(request.query, keep_blank_values=True)
+                try:
+                    if set(query) - {"project_id", "collection", "after_cursor", "limit"} or any(len(value) != 1 for value in query.values()):
+                        raise ValueError("query fields may appear once")
+                    project_id = query.get("project_id", [""])[0]
+                    collection = query.get("collection", [""])[0]
+                    if not project_id or not collection:
+                        raise ValueError("project_id and collection are required")
+                    limit_text = query.get("limit", ["200"])[0]
+                    if re.fullmatch(r"[1-9][0-9]*", limit_text) is None:
+                        raise ValueError("invalid lifecycle pagination")
+                    result = self.server.runtime.lifecycle_collection(project_id, collection, limit=int(limit_text), after_cursor=query.get("after_cursor", [None])[0])
+                    self._json(HTTPStatus.OK, result)
+                except (KeyError, ValueError) as exc:
+                    self._error(HTTPStatus.BAD_REQUEST, str(exc))
+                return
+            if request.path == "/api/lifecycle":
+                query = parse_qs(request.query, keep_blank_values=True)
+                try:
+                    if set(query) - {"project_id", "after_sequence", "limit"} or any(len(v) != 1 for v in query.values()):
+                        raise ValueError("query fields may appear once")
+                    project_id = query.get("project_id", [""])[0]
+                    if not project_id:
+                        raise ValueError("project_id is required")
+                    after = int(query.get("after_sequence", ["0"])[0])
+                    limit = int(query.get("limit", ["200"])[0])
+                    if after < 0 or not 1 <= limit <= 500:
+                        raise ValueError("invalid lifecycle pagination")
+                    result = self.server.runtime.lifecycle_snapshot(project_id, after_sequence=after, limit=limit)
+                    self._json(HTTPStatus.OK, result)
+                except (KeyError, ValueError) as exc:
+                    self._error(HTTPStatus.BAD_REQUEST, str(exc))
+                return
             if request.path == "/api/snapshot":
                 query = parse_qs(request.query, keep_blank_values=True)
                 project_ids = query.get("project_id", [])

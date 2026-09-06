@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="card"><view class="title">本地记账本</view><view class="subtitle">数据仅保存在当前设备</view></view>
+  <view class="card">
+    <input class="input" type="digit" value="{{amountInput}}" placeholder="金额，例如 12.34" bindinput="onAmountInput" />
+    <input class="input" value="{{categoryInput}}" placeholder="分类，例如 餐饮" bindinput="onCategoryInput" maxlength="64" />
+    <button class="add" bindtap="onAddExpense">新增记录</button>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+  </view>
+  <view class="card total"><text>合计</text><text class="amount">¥ {{totalText}}</text></view>
+  <view wx:if="{{records.length}}" class="card">
+    <view wx:for="{{records}}" wx:key="id" class="item">
+      <view><view class="category">{{item.category}}</view><view class="time">{{item.createdAt}}</view></view>
+      <view class="item-right"><text>¥ {{item.amountText}}</text><button class="delete" data-id="{{item.id}}" bindtap="onDeleteExpense">删除</button></view>
+    </view>
+  </view>
+  <view wx:else class="empty">还没有记录，先记一笔吧。</view>
+</view>

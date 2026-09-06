@@ -32,6 +32,7 @@ async function refresh() {
     if (!response.ok) throw new Error("无法读取本地快照");
     snapshot = await response.json();
     render();
+    await refreshLifecycle();
     const now = new Date().toLocaleTimeString("zh-CN", { hour12: false });
     byId("refresh-status").textContent = `每 3 秒在可见页面自动刷新。最后成功：${now}`;
     notice("已更新：仅显示已持久化的运行事实。", false);
@@ -61,8 +62,37 @@ function render() {
     const block = element("div", undefined, "counter"); block.append(element("strong", count), element("span", label)); counters.append(block);
   });
   renderSelect(byId("task-project"), snapshot.projects, "项目");
+  renderSelect(byId("lifecycle-project"), snapshot.projects, "项目");
   renderSelect(byId("control-task"), snapshot.tasks, "任务");
   renderProjects(); renderAgents(); renderEvents();
+}
+
+let lifecycleRequest = 0;
+async function refreshLifecycle() {
+  const generation = ++lifecycleRequest;
+  const projectId = byId("lifecycle-project").value;
+  const status = byId("lifecycle-status");
+  ["lifecycle-summary", "lifecycle-gates", "lifecycle-details"].forEach((id) => clear(byId(id)));
+  if (!projectId) { status.textContent = "尚无项目。"; return; }
+  try {
+    const response = await fetch(`/api/lifecycle?project_id=${encodeURIComponent(projectId)}`, { cache: "no-store" });
+    const data = await response.json();
+    if (generation !== lifecycleRequest) return;
+    if (!response.ok) { status.textContent = `生命周期未就绪：${data.error || "读取失败"}`; return; }
+    const lifecycle = data.lifecycle;
+    status.textContent = `${lifecycle.state} · 当前阶段 ${lifecycle.current_gate} · 已作出决策 ${lifecycle.progress.decided}/${lifecycle.progress.total}（不代表全部通过）`;
+    [["版本化产物", data.summary.artifacts], ["追踪缺口", data.summary.trace_gaps], ["未关闭缺陷", data.summary.open_defects]].forEach(([label, count]) => {
+      const block = element("div", undefined, "counter"); block.append(element("strong", count), element("span", label)); byId("lifecycle-summary").append(block);
+    });
+    data.gates.slice().sort((a, b) => a.ordinal - b.ordinal).forEach((gate) => {
+      const row = element("tr"); [gate.gate_id, gate.evaluation_state, gate.gate_status || "未作出结论", gate.current_assessment_id || "无"].forEach((value) => row.append(element("td", value))); byId("lifecycle-gates").append(row);
+    });
+    const sections = [["待处理事项", data.next_actions], ["工作单与租约", data.work_orders], ["需求追踪", data.traceability], ["测试模型", data.test_models], ["测试用例", data.test_cases], ["真实测试执行", data.test_executions], ["缺陷闭环", data.defects], ["版本化产物", data.artifacts], ["发布记录", data.releases], ["生命周期事件", data.events]];
+    sections.forEach(([label, rows]) => {
+      const details = element("details", undefined, "run-details"); details.append(element("summary", `${label}（本页 ${rows.length} 项）`), element("pre", JSON.stringify(rows, null, 2))); byId("lifecycle-details").append(details);
+    });
+    if (data.has_more || Object.values(data.collections_truncated).some(Boolean)) byId("lifecycle-details").prepend(element("p", "数据已截页；使用 CLI lifecycle 查看事件后续，使用 lifecycle-collection 的游标查看各集合后续。不能把本页数量当作完整数量。", "table-note"));
+  } catch (error) { if (generation === lifecycleRequest) status.textContent = `生命周期读取失败：${error.message}`; }
 }
 
 function renderProjects() {
@@ -129,6 +159,17 @@ bindForm("control-form", "task.control", (data) => {
   ["agent_id", "title", "why"].forEach((key) => { if (!data[key]) delete data[key]; }); return data;
 });
 byId("refresh").addEventListener("click", refresh);
-setInterval(() => { if (!document.hidden) refresh(); }, 3000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+byId("lifecycle-project").addEventListener("change", refreshLifecycle);
+function autoRefresh() {
+  if (document.hidden) return;
+  // Preserve open evidence and partially entered controls. The explicit
+  // refresh button remains available when the reader wants a new snapshot.
+  if (document.querySelector("details[open]")) {
+    byId("refresh-status").textContent = "正在查看展开内容，自动刷新暂缓；可手动刷新，收起后恢复。";
+    return;
+  }
+  refresh();
+}
+setInterval(autoRefresh, 3000);
+document.addEventListener("visibilitychange", autoRefresh);
 refresh();

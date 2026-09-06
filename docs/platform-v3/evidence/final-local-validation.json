@@ -1,0 +1,1148 @@
+{
+  "schema_version": "v3-delivery-evidence-v1",
+  "observed_at": "2026-09-06T09:55:29.2624572Z",
+  "baseline_commit": "9655f33d645e2169d451d79f3667778733897390",
+  "scope": "local source delivery, not Gate or release approval",
+  "tasks": [
+    {
+      "id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "project_id": "project-152bca383ccf4f48a63d8d1648d45c95",
+      "title": "C++做一个库存工具",
+      "status": "DONE",
+      "attempt": 2,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "project_id": "project-322f5048ad634b42b59dde2168bdbdc6",
+      "title": "Python做一个CSV费用分析工具",
+      "status": "DONE",
+      "attempt": 2,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "project_id": "project-876a0fda2c6746759124392165b98e70",
+      "title": "Web做一个离线便签应用",
+      "status": "DONE",
+      "attempt": 2,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-040d30aa16f54e84afb74dae678450ac",
+      "project_id": "project-df85f053bb07401fa41cc28040bfbae5",
+      "title": "Java做一个会议室预约工具",
+      "status": "DONE",
+      "attempt": 2,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "project_id": "project-25bf3b17a430485caef4f27d80287626",
+      "title": "微信小程序做一个本地记账本",
+      "status": "DONE",
+      "attempt": 2,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "project_id": "project-908e903738184820b14264adac92adda",
+      "title": "多技术栈编译、测试、打包执行器",
+      "status": "DONE",
+      "attempt": 4,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-e39fdf1276024f338c00c196b764a56c",
+      "project_id": "project-908e903738184820b14264adac92adda",
+      "title": "版本化生命周期、追踪、Gate与缺陷闭环",
+      "status": "DONE",
+      "attempt": 4,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-5ae84d62357e4887ac35eb7877f3bc9e",
+      "project_id": "project-908e903738184820b14264adac92adda",
+      "title": "接入CLI、生命周期看板及Skill交付流程",
+      "status": "DONE",
+      "attempt": 1,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-f8748fc6225b4e4e87106f29e939dd55",
+      "project_id": "project-908e903738184820b14264adac92adda",
+      "title": "补齐生命周期集合分页与安全投影",
+      "status": "DONE",
+      "attempt": 1,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    },
+    {
+      "id": "task-3719174d1366496eb8f76c16aa312abf",
+      "project_id": "project-908e903738184820b14264adac92adda",
+      "title": "补齐测试模型来源、版本演进与失效传播",
+      "status": "DONE",
+      "attempt": 1,
+      "revision": 1,
+      "checks_passed": 4,
+      "checks_total": 4
+    }
+  ],
+  "active_runs": [],
+  "packages": [
+    {
+      "app": "cpp_inventory",
+      "status": "PASS",
+      "archive_filename": "cpp_inventory-401feb180316a70867c3788423a7c7efc26e44f33d244a615af7d5b82f49093e.zip",
+      "archive_sha256": "44728808fb7c9a6bba6a6c39fd070f6319c3107b48156c8da085f4e9183bc1a5",
+      "source_sha256": "401feb180316a70867c3788423a7c7efc26e44f33d244a615af7d5b82f49093e",
+      "files": [
+        {
+          "path": "inventory.cpp",
+          "sha256": "1032ff62f48bc6e2e7e1fb9423996e2dc8729d48d94937baa68eba5457682164"
+        },
+        {
+          "path": "inventory.hpp",
+          "sha256": "ce244278b2ed35d5c3919c0b4abfde16b676f70d98af633e37983c6d351f17df"
+        },
+        {
+          "path": "main.cpp",
+          "sha256": "4aadd80a3ba41b9507574de7b341e3b9a1b094c044b8f83b8ba4be15f6bb3ba2"
+        },
+        {
+          "path": "manifest.json",
+          "sha256": "f71f9d3c9b8058aa9440d86523784406b929224bec001badaa379326745ece94"
+        },
+        {
+          "path": "test_inventory.cpp",
+          "sha256": "60103edc1eeadfd826f0903cbd2021bdba37a41156954bc108ff3ad8662b8802"
+        },
+        {
+          "path": "verify.py",
+          "sha256": "f5256c0f7fc00a5479209eaac4f784b54c8b3f0f3a2ef21124bae4b2c744404f"
+        }
+      ],
+      "excluded_sources": []
+    },
+    {
+      "app": "python_expenses",
+      "status": "PASS",
+      "archive_filename": "python_expenses-c292b6591af8cf4a3115d48579da2ac5c6ce2b86cd1a8aba8da192a4f32657fb.zip",
+      "archive_sha256": "6a2905789214697ee7e417fcbdc8764375adf29f60f77b86c9759337a36a9be3",
+      "source_sha256": "c292b6591af8cf4a3115d48579da2ac5c6ce2b86cd1a8aba8da192a4f32657fb",
+      "files": [
+        {
+          "path": "expense_analyzer.py",
+          "sha256": "e5b1fd29183b182d3288feba8168d7babb5112972d67493291f8d1694151193f"
+        },
+        {
+          "path": "manifest.json",
+          "sha256": "34456a238a3e9ba1cfe495d4b3f2c7b958f597c6956afa94be58629e0c12fe90"
+        },
+        {
+          "path": "tests/test_expense_analyzer.py",
+          "sha256": "53016b1113237a79e928f2b92308a577856c6b4e8719d94e4b2d61ac76f5249d"
+        }
+      ],
+      "excluded_sources": [
+        {
+          "path": "__pycache__/",
+          "reason": "known_sensitive_configuration_directory"
+        },
+        {
+          "path": "tests/__pycache__/",
+          "reason": "known_sensitive_configuration_directory"
+        }
+      ]
+    },
+    {
+      "app": "web_notes",
+      "status": "PASS",
+      "archive_filename": "web_notes-77b89f7c04d9930a903c0754bd1a4fbbf6acf828d95d52c3dd2af490b5b3a5b0.zip",
+      "archive_sha256": "a3f01a47e6089d733c3dba1c9c68311216b8ee958fa4218e0c582683eb8ff79e",
+      "source_sha256": "77b89f7c04d9930a903c0754bd1a4fbbf6acf828d95d52c3dd2af490b5b3a5b0",
+      "files": [
+        {
+          "path": "app.js",
+          "sha256": "036990c41c1b944e93defe5bf23e0b3df6a9c85474ee85c7dd3d9c4e8d87ac47"
+        },
+        {
+          "path": "index.html",
+          "sha256": "6e818d65ed8fe69f41efbf0658e6fb209f9d142ae8e6beef67cd9148d9659eb9"
+        },
+        {
+          "path": "manifest.json",
+          "sha256": "45a8397e5e1852ed9eb826cc7eda19df11ab120f406fc98beba0ecbd482b3f33"
+        },
+        {
+          "path": "notes.js",
+          "sha256": "b605ff89d34931c024b10b85b4b22b04d3b377ac6cc8b0ba47df0930aa8b6942"
+        },
+        {
+          "path": "package.json",
+          "sha256": "52c3543409f1c7601a9205bb0c030e9af90f92e8db60d51caabf0ac9fa8ed422"
+        },
+        {
+          "path": "storage.js",
+          "sha256": "434bafb2eb30918c76726000378b7cc75e22eadf4187745e16eaa55dbb58992b"
+        },
+        {
+          "path": "styles.css",
+          "sha256": "f19b57d2197a1412a1178b13ddc40b4277c8ceddb7c6e2ffc9f3f03fde5d187d"
+        },
+        {
+          "path": "tests/notes.test.js",
+          "sha256": "b479bd4f152c1efa9be458a08b76c9fc7b2acb496cbdf9ce8bbad537beb12eae"
+        }
+      ],
+      "excluded_sources": []
+    },
+    {
+      "app": "java_booking",
+      "status": "PASS",
+      "archive_filename": "java_booking-038a4340b53e722a455e79546f631266297e46acc982af4686179e61ebb62ddb.zip",
+      "archive_sha256": "b54259b42f776de977d0d6450ce3c90fd2371acdc5114540dbfcf0acd0c643e7",
+      "source_sha256": "038a4340b53e722a455e79546f631266297e46acc982af4686179e61ebb62ddb",
+      "files": [
+        {
+          "path": "manifest.json",
+          "sha256": "3cd1cb104fa90631deecdf7db217c8f44ce9222615cbc3f957667c6f3629a617"
+        },
+        {
+          "path": "src/booking/Booking.java",
+          "sha256": "bb1d90079bc579547fab453aa92d9c2d73bd6b7212bd649d1a90d1e82d2726c6"
+        },
+        {
+          "path": "src/booking/BookingCli.java",
+          "sha256": "f73253e26d6598bc1f7d7f380ac815fab08dbafd02519e9c095213c0b6370f59"
+        },
+        {
+          "path": "src/booking/BookingCliProcessTest.java",
+          "sha256": "e212d83ff9fad85f5341e95f8c59e4f3791eec75c896af3da8b7f30a7196d35c"
+        },
+        {
+          "path": "src/booking/BookingException.java",
+          "sha256": "a332ca06a0e57b0421bb40fbdc6c7725d02264200254ae53f050552238b7ca4a"
+        },
+        {
+          "path": "src/booking/BookingStore.java",
+          "sha256": "ad6d79bcdb0ca3cfdf474ada3157bf4ab5c8154eda78bf81e4ae28187b61b9db"
+        },
+        {
+          "path": "src/booking/BookingStoreTest.java",
+          "sha256": "49b4f94b3a9b9648697cc932620589e8fcf0de2848b02b55ad7d512b6cd48bd8"
+        }
+      ],
+      "excluded_sources": []
+    },
+    {
+      "app": "wechat_expenses",
+      "status": "PASS",
+      "archive_filename": "wechat_expenses-633afab126866d7b8401f64354c453ff1daaa6090bd788b20cf9e181d8440799.zip",
+      "archive_sha256": "c63772210ede95c915a4ed2347fd36b06334f2e40be2c5e25a5a1fb465a8a35b",
+      "source_sha256": "633afab126866d7b8401f64354c453ff1daaa6090bd788b20cf9e181d8440799",
+      "files": [
+        {
+          "path": "app.js",
+          "sha256": "1ab645c73bcea61604f9cc4805a752ab9ba8fb66813d8c57cad34328c0ce4109"
+        },
+        {
+          "path": "app.json",
+          "sha256": "db9da2d36c4211f77fb1a2f03892f5f444daece66c233445fa09c4f4ccb570af"
+        },
+        {
+          "path": "app.wxss",
+          "sha256": "485d82724f8abfbd5ae58bc7a30e0274ec6963fcfdb931bd8da0dcf02c3b0f44"
+        },
+        {
+          "path": "lib/expense-domain.js",
+          "sha256": "010c989fdb047046334eef103d5748c9b4d64190633450c4e4db4147a9ea5621"
+        },
+        {
+          "path": "manifest.json",
+          "sha256": "c3c8e586b6d059ac0b14301420081f7832fb719710d86767575360cab5418503"
+        },
+        {
+          "path": "pages/index/index.js",
+          "sha256": "58e85e31fe59f32ce32c359c4857c7eca2127c6047c0abead5e57837603a3d32"
+        },
+        {
+          "path": "pages/index/index.wxml",
+          "sha256": "1dcb80aad432840002e4a0c6c4f0d03e226b5dbb88b068cf4d2110cce930dfea"
+        },
+        {
+          "path": "pages/index/index.wxss",
+          "sha256": "99b43393505204c2261949a11fa766f7a4dd1d370247ba5418c6617ada189349"
+        },
+        {
+          "path": "project.config.json",
+          "sha256": "aefa03f088b7bb7664db0e081b335f723c05eb75e9f7a5673076ffaf048ab41a"
+        },
+        {
+          "path": "test/expense-domain.test.js",
+          "sha256": "39dafd7514e6250b76071cacb89a3317f98051a9f2945ac35c53ed6b39b38b9f"
+        },
+        {
+          "path": "test/page-adapter.test.js",
+          "sha256": "e75d93c7b69cf6e9dfd7f62ebaac3c4b8078590e3e6301658a79e91af7f21a5f"
+        }
+      ],
+      "excluded_sources": []
+    }
+  ],
+  "run_history": [
+    {
+      "id": "run-afdc4512474f4eef8ac96b7afe7a0c43",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_cpp",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:56:28.129684+08:00",
+      "finished_at": "2026-09-06T17:02:02.477445+08:00"
+    },
+    {
+      "id": "run-776b5e5814784f5b99ca6c78e6b7e791",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_python",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:56:28.1568+08:00",
+      "finished_at": "2026-09-06T16:59:35.521688+08:00"
+    },
+    {
+      "id": "run-beb11b69f05c47e9a64dac3f3bdc64da",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_web",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:56:28.179889+08:00",
+      "finished_at": "2026-09-06T16:59:48.052719+08:00"
+    },
+    {
+      "id": "run-bd59a53bea7241e59cc9f6e790218dd5",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_java",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:56:28.201857+08:00",
+      "finished_at": "2026-09-06T17:07:28.338823+08:00"
+    },
+    {
+      "id": "run-4e2bd996464b4b82a51182c34ea3ac9a",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_wechat",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:56:28.223644+08:00",
+      "finished_at": "2026-09-06T17:01:05.23942+08:00"
+    },
+    {
+      "id": "run-a9b1a1c43fa24acd900496a1284f36a9",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_harness",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:58:41.557285+08:00",
+      "finished_at": "2026-09-06T17:07:38.365702+08:00"
+    },
+    {
+      "id": "run-b809c83777994ab7b1e3658dbfe35063",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_lifecycle",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T16:58:41.571814+08:00",
+      "finished_at": "2026-09-06T17:21:38.526602+08:00"
+    },
+    {
+      "id": "run-e8fafb9272eb4f3ba1009dff9077a83d",
+      "task_id": "task-5ae84d62357e4887ac35eb7877f3bc9e",
+      "agent_id": "/root",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:01:53.660358+08:00",
+      "finished_at": "2026-09-06T17:25:25.556599+08:00"
+    },
+    {
+      "id": "run-679046b5fa9b41c9b8349f4b87b0ff4d",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:07:11.001897+08:00",
+      "finished_at": "2026-09-06T17:07:12.008284+08:00"
+    },
+    {
+      "id": "run-550a33c9a740431da74c7bd76ec1464a",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:07:19.064212+08:00",
+      "finished_at": "2026-09-06T17:07:20.700093+08:00"
+    },
+    {
+      "id": "run-4d585e877f5045beb537a4acda9a76f6",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:07:57.510557+08:00",
+      "finished_at": "2026-09-06T17:08:04.907305+08:00"
+    },
+    {
+      "id": "run-c687c89e44024f01a115d85e12d8095d",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:08:16.488594+08:00",
+      "finished_at": "2026-09-06T17:08:18.658471+08:00"
+    },
+    {
+      "id": "run-836f353e89d34535a420c4426f2f5f5a",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:08:44.488879+08:00",
+      "finished_at": "2026-09-06T17:08:44.84884+08:00"
+    },
+    {
+      "id": "run-181c413e446d4b679f2dcdca46bf2baf",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:08:50.444149+08:00",
+      "finished_at": "2026-09-06T17:08:50.79304+08:00"
+    },
+    {
+      "id": "run-ba071e63e0c7456c9c930147d8429a57",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:08:57.090687+08:00",
+      "finished_at": "2026-09-06T17:08:57.434176+08:00"
+    },
+    {
+      "id": "run-a480879ff1b049a2bf812be8bdf53d32",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:09:03.165383+08:00",
+      "finished_at": "2026-09-06T17:09:03.50941+08:00"
+    },
+    {
+      "id": "run-474cd4179f7f44d4b6f496dbbadcaf3e",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:09:31.533109+08:00",
+      "finished_at": "2026-09-06T17:09:32.513459+08:00"
+    },
+    {
+      "id": "run-d7e1661cabb64f1a9494726324c4ec10",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:09:38.297297+08:00",
+      "finished_at": "2026-09-06T17:09:43.207638+08:00"
+    },
+    {
+      "id": "run-90f33c118e6b47638d7d21737f9ee5f8",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_python",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:12:04.889235+08:00",
+      "finished_at": "2026-09-06T17:17:03.180979+08:00"
+    },
+    {
+      "id": "run-e142a916a8864405af1614b57d93766b",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_cpp",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:12:04.899311+08:00",
+      "finished_at": "2026-09-06T17:13:04.015295+08:00"
+    },
+    {
+      "id": "run-d35ef0e24f874ce3b7e2b5bc633005f0",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:13:21.121673+08:00",
+      "finished_at": "2026-09-06T17:13:27.107076+08:00"
+    },
+    {
+      "id": "run-b089d11e2294469b9aacc3bfc6ab807c",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:13:35.80364+08:00",
+      "finished_at": "2026-09-06T17:13:38.317332+08:00"
+    },
+    {
+      "id": "run-c092258d1e1f40658b0826cf8603cbde",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:14:40.489858+08:00",
+      "finished_at": "2026-09-06T17:14:40.495292+08:00"
+    },
+    {
+      "id": "run-e5b1750d6e2c4e778dfd1318337d1382",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_web",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:14:40.506587+08:00",
+      "finished_at": "2026-09-06T17:16:40.21161+08:00"
+    },
+    {
+      "id": "run-333a29976670424ba591fd9c07253dbf",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:14:40.511454+08:00",
+      "finished_at": "2026-09-06T17:14:40.517223+08:00"
+    },
+    {
+      "id": "run-67cf7bf52ef04ddfaec62d5e56754a0b",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_java",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:14:40.527331+08:00",
+      "finished_at": "2026-09-06T17:16:10.477171+08:00"
+    },
+    {
+      "id": "run-f4a96a4a95f24487943d7ffa3ddeac72",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:14:40.532997+08:00",
+      "finished_at": "2026-09-06T17:14:40.537895+08:00"
+    },
+    {
+      "id": "run-deed790f56c24d51a4d5470c1fd00393",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_wechat",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:14:40.547789+08:00",
+      "finished_at": "2026-09-06T17:17:24.588749+08:00"
+    },
+    {
+      "id": "run-c01b1ecc314648dba838d8ab559231e7",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:17:19.392033+08:00",
+      "finished_at": "2026-09-06T17:17:20.983027+08:00"
+    },
+    {
+      "id": "run-300f7ffe0c374c379894e8c53b87365b",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:17:36.260131+08:00",
+      "finished_at": "2026-09-06T17:17:45.812779+08:00"
+    },
+    {
+      "id": "run-f0e9c433b69948c9a08ac16b0d6b258f",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_harness",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:17:52.005444+08:00",
+      "finished_at": "2026-09-06T17:18:08.757372+08:00"
+    },
+    {
+      "id": "run-0dd01aac97944e779caf055248bf38da",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:18:02.671686+08:00",
+      "finished_at": "2026-09-06T17:18:04.079231+08:00"
+    },
+    {
+      "id": "run-6da5d6f6d15f4f2482098d8e667dce6d",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:18:11.252198+08:00",
+      "finished_at": "2026-09-06T17:18:13.580931+08:00"
+    },
+    {
+      "id": "run-67d0e0bbf37e4b4fbea8b4fe4326071d",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:18:24.087356+08:00",
+      "finished_at": "2026-09-06T17:18:26.384285+08:00"
+    },
+    {
+      "id": "run-8584a3f6ce8944cfb9233910d8b5e693",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:18:26.549009+08:00",
+      "finished_at": "2026-09-06T17:18:28.199993+08:00"
+    },
+    {
+      "id": "run-1003cafadd20428a85a6530193040bf3",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:18:29.369672+08:00",
+      "finished_at": "2026-09-06T17:18:29.722942+08:00"
+    },
+    {
+      "id": "run-3e28eef6e3074b1a8b4070b06e0ef660",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:18:36.954523+08:00",
+      "finished_at": "2026-09-06T17:18:37.291314+08:00"
+    },
+    {
+      "id": "run-665ff6ed9a654572bf6712e2c15a3042",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:19:00.03372+08:00",
+      "finished_at": "2026-09-06T17:19:00.396971+08:00"
+    },
+    {
+      "id": "run-9129e4c728224844a41751f1902dd358",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:19:05.834934+08:00",
+      "finished_at": "2026-09-06T17:19:06.203931+08:00"
+    },
+    {
+      "id": "run-4c78c26fa12f46bf879f35107b5b029b",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:19:21.521305+08:00",
+      "finished_at": "2026-09-06T17:19:22.427512+08:00"
+    },
+    {
+      "id": "run-bf0329990253491685738be675d47782",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:19:27.858329+08:00",
+      "finished_at": "2026-09-06T17:19:32.776154+08:00"
+    },
+    {
+      "id": "run-2713940ee75841a5ae402600fd21fecb",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:22:33.757426+08:00",
+      "finished_at": "2026-09-06T17:22:36.502364+08:00"
+    },
+    {
+      "id": "run-faae3da9fa5c4c8fa69e76f5e0e6663b",
+      "task_id": "task-bee072b4c58e4cd99f5df51a484ba7cb",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:23:26.39693+08:00",
+      "finished_at": "2026-09-06T17:23:26.40332+08:00"
+    },
+    {
+      "id": "run-b2f3e97832844b0593f3de0e18cf0abd",
+      "task_id": "task-ba16f26b15ca4110b71d69cb1f61db2f",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:23:26.408969+08:00",
+      "finished_at": "2026-09-06T17:23:26.413738+08:00"
+    },
+    {
+      "id": "run-3491f9ac8f404730a3d3944eb3b811ba",
+      "task_id": "task-b49068ef61e8478d9a97718c3769aeae",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:23:26.419618+08:00",
+      "finished_at": "2026-09-06T17:23:26.424841+08:00"
+    },
+    {
+      "id": "run-bc5f577683954eabad35042bf790ff91",
+      "task_id": "task-040d30aa16f54e84afb74dae678450ac",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:23:26.430009+08:00",
+      "finished_at": "2026-09-06T17:23:26.435789+08:00"
+    },
+    {
+      "id": "run-7faa320cac5f4621bcc41aa9db0f3f6c",
+      "task_id": "task-6f889da4a2bc4c3e90aec0a83983edc1",
+      "agent_id": "/root/v3_review_apps",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:23:26.441626+08:00",
+      "finished_at": "2026-09-06T17:23:26.446337+08:00"
+    },
+    {
+      "id": "run-e507a53d5fc147f0a45dddaacf53722f",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "FAIL",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:26:33.330658+08:00",
+      "finished_at": "2026-09-06T17:26:34.893466+08:00"
+    },
+    {
+      "id": "run-36ec47d70c0241ddb65d0f219a7afb64",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_review_runtime",
+      "phase": "review",
+      "status": "FAIL",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:27:08.50437+08:00",
+      "finished_at": "2026-09-06T17:27:08.508962+08:00"
+    },
+    {
+      "id": "run-a8d8727430284f358227ccdabdeb0cd0",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_harness",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 3,
+      "revision": 1,
+      "created_at": "2026-09-06T17:27:08.51919+08:00",
+      "finished_at": "2026-09-06T17:27:38.585994+08:00"
+    },
+    {
+      "id": "run-62570863127b458d85955247a2833bf7",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_lifecycle",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:27:08.528807+08:00",
+      "finished_at": "2026-09-06T17:34:51.959243+08:00"
+    },
+    {
+      "id": "run-4c13a30260b0402e889d6e9cc710b90f",
+      "task_id": "task-5ae84d62357e4887ac35eb7877f3bc9e",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:27:18.759255+08:00",
+      "finished_at": "2026-09-06T17:27:20.267063+08:00"
+    },
+    {
+      "id": "run-f96512f626634da5842fb950096a57fd",
+      "task_id": "task-5ae84d62357e4887ac35eb7877f3bc9e",
+      "agent_id": "/root/v3_qa_apps",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:27:26.540544+08:00",
+      "finished_at": "2026-09-06T17:27:28.542964+08:00"
+    },
+    {
+      "id": "run-c6ea2ab37df14a4ab39e090fd343b423",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 3,
+      "revision": 1,
+      "created_at": "2026-09-06T17:29:21.36196+08:00",
+      "finished_at": "2026-09-06T17:29:23.10331+08:00"
+    },
+    {
+      "id": "run-0326efdffb0746598fc8da384f496afe",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "FAIL",
+      "attempt": 3,
+      "revision": 1,
+      "created_at": "2026-09-06T17:29:23.266271+08:00",
+      "finished_at": "2026-09-06T17:29:25.001757+08:00"
+    },
+    {
+      "id": "run-99a53f074f6d416cbb7f46cf401a50e7",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_harness",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:29:33.405689+08:00",
+      "finished_at": "2026-09-06T17:33:37.606255+08:00"
+    },
+    {
+      "id": "run-66ceba217a5d4fe58c4b13b0573ca4b9",
+      "task_id": "task-f8748fc6225b4e4e87106f29e939dd55",
+      "agent_id": "/root/v3_query",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:33:00.059097+08:00",
+      "finished_at": "2026-09-06T17:38:22.092599+08:00"
+    },
+    {
+      "id": "run-15973333db0243a49b02e1c7569e6db1",
+      "task_id": "task-3719174d1366496eb8f76c16aa312abf",
+      "agent_id": "/root/v3_models",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:33:00.075292+08:00",
+      "finished_at": "2026-09-06T17:41:53.823621+08:00"
+    },
+    {
+      "id": "run-272ca63cc4d04946bb5e642f82e4b750",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:34:04.21655+08:00",
+      "finished_at": "2026-09-06T17:34:06.386417+08:00"
+    },
+    {
+      "id": "run-fcfa39a14b704595b5d4d01060b991d0",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:34:06.549453+08:00",
+      "finished_at": "2026-09-06T17:34:08.312729+08:00"
+    },
+    {
+      "id": "run-40bd77cee59942c0991ed7d570dcb637",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "FAIL",
+      "attempt": 2,
+      "revision": 1,
+      "created_at": "2026-09-06T17:35:32.043627+08:00",
+      "finished_at": "2026-09-06T17:35:35.28823+08:00"
+    },
+    {
+      "id": "run-444715940ce54dd3829731b6689e0266",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_lifecycle",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 3,
+      "revision": 1,
+      "created_at": "2026-09-06T17:38:58.755733+08:00",
+      "finished_at": "2026-09-06T17:39:55.90948+08:00"
+    },
+    {
+      "id": "run-257a64d606b044c59421ffd9dec4f5da",
+      "task_id": "task-f8748fc6225b4e4e87106f29e939dd55",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:40:19.165294+08:00",
+      "finished_at": "2026-09-06T17:40:20.976131+08:00"
+    },
+    {
+      "id": "run-eecacd5f4c04423e934bdcf42bac6c9f",
+      "task_id": "task-f8748fc6225b4e4e87106f29e939dd55",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:40:21.151739+08:00",
+      "finished_at": "2026-09-06T17:40:27.648043+08:00"
+    },
+    {
+      "id": "run-3c6c4c3a02f14f53b5d3beb5cd1f10e0",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 3,
+      "revision": 1,
+      "created_at": "2026-09-06T17:40:38.323256+08:00",
+      "finished_at": "2026-09-06T17:40:44.805181+08:00"
+    },
+    {
+      "id": "run-f3fea4c5de9246a890cf63bfbc335b5e",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "FAIL",
+      "attempt": 3,
+      "revision": 1,
+      "created_at": "2026-09-06T17:40:44.978092+08:00",
+      "finished_at": "2026-09-06T17:40:46.697324+08:00"
+    },
+    {
+      "id": "run-67b1f96af9f74b30a18a95b6ef956060",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_lifecycle",
+      "phase": "implementation",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:42:39.39083+08:00",
+      "finished_at": "2026-09-06T17:42:44.601705+08:00"
+    },
+    {
+      "id": "run-e6a2da070d154e0ea47bd91e89639de9",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:16.875385+08:00",
+      "finished_at": "2026-09-06T17:43:22.078942+08:00"
+    },
+    {
+      "id": "run-b8f97a4050c54570b523c63565622cc2",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:22.257259+08:00",
+      "finished_at": "2026-09-06T17:43:23.836916+08:00"
+    },
+    {
+      "id": "run-81f20abe85c3403daec4ab151950ebad",
+      "task_id": "task-3719174d1366496eb8f76c16aa312abf",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "unit",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:52.934821+08:00",
+      "finished_at": "2026-09-06T17:43:53.86368+08:00"
+    },
+    {
+      "id": "run-081038cf87724189a4efebfd3ce789eb",
+      "task_id": "task-3719174d1366496eb8f76c16aa312abf",
+      "agent_id": "/root/v3_qa_platform",
+      "phase": "integration",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:54.030025+08:00",
+      "finished_at": "2026-09-06T17:43:54.782025+08:00"
+    },
+    {
+      "id": "run-342f9ba472c445c7a2881f0f7d196c03",
+      "task_id": "task-ee636acafdb649eea24dc4a22ddcba5f",
+      "agent_id": "/root/v3_review_runtime",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:59.971143+08:00",
+      "finished_at": "2026-09-06T17:43:59.977433+08:00"
+    },
+    {
+      "id": "run-ec8cc46c902647d38c93a8d9f5c66a30",
+      "task_id": "task-e39fdf1276024f338c00c196b764a56c",
+      "agent_id": "/root/v3_review_runtime",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 4,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:59.984127+08:00",
+      "finished_at": "2026-09-06T17:43:59.990863+08:00"
+    },
+    {
+      "id": "run-373b154c5e064d349645857d0c0d28c9",
+      "task_id": "task-5ae84d62357e4887ac35eb7877f3bc9e",
+      "agent_id": "/root/v3_review_runtime",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:43:59.998569+08:00",
+      "finished_at": "2026-09-06T17:44:00.005578+08:00"
+    },
+    {
+      "id": "run-c12d40923a1c460aaf8061c84a520c1f",
+      "task_id": "task-f8748fc6225b4e4e87106f29e939dd55",
+      "agent_id": "/root/v3_review_runtime",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:44:00.01472+08:00",
+      "finished_at": "2026-09-06T17:44:00.021585+08:00"
+    },
+    {
+      "id": "run-a79765def5944e4db0d2bd66ff6a6415",
+      "task_id": "task-3719174d1366496eb8f76c16aa312abf",
+      "agent_id": "/root/v3_review_runtime",
+      "phase": "review",
+      "status": "PASS",
+      "attempt": 1,
+      "revision": 1,
+      "created_at": "2026-09-06T17:45:51.816467+08:00",
+      "finished_at": "2026-09-06T17:45:51.822336+08:00"
+    }
+  ]
+}

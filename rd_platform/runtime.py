@@ -22,9 +22,10 @@ MAX_RETRIES = 3
 class Runtime:
     """A SQLite-backed runtime.  Every public operation uses one transaction."""
 
-    def __init__(self, db_path: str | Path):
+    def __init__(self, db_path: str | Path, *, approval_provider=None):
         self.db_path = str(db_path)
         self.store = Store(db_path)
+        self.approval_provider = approval_provider
 
     def execute(self, command: str, data: dict, *, request_id: str | None = None) -> dict:
         if not isinstance(command, str) or not command.strip():
@@ -37,20 +38,59 @@ class Runtime:
             payload = Store.dumps(data)
         except (RecursionError, TypeError, ValueError) as error:
             raise ValueError("data must be JSON-serializable") from error
+        if command.startswith("work.") and "lease_token" in data:
+            import hashlib
+            token = self._text(data["lease_token"], "lease_token")
+            payload = Store.dumps({**data, "lease_token": hashlib.sha256(token.encode()).hexdigest()})
         with self.store.transaction() as connection:
             if request_id is not None:
                 old = connection.execute("SELECT command, payload, result FROM requests WHERE request_id = ?", (request_id,)).fetchone()
                 if old:
                     if old["command"] != command or old["payload"] != payload:
                         raise ValueError("request_id was already used with different command or data")
+                    if command == "work.claim":
+                        from .lifecycle import LifecycleService
+                        result = LifecycleService().recover_claim(connection, data, Store.loads(old["result"]))
+                        cached = {key:value for key,value in result.items() if key != "lease_token"}
+                        connection.execute("UPDATE requests SET result=? WHERE request_id=?", (Store.dumps(cached),request_id))
+                        return result
                     return Store.loads(old["result"])
-            handler = getattr(self, "_" + command.replace(".", "_"), None)
-            if handler is None or command not in {"project.create", "agent.register", "task.create", "run.start", "run.heartbeat", "run.finish", "task.control", "project.control"}:
-                raise ValueError("unknown command")
-            result = handler(connection, data)
+            if command in {"project.create", "agent.register", "task.create", "run.start", "run.heartbeat", "run.finish", "task.control", "project.control"}:
+                handler = getattr(self, "_" + command.replace(".", "_"), None)
+                result = handler(connection, data)
+            else:
+                from .lifecycle import LifecycleService
+                if command not in LifecycleService.COMMANDS:
+                    raise ValueError("unknown command")
+                result = LifecycleService().execute(connection, command, data)
             if request_id is not None:
-                connection.execute("INSERT INTO requests VALUES (?, ?, ?, ?, ?)", (request_id, command, payload, Store.dumps(result), self._now()))
+                persisted_result = result
+                if command == "work.claim":
+                    persisted_result = {key: value for key, value in result.items() if key != "lease_token"}
+                    persisted_result["lease_token_redacted"] = True
+                connection.execute("INSERT INTO requests VALUES (?, ?, ?, ?, ?)", (request_id, command, payload, Store.dumps(persisted_result), self._now()))
             return result
+
+    def lifecycle_snapshot(self, project_id: str, *, after_sequence: int = 0, limit: int = 200) -> dict:
+        from .lifecycle import LifecycleService
+        with self.store.transaction(write=False) as connection:
+            return LifecycleService().snapshot(connection, project_id, after_sequence=after_sequence, limit=limit)
+
+    def lifecycle_collection(self, project_id: str, collection: str, *, limit: int = 200, after_cursor: str | None = None) -> dict:
+        """Read one public lifecycle collection page without changing state."""
+        from .lifecycle_query import LifecycleCollectionQuery
+        with self.store.transaction(write=False) as connection:
+            return LifecycleCollectionQuery().read(connection, project_id, collection, limit=limit, after_cursor=after_cursor)
+
+    def register_human_approval(self, data: dict, *, operator: str) -> dict:
+        """Authenticate an approval through a host-injected verification provider.
+
+        No provider is configured by default. ``operator`` is only a claimed hint;
+        the provider must authenticate it and return the exact computed binding.
+        """
+        from .lifecycle import LifecycleService
+        with self.store.transaction() as connection:
+            return LifecycleService().human_approval(connection, data, operator=operator, provider=self.approval_provider)
 
     def snapshot(self, project_id: str | None = None) -> dict:
         if project_id is not None:
