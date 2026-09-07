@@ -8,7 +8,7 @@ It is not a model-calling cloud service, a multi-tenant system, or a production-
 
 ## Current scope and version
 
-- V3 uses GitHub branch `codex/platform-v3-lifecycle`; this continuation started from `2d77904`. See the [completion delivery record](docs/platform-v3/completion-delivery.md) for verified source commits and corresponding CI. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
+- V3 uses GitHub branch `codex/platform-v3-lifecycle`; `2d77904` is only the historical continuation starting point, not the current version. See the [completion delivery record](docs/platform-v3/completion-delivery.md) and [CI execution record](docs/platform-v3/ci-execution.md) for verified source commits and corresponding CI. It is **not merged into `main`**; a default-branch clone does not contain this V3 work.
 - V2 provides project/task management, four quality Run phases (implementation, unit, integration, review), a board, and controlled local command execution. V3 adds versioned artifacts, traceability, test models/Cases/Executions, work leases, Gate assessment, release/rollback facts, paginated reads, and a five-stack Harness.
 - Local source-validation, independent-test, and review records exist, but they are engineering-scope evidence, not formal product acceptance or a production release. See the scoped [traceability index](docs/platform-v3/traceability.md), [final local-validation JSON](docs/platform-v3/evidence/final-local-validation.json), and [capability status](docs/platform-v3/capability-status.md).
 - Top-level `platform-manifest.json` remains `lifecycle_mode: template`. A template validation pass, `DONE` task, Harness `PASS`, or Case-report `PASS` is not any G0–G11 `PASS`, human acceptance, or release recommendation.
@@ -147,6 +147,55 @@ python -X utf8 -m rd_platform stack-probe
 `validate_platform.py` actually starts MCP and checks its tool list; its observed health result is the evidence for your machine. Do not reuse `.codex/config.toml` from another checkout. Remote MCP services still need real network access and accounts. See the [CI execution record](docs/platform-v3/ci-execution.md) for the exact commits and hosted Linux/Windows results.
 
 ## Start or continue in Codex
+
+### Agents and Skills: 9 roles, 14 Skills, one entry point
+
+The platform does not package several Agents into one Skill. It contains **9 specialist Agent definitions and 14 repository-local Skills**, with the current Codex conversation acting as Orchestrator. Agents define who acts, Skills define how, and Runtime records actual tasks and evidence. See [platform-manifest.json](platform-manifest.json). This table shows conventional responsibilities, not hard bindings or nine concurrently running models.
+
+| Role and definition | Responsibility | Typical Skills |
+| --- | --- | --- |
+| Main Codex conversation (no tenth specialist definition file) | Analysis, dispatch, dependencies, handoffs, user decisions | `platform-orchestration`, `context-discovery`, `project-initiation`, `task-breakdown` |
+| [researcher](.codex/agents/researcher.toml) | Market, competitor, technology and evidence research | `market-research`, `competitor-analysis`, `context-discovery` |
+| [product_manager](.codex/agents/product-manager.toml) | Users, scenarios, product goals, PRD | `project-initiation`; product-specific instructions live in its Agent definition, not a separate product Skill |
+| [requirement_analyst](.codex/agents/requirement-analyst.toml) | Requirements, acceptance criteria, RTM | `requirement-analysis` |
+| [architect](.codex/agents/architect.toml) | Architecture, interfaces, data, security, ADRs | `architecture-design`, `task-breakdown` |
+| [developer](.codex/agents/developer.toml) | Module implementation and unit tests | `implementation` |
+| [tester](.codex/agents/tester.toml) | Independent test modeling, execution, defects, regression | `testing` |
+| [reviewer](.codex/agents/reviewer.toml) | Independent code and architecture review | `code-review` |
+| [documentation_manager](.codex/agents/documentation-manager.toml) | Documents, traceability, evidence, archive | `documentation-governance`, `project-closure` |
+| [release_manager](.codex/agents/release-manager.toml) | Release readiness, deployment/rollback material, delivery | `release` |
+
+All 14 Skills have entries at `.agents/skills/<name>/SKILL.md`. [platform-orchestration](.agents/skills/platform-orchestration/SKILL.md) is the unified entry for application development; other Skills are selected by task. A Skill contains neither a model nor the complete Runtime. **Copying this single SKILL.md into a global directory does not install the platform.**
+
+### First invocation: use chat, not a terminal
+
+1. Obtain the `codex/platform-v3-lifecycle` branch and complete setup/self-check above. The repository already contains the Skills/Agent definitions; setup does not install them globally.
+2. Open the platform repository root in Codex and start a project task. Ask the host to list actually available Skills and specialist Agents; verify `platform-orchestration` and required roles are loaded. Files on disk do not prove availability in the current session.
+3. Paste this into **Codex chat**. `$platform-orchestration` is a Skill prompt, not a PowerShell/Bash command; saying “Use platform-orchestration” is an alternative.
+
+```text
+$platform-orchestration
+Build a Python personal-expenses Web application at D:/projects/my-expenses.
+First analyze users, workflows, data, risks and acceptance criteria; ask only material product questions.
+State assumptions and choose ordinary engineering details. Once requirements are clear, implement modules with independent tests and review.
+Record actual Agent work on the board and deliver startup instructions, test results and remaining gaps.
+```
+
+Replace the example path. Keep the platform as the Codex workspace and explicitly specify a separate application directory; do not mix business code into platform source or overwrite existing work. The host needs access to that directory. If the Skill is missing, reopen the correct platform project and check availability; explicitly requesting that the host read the complete linked `SKILL.md` and its references is a fallback, not proof of successful installation/loading.
+
+4. Expect an initial requirements model, facts/assumptions and a small set of material questions. Once requirements are clear, expect real tasks, Agent handoffs, design, code, test model/cases/execution results, independent review and delivery instructions. Checks missing prerequisites must remain unexecuted.
+5. Open the board using the next section and select this application's project. Ending chat does not imply background development continues; use a continuation prompt to recover existing records.
+
+Other copyable chat prompts:
+
+```text
+Use platform-orchestration to continue D:/projects/my-expenses. Recover the existing project/tasks; do not regenerate completed work.
+Pause development; verify the actual host Agents/processes stopped and identify unknown execution outcomes.
+Use requirement-analysis only to define requirements and acceptance criteria; do not implement this turn.
+Use testing to model tests for the implemented module, execute applicable checks and report actual results.
+```
+
+Calling a specialist Skill scopes the work method; it does not execute the entire lifecycle automatically. The host controls actual concurrency, role availability and dispatch; developers cannot be their own sole tester/reviewer.
 
 Open the repository in Codex and read rules/current facts before development.
 
@@ -335,15 +384,20 @@ While running, read `<output-dir>/perf-<run-id>-checkpoint.json` (capacity) or `
 
 Before backup, stop the board, CLI, and other SQLite writers; preserve a timestamped copy of `.rd-platform/state.db`, and do not commit databases, run output, archives, or credentials. Save code Git SHA, artifact SHA-256, and external evidence locators together; after recovery compare `snapshot`, `lifecycle`, and digests. Recovery does not create test/approval facts. Roll back code with reviewed `git revert` or known-version deployment; V3 adds tables, so returning to V2 code must not delete `lc_` tables. Restore database only from a verified backup; no generic downgrade or automatic DROP-table plan exists. Once work genuinely enters release, a release manager records operator, reason, environment, and evidence using `release.rollback`; a code rollback or zero exit code is not proof of successful production rollback.
 
+### Unimplemented versus not yet verified
+
+**The complete final vision is not finished: this is the host-assisted edition, not an unattended cloud platform.** The table separates implementation gaps from external verification prerequisites. Older screenshots saying Linux MCP is undelivered or the approval provider unavailable are not current source status. Implemented adapters do not establish real authorization, deployment or acceptance; every application needs its own evidence.
+
 | Boundary | Current state | Required before completion can be claimed |
 | --- | --- | --- |
+| Unattended cloud Agent service / multi-tenant platform | Not implemented | Cloud service, authentication/isolation, scheduling queues, operational deployment and actual E2E verification; local worker-service is not a substitute. |
 | Trusted `worker-service` (not a cloud Agent) | `OBSERVED`: current source supplies durable workers, leases/heartbeats/cancellation, controlled `argv`, and no-tools Responses file proposals; the production Codex backend is fail-closed disabled. | Requires protected configuration, real work orders, and an observable host process. There is no successful resident-worker or live Responses execution fact, so autonomous project completion is not claimed. |
 | Formal G0–G11 / human acceptance | No decision | Active-project central Gate Register, complete BG→PRD→REQ→DES→TASK→CODE→TC→BUG→REL trace, real evidence, and authorized decision. |
 | SSH approval provider | `OBSERVED`: the optional Ed25519 adapter and challenge/register CLI are in source; an unconfigured default Runtime still refuses approval. | Requires operator-protected signer/trust configuration, an external signature, and actual authority. There is no project human approval or Gate decision. |
 | Production deployment, release, rollback | `NOT_EXECUTED` | Authorized environment, `REL-*`, install/rollback instructions, known issues, real operator, and environment evidence. Git push is not a substitute. |
 | WeChat native | `NOT_AVAILABLE` | Developer Tools, authorized project, real import/run/storage validation, and device/publication authority if required. Node fake-wx is not a substitute. |
 | Production/user-flow write performance, cross-browser/cross-OS, complete security matrix | `NOT_EXECUTED` | Their own controlled environment, load/duration/metrics, raw output, and independent review; the synthetic SQLite read benchmark cannot be extrapolated. |
-| One-step Linux MCP install | `OBSERVED`: `scripts/setup.sh` creates/reuses the checkout venv, generates configuration, and invokes the validator; native setup and repeat-install both succeeded in GitHub Actions Ubuntu job `101496781967`. | That job covers only its Ubuntu script version; it cannot be extrapolated to all target Linux hosts, production deployment, release, or acceptance. |
+| One-step Linux MCP install | Implemented and verified: `scripts/setup.sh` provides the checkout venv, configuration and validator; source `fbd9b36` passed native setup and repeat-install in Ubuntu job `101659687365`. | See the [CI execution record](docs/platform-v3/ci-execution.md); this Ubuntu result does not cover all Linux distributions, production deployment or human acceptance. |
 
 Do not expose the loopback board to a network. Harness has path/argv constraints but is not a malicious-code sandbox; run untrusted code in a separate controlled environment. Commands, logs, and evidence must not print secrets.
 

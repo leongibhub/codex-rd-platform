@@ -8,7 +8,7 @@
 
 ## 当前范围与版本
 
-- V3 使用 GitHub 分支 `codex/platform-v3-lifecycle`，本轮续作基线为 `2d77904`；经验证的源码提交及对应 CI 见[后续交付记录](docs/platform-v3/completion-delivery.md)。它**尚未合并到 `main`**，默认分支 clone 不含本轮 V3 内容。
+- V3 使用 GitHub 分支 `codex/platform-v3-lifecycle`，`2d77904` 仅是历史续作起点，不是当前版本；经验证的源码提交及对应 CI 见[后续交付记录](docs/platform-v3/completion-delivery.md)和 [CI 执行记录](docs/platform-v3/ci-execution.md)。它**尚未合并到 `main`**，默认分支 clone 不含本轮 V3 内容。
 - V2 提供项目/任务、四阶段质量 Run（implementation、unit、integration、review）、看板和受控本地命令执行；V3 加入版本化工件、追踪、测试模型/Case/Execution、工作租约、Gate assessment、release/rollback 事实、分页读取和五技术栈 Harness。
 - 已有本地源码验证、独立测试和审查记录，但它们是工程范围证据，不是正式产品验收或生产发布。见 [追踪索引](docs/platform-v3/traceability.md)、[最终本地验证 JSON](docs/platform-v3/evidence/final-local-validation.json) 与 [能力状态](docs/platform-v3/capability-status.md)。
 - 顶层 `platform-manifest.json` 仍为 `lifecycle_mode: template`。模板校验通过、任务 `DONE`、Harness `PASS` 或 Case 报告 `PASS` 都不等于任何 G0–G11 `PASS`、人工验收或发布建议。
@@ -147,6 +147,55 @@ python -X utf8 -m rd_platform stack-probe
 `validate_platform.py` 会真实启动 MCP 并检查工具集；只有它报告的健康检查才是本机结果。不要直接复用别的工作区的 `.codex/config.toml`。远程 MCP 服务仍需真实网络与账户；在线 Linux/Windows 验证的具体提交和结果见 [CI 执行记录](docs/platform-v3/ci-execution.md)。
 
 ## 在 Codex 中开始或续作
+
+### Agent 与 Skill：9 个角色、14 个技能、1 个统一入口
+
+不是“把几个 Agent 打包成一个 Skill”。当前有 **9 个专业 Agent 定义、14 个仓库级 Skill**，主 Codex 会话负责 Orchestrator 调度。Agent 定义“谁执行”，Skill 规定“怎么做”，Runtime 记录真实任务与证据。清单见 [platform-manifest.json](platform-manifest.json)；下表是常用分工，不是硬绑定，也不代表同时启动 9 个模型。
+
+| 角色及定义 | 主要职责 | 常用 Skill |
+| --- | --- | --- |
+| 主 Codex 会话（无第 10 个专业 Agent 文件） | 分析、调度、依赖、交接、用户决策 | `platform-orchestration`、`context-discovery`、`project-initiation`、`task-breakdown` |
+| [researcher](.codex/agents/researcher.toml) | 市场、竞品、技术与证据研究 | `market-research`、`competitor-analysis`、`context-discovery` |
+| [product_manager](.codex/agents/product-manager.toml) | 用户、场景、产品目标、PRD | `project-initiation`；产品专业约束在 Agent 定义中，没有单独 product Skill |
+| [requirement_analyst](.codex/agents/requirement-analyst.toml) | 需求、验收标准、RTM | `requirement-analysis` |
+| [architect](.codex/agents/architect.toml) | 架构、接口、数据、安全、ADR | `architecture-design`、`task-breakdown` |
+| [developer](.codex/agents/developer.toml) | 模块实现与单元测试 | `implementation` |
+| [tester](.codex/agents/tester.toml) | 独立测试模型、执行、缺陷与回归 | `testing` |
+| [reviewer](.codex/agents/reviewer.toml) | 独立代码与架构审查 | `code-review` |
+| [documentation_manager](.codex/agents/documentation-manager.toml) | 文档、追踪、证据、归档 | `documentation-governance`、`project-closure` |
+| [release_manager](.codex/agents/release-manager.toml) | 发布准备、部署/回滚材料、交付 | `release` |
+
+14 个 Skill 的文件均为 `.agents/skills/<名称>/SKILL.md`。完整应用开发的统一入口是 [platform-orchestration](.agents/skills/platform-orchestration/SKILL.md)，其余技能按任务选择。Skill 不包含模型或完整 Runtime；**只复制这一个 SKILL.md 到全局目录不能安装整个平台**。
+
+### 第一次调用：在聊天框输入，不是在终端运行
+
+1. 按上文获取 `codex/platform-v3-lifecycle` 分支，并完成对应系统的 setup 和自检。仓库已带 Skills/Agent 文件，setup 不把它们安装到用户全局目录。
+2. 在 Codex 打开这个平台仓库根目录并新建项目内任务。让宿主列出实际可用 Skills 和专业 Agent，确认 `platform-orchestration` 及所需角色已加载；文件存在不代表当前会话已加载。
+3. 在 **Codex 聊天输入框**粘贴下面的例子。`$platform-orchestration` 是 Skill 提示，不是 PowerShell/Bash 命令；也可直接说“使用 platform-orchestration”。
+
+```text
+$platform-orchestration
+帮我做一个 Python 个人记账 Web 应用，放在 D:/projects/my-expenses。
+先分析用户、流程、数据、风险和验收标准，只问影响产品方向的关键问题。
+说明假设，普通工程细节由你判断；明确需求后分模块开发、独立测试和审查。
+将真实 Agent 工作登记到看板，最后给我启动方法、测试报告和未完成项。
+```
+
+路径是示例，请替换。推荐保持平台为 Codex 工作区，明确指定单独的应用目录；不要把业务代码混进平台源码或覆盖已有内容。宿主须有目标目录访问权限。若 Skill 未发现，重新打开正确的平台项目并核对清单；也可明确要求读取上述完整 `SKILL.md` 及其引用文档，不能假装安装/加载成功。
+
+4. 首轮应看到初始需求模型、事实/假设和少量关键问题；需求明确后，应有真实任务、Agent 交接、设计、代码、测试模型/用例/执行结果、独立审查及交付说明。缺少环境的检查必须标注未执行。
+5. 按下一节打开看板，选择该应用项目。结束聊天不意味着后台继续开发；下次用续作提示恢复原项目记录。
+
+其他可复制的聊天提示：
+
+```text
+使用 platform-orchestration，继续 D:/projects/my-expenses，恢复已有项目与任务，不重新生成完成内容。
+暂停当前开发；确认实际宿主 Agent/进程已停止，并列出仍然未知的执行结果。
+使用 requirement-analysis，只分析这个应用的需求和验收标准，本轮不开发。
+使用 testing，先为已实现模块建立测试模型，再执行适用测试并报告真实结果。
+```
+
+单独调用专业 Skill 仅限定本次工作方法，不自动执行全生命周期。实际并发、角色可用性和启动由宿主决定，开发者不能作为自己唯一的 tester/reviewer。
 
 在 Codex 打开仓库，先读规则和当前事实再开发。
 
@@ -335,15 +384,20 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 
 备份前停止看板、CLI 和其他 SQLite 写入者，保留带时间戳的 `.rd-platform/state.db` 副本；不要将数据库、运行输出、归档或凭据提交 Git。同步保存代码 Git SHA、工件 SHA-256 和外部证据 locator；恢复后用 `snapshot`、`lifecycle` 与摘要比对，恢复不会补齐测试/批准事实。代码回退用审查过的 `git revert` 或已知版本；V3 只增表，回退 V2 代码不应删除 `lc_` 表。数据库仅能从验证过的备份恢复，当前没有通用降级或自动 DROP 表方案。真实进入 release 域后才由 release manager 用 `release.rollback` 记录操作者、原因、环境和证据；代码回退或 exit 0 不代表生产回滚成功。
 
+### 尚未实现与尚未验证的区别
+
+**最终愿景尚未全部完成：当前交付是宿主协作版，不是无人值守云平台。** 下表区分实现缺口和外部验证条件。旧截图的“Linux MCP 未交付”“审批 provider 不可用”不是当前源码状态；已有适配器也不能代替真实授权、部署和验收。每个新应用都需要自己的证据。
+
 | 边界 | 当前状态 | 声称完成前必须具备 |
 | --- | --- | --- |
+| 无人值守云端 Agent 服务 / 多租户平台 | 未实现 | 云端服务、认证/隔离、调度队列、运维部署和实际端到端验证；本地 worker-service 不能替代。 |
 | 受信任 worker-service（非云端 Agent） | `OBSERVED`：当前源码提供持久 worker、租约/心跳/取消、受控 `argv` 与 no-tools Responses 文件提案；生产 Codex backend 已 fail-closed 禁用。 | 需要受保护配置、真实工作项和可观察的宿主进程；当前无成功常驻 worker 或 live Responses 执行事实，不能声称自动完成项目。 |
 | 正式 G0–G11 / 人工验收 | 未决定 | active 项目中央 Gate Register、完整 BG→PRD→REQ→DES→TASK→CODE→TC→BUG→REL 追踪、真实证据和有权决定。 |
 | SSH 审批 provider | `OBSERVED`：可选 Ed25519 适配器和 challenge/register CLI 已在源码中；无配置的默认 Runtime 仍拒绝。 | 需要操作员保护的 signer/trust 配置、外部签名和真实授权；当前没有本项目人工批准或 Gate 决定。 |
 | 生产部署、发布、回滚 | `NOT_EXECUTED` | 授权环境、`REL-*`、安装/回滚步骤、已知问题、真实操作者和环境证据；Git push 不替代。 |
 | 微信原生 | `NOT_AVAILABLE` | 开发者工具、授权项目、真实导入/运行/存储验证，必要时真机和发布权限；Node fake-wx 不替代。 |
 | 生产/用户流写入性能、跨浏览器/跨 OS、完整安全矩阵 | `NOT_EXECUTED` | 各自的受控环境、负载/时长/指标、原始输出和独立复核；不可用 synthetic SQLite 读取 benchmark 外推。 |
-| Linux MCP 一键安装 | `OBSERVED`：`scripts/setup.sh` 已实现本仓 venv、配置生成和 validator 调用；GitHub Actions Ubuntu job `101496781967` 的 native setup 与 repeat-install 均 SUCCESS。 | 该 job 仅覆盖其 Ubuntu 脚本版本；仍不能外推为全部目标 Linux、生产部署、release 或验收。 |
+| Linux MCP 一键安装 | 已实现并验证：`scripts/setup.sh` 提供本仓 venv、配置生成和 validator；源码 `fbd9b36` 的 Ubuntu job `101659687365` 中 native setup 与 repeat-install 均 SUCCESS。 | 见 [CI 执行记录](docs/platform-v3/ci-execution.md)；该 Ubuntu 结果不覆盖所有 Linux 发行版、生产部署或人工验收。 |
 
 不要将 loopback 看板暴露到网络。Harness 有路径/argv 约束但不是恶意代码沙箱；不可信代码应在独立受控环境运行。命令、日志和证据均不得打印秘密。
 
