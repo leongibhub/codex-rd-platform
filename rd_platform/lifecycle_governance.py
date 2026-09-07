@@ -160,7 +160,9 @@ class GovernanceCommands:
         decision=dict(id=self.ident('decision'),project_id=p,assessment_id=a['id'],gate_id=gate,status=status,evidence_refs=refs,decided_by=actor['id'],reason=d.get('reason'),resolution=d.get('resolution'),created_at=self.now())
         self.put(c,'gate_decisions',decision,new=True)
         g.update(evaluation_state='DECIDED',gate_status=status,decided_at=self.now()); self.put(c,'gates',g); self.refresh_stage(c,p)
-        if status=='FAIL': self.work_create(c,dict(project_id=p,gate_id=gate,activity='remediate gate '+gate,required_role='documentation_manager',why=d['reason'],input_refs=a['input_refs'],output_contract={'min_outputs':1,'required_types':['EVIDENCE']},dependencies=[]))
+        if status=='FAIL':
+            from .orchestration_policy import recovery_dependencies
+            self.work_create(c,dict(project_id=p,gate_id=gate,activity='remediate gate '+gate,required_role='documentation_manager',why=d['reason'],input_refs=a['input_refs'],output_contract={'min_outputs':1,'required_types':['EVIDENCE']},dependencies=recovery_dependencies(self,c,p,gate)))
         self.event(c,p,'gate.decided',decision['id'],{'gate_id':gate,'status':status,'decided_by':actor['id']})
         return decision
 

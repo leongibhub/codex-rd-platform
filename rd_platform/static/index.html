@@ -37,6 +37,9 @@
         <form id="work-control-form"><label>工作单 ID<input name="work_order_id" required></label><label>操作<select name="action"><option>retry</option><option>reject</option><option>skip</option><option>reassign</option></select></label><label>重新分配 Agent<input name="agent_id"></label><label>原因<input name="reason" required maxlength="1000"></label><button>执行工作单控制</button></form>
         <p class="table-note">仅控制既有任务。后台服务收到失效后终止自己拥有的进程；外部宿主需由其取消工具处理。审批、部署和任意命令不通过本页面执行。</p>
         <div id="lifecycle-summary" class="counters"></div>
+        <h3>阶段工作与推进条件</h3>
+        <p id="orchestration-status" role="status">尚未读取编排前提。</p>
+        <div class="table-wrap"><table><thead><tr><th>阶段 / 职责</th><th>当前任务 / 原因</th><th>状态 / 推进条件</th><th>输入 / 输出 / 交接</th></tr></thead><tbody id="orchestration-work"></tbody></table></div>
         <div class="table-wrap"><table><thead><tr><th>Gate</th><th>评估状态</th><th>结论</th><th>当前评估</th></tr></thead><tbody id="lifecycle-gates"></tbody></table></div>
         <div id="lifecycle-details"></div>
         <p class="table-note">没有初始化或未评估不等于 PASS。历史执行与当前有效版本分开记录；人工批准、运行证据和发布操作不开放给浏览器。</p>

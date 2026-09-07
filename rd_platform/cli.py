@@ -23,6 +23,9 @@ def build_parser() -> argparse.ArgumentParser:
     bootstrap.add_argument("--name", required=True)
     bootstrap.add_argument("--repository-root", type=Path, required=True)
     bootstrap.add_argument("--request-id", required=True)
+    orchestration = commands.add_parser("orchestrate-status", help="只读说明当前阶段、工作前提和阻塞原因，不推进门禁")
+    orchestration.add_argument("--project-id", required=True)
+    orchestration.add_argument("--limit", type=int, default=200)
     service = commands.add_parser("worker-service", help="运行真实后台工作单执行器")
     service.add_argument("--config", type=Path, required=True)
     service.add_argument("--once", action="store_true")
@@ -164,6 +167,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if args.operation == "stack-probe" or result.get("status") == "PASS" else 1
 
         from .runtime import Runtime
+        if args.operation == "orchestrate-status" and not args.db.is_file():
+            raise ValueError("status requires an existing runtime database")
         runtime = Runtime(args.db)
         exit_code = 0
         if args.operation in {"approval-challenge", "approval-register"}:
@@ -189,6 +194,9 @@ def main(argv: list[str] | None = None) -> int:
             from .worker_service import run_service
             result = run_service(runtime, _config_file(args.config), once=args.once)
             exit_code = 1 if result.get('status') == 'FAIL' else 0
+        elif args.operation == "orchestrate-status":
+            from .orchestration_status import orchestration_status
+            result = orchestration_status(runtime, args.project_id, limit=args.limit)
         elif args.operation == "deploy-run":
             from .deployment import execute_deployment
             result = execute_deployment(runtime, _config_file(args.config), action=args.action)

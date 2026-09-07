@@ -4,7 +4,7 @@
 
 这是一个供 **Codex 宿主协作** 使用的本地研发控制面：它将项目、任务、质量检查、版本化生命周期工件、测试执行、缺陷、Gate 候选评估和多技术栈验证存入 SQLite；源代码和文档事实仍在 Git 工作区中。
 
-它不是自动调用模型的云服务、多租户系统或生产发布平台。当前源码包含受信任宿主启动的常驻 `worker-service`、SSH Ed25519 审批适配器、受控部署执行器和 Linux 安装脚本；它们不暴露匿名远程命令接口。已确认的安全 probe 证明 Codex auto-review 可读写 workspace 外路径，因此生产 Codex backend 现已 fail-closed 禁用；控制库与 workspace 分目录只是运维卫生，**不是**隔离边界。默认提案路径正改为 no-tools Responses HTTPS 调用，模型不直接拥有文件/命令工具，宿主才会受控落盘和登记 DRAFT。Runtime 校验、记录和展示事实；新执行端仍在独立复审，尚无真实人类审批、生产部署/回滚、客户验收、成功的 live Codex smoke 或 live Responses 执行结论。请先阅读 [V3 运行说明](docs/platform-v3/README.md) 与 [V3 交付记录](docs/platform-v3/delivery-record.md)。
+它不是自动调用模型的云服务、多租户系统或生产发布平台。当前源码已包含受信任宿主启动的常驻 `worker-service`、SSH Ed25519 审批适配器、受控部署执行器和 Linux 原生安装脚本；它们不暴露匿名远程命令接口。已确认的安全 probe 证明 Codex auto-review 可读写 workspace 外路径，因此生产 Codex backend 现已 fail-closed 禁用；控制库与 workspace 分目录只是运维卫生，**不是**隔离边界。当前默认提案路径是 no-tools Responses HTTPS：模型不直接拥有文件/命令工具，宿主才会受控 CAS 落盘和登记 DRAFT。Runtime 校验、记录和展示事实；新执行端仍在独立复审，尚无真实人类审批、生产部署/回滚、客户验收、成功的 live Codex smoke 或 live Responses 执行结论。请先阅读 [V3 运行说明](docs/platform-v3/README.md) 与 [V3 执行端交付记录](docs/platform-v3/completion-execution-delivery.md)。
 
 ## 当前范围与版本
 
@@ -120,9 +120,15 @@ $env:GIT_CONFIG_VALUE_1 = "your-approved-address@example.invalid"
 
 该 revision-3 helper 的独立审查记录为 unit 12/12、integration 10/10 和 reviewer 22/22 PASS；真实隔离安装从提交 `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 执行完整 setup、依赖与 MCP 检查，记录的是 `PASS (TEMPLATE MODE)`、`Evaluated Gates: NONE`。详见[独立安装交付审查](docs/platform-v3/install-transfer-review.md)和[真实隔离安装验证](docs/platform-v3/install-real-validation.md)。此前递归复制实现是保留的历史 BUG-INSTALL-001；`c3eb271` 的实际 public-stub 拒绝失败是 BUG-INSTALL-002。两者都不应作为本 helper 的行为或发布/人工验收结论。
 
-### Linux（可验证的手动 venv 路径）
+### Linux（已捆绑原生 setup；手动路径供审计）
 
-Linux 使用下面的手动安装流程；配置生成器已支持 native `.venv/bin/python`。使用 `--copies` 将解释器保留在仓库内，满足 MCP 的真实路径来源检查；不要用指向仓库外解释器的软链接绕过检查。
+首选在目标 Linux Git checkout 内运行已捆绑的 `scripts/setup.sh`；它检查 Git 身份和 Python 3.11+，创建或复用本仓 `--copies` venv，安装受限依赖、运行 `pip check`、生成本地 MCP 配置并执行 validator。脚本不使用 sudo、不改全局 Git/Python、也不删除已有数据。GitHub Actions Ubuntu job `101496781967` 已观察到 native setup 和 repeat-install 成功，但这不是所有 Linux 主机或发布/验收的结论。
+
+```bash
+./scripts/setup.sh
+```
+
+下面是等价的手动审计路径；使用 `--copies` 将解释器保留在仓库内，满足 MCP 的真实路径来源检查。不要用指向仓库外解释器的软链接绕过检查。
 
 ```bash
 python3 --version                     # 必须为 3.11 或更高
@@ -311,8 +317,8 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 | --- | --- |
 | 全量报告、只读项目导出、Case 绑定 runner | 已实现并有本机验证记录。全量报告不截断首个页面；导出拒绝覆盖且不含源码/秘密；`test-run` 只能运行已基线的版本绑定 argv，普通命令结果不等于 Gate。见 [导出说明](docs/platform-v3/project-export.md) 与 [test-run 验证](docs/platform-v3/test-run-validation.md)。 |
 | SQLite 读取容量 | 已观察到 synthetic `capacity --profile full`：100 projects、100,000 artifact versions、1,000,000 events，终端 JSON 为 PASS，129.7199 s、294,764,544 bytes、无公开读取错误。它只衡量 `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` 的本地 SQLite 读路径，不是生产吞吐、写入性能、SLO、Gate 或发布结论。见 [性能验证](docs/platform-v3/performance-validation.md)。 |
-| 8 小时 soak | 已启动，运行目录为 `.rd-platform/benchmark-soak-8h-20260906-1`；当前只有同一 run 的 checkpoint，没有 terminal JSON，因此没有完成/PASS 结论。宿主的 30 分钟 heartbeat 仅用于完成/失败通知，不替代 benchmark 结果。 |
-| GitHub Actions CI | `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` 的真实 [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) 于 `2026-09-06T12:32:02Z` 完成 SUCCESS，4/4 jobs SUCCESS（Windows runtime job `101485885964` 于 `12:32:01Z` 完成）。`62c153e` 与 `c3eb271` 的既有成功、第一/二轮失败和修复历史保留在 [CI 执行记录](docs/platform-v3/ci-execution.md)；`c3eb271` 的 workflow 成功也不覆盖其随后保留的真实安装失败。本行仅覆盖该源码 workflow，后续仅文档改动不在其中；Node/fake-`wx` 不等于微信 IDE、真机或发布。 |
+| 8 小时 soak | 同一 run `soak-9241634446774e1291126d1cc1c2a53b` 的 terminal 已 `PASS`/exit 0：elapsed 28800.740279s、4,952 样本、最大相邻 gap 8.191594s、0 read errors；terminal SHA-256 `00BE7586AD05A8CDD03CFC510C7C730021920BEDB8EFDC1225E4A24765A398CD`。它仅覆盖旧源码 `E482F1E2DD6A5A7AB42736AE227DB56B8B5D12F2D6C1D5FA1F3293F78BEDBC9A` 的合成 SQLite 公共读路径，不能外推写入、完整系统/安全、生产、Gate、release 或验收。见[性能验证](docs/platform-v3/performance-validation.md)。 |
+| GitHub Actions CI | `026263f` 的 [run 34038680898](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898) 为 3/4 jobs SUCCESS：Windows Runtime 共 273 tests、OK、1 skip；platform 共 133 tests、OK、3 skips；独立 suite 共 98 tests、1 error，原因是 Windows 检出存在 `wsl.exe` 但无可启动 Linux distro，不是将该环境缺口写成产品通过。WSL 探测修复后的本机端点 suite 为 30 tests、OK、24.700s；阶段性 full independent suite 为 99 tests、OK、1 skip、114.547s。后续源码已继续修改，最终冻结回归和新 CI 仍 `PENDING`，不能复用这组历史数字。历史 CI 和失败记录保留在 [CI 执行记录](docs/platform-v3/ci-execution.md)，均不等于 Gate、生产部署或验收。 |
 | Python 逐需求生命周期收口 | 有界的既有 Python 费用 CLI 项目已完成 37/37 当前 Case PASS、7/7 RTM `COMPLETE` 和 G0–G8 `DECIDED PASS CURRENT`；这不是 G9 人工验收、生产部署或发布建议。G9–G11 保持 `NOT_EVALUATED`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。 |
 
 容量/soak 使用专用基准脚本和隔离的全新输出目录；不要指向项目状态库或复用已有输出：
@@ -369,6 +375,14 @@ $workspace = 'D:\workspaces\inventory-service'        # 已存在、受信任的
 ```
 
 保存返回的 `project_id`，再以相同参数/`request-id` 演练重试。不要将控制库复制进 `$workspace\.rd-platform`；但不要把路径分离误认为模型不可访问的安全保证。
+
+新建流程启用[严格阶段策略](docs/platform-v3/orchestration-policy.md)：前一工作生成 DRAFT 并不代表阶段通过，下一阶段领取任务前必须有前一 Gate 的当前有效 PASS。查看具体原因：
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb orchestrate-status --project-id 'PROJECT_ID'
+```
+
+运行台的“阶段工作与推进条件”显示相同的职责、任务、原因、输入输出和依赖。`ALLOWED` 只表示阶段前提，不是执行授权；真实身份、租约、重试安全仍在领取时检查。具体状态解释与 Linux 命令见[编排状态指南](docs/platform-v3/orchestration-status.md)。已有通用项目不会被静默升级或重建。
 
 ### 登记实际角色并启动 Worker
 

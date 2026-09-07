@@ -4,7 +4,7 @@
 
 This is a local R&D control plane for **Codex host-assisted collaboration**. It stores projects, tasks, quality checks, versioned lifecycle artifacts, test executions, defects, Gate-assessment candidates, and multi-stack validation in SQLite; source and documented facts remain in the Git worktree.
 
-It is not a model-calling cloud service, a multi-tenant system, or a production-release platform. The current source includes a trusted-host resident `worker-service`, an SSH Ed25519 approval adapter, a controlled deployment executor, and a Linux setup script; they expose no anonymous remote-command surface. A confirmed safety probe showed that Codex auto-review can read/write outside its workspace, so the production Codex backend is now fail-closed disabled; separating the control DB and workspace is operational hygiene, **not** isolation. The default proposal path is moving to no-tools HTTPS Responses, where the model has no direct file/command tool and the host alone performs controlled writes and DRAFT registration. Runtime validates, records, and displays facts. The endpoints remain under independent review: there is no real human approval, production deploy/rollback, customer acceptance, successful live-Codex smoke, or live Responses execution conclusion. Start with the [V3 operating guide](docs/platform-v3/README.md) and [V3 delivery record](docs/platform-v3/delivery-record.md).
+It is not a model-calling cloud service, a multi-tenant system, or a production-release platform. The current source includes a trusted-host resident `worker-service`, an SSH Ed25519 approval adapter, a controlled deployment executor, and a native Linux setup script; they expose no anonymous remote-command surface. A confirmed safety probe showed that Codex auto-review can read/write outside its workspace, so the production Codex backend is now fail-closed disabled; separating the control DB and workspace is operational hygiene, **not** isolation. The current default proposal path is no-tools HTTPS Responses: the model has no direct file/command tool, and the host alone performs controlled CAS writes and DRAFT registration. Runtime validates, records, and displays facts. The endpoints remain under independent review: there is no real human approval, production deploy/rollback, customer acceptance, successful live-Codex smoke, or live Responses execution conclusion. Start with the [V3 operating guide](docs/platform-v3/README.md) and [V3 execution-endpoint delivery record](docs/platform-v3/completion-execution-delivery.md).
 
 ## Current scope and version
 
@@ -120,9 +120,15 @@ Replace the placeholders with an approved, auditable identity. Those environment
 
 The revision-3 helper has independent evidence of unit 12/12, integration 10/10, and reviewer 22/22 PASS. A real isolated installation from `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` ran full setup, dependencies, and MCP checks; its recorded result is `PASS (TEMPLATE MODE)` with `Evaluated Gates: NONE`. See the [independent installation-transfer review](docs/platform-v3/install-transfer-review.md) and [real isolated-install validation](docs/platform-v3/install-real-validation.md). The former recursive-copy implementation is retained historical BUG-INSTALL-001; the real `c3eb271` public-stub rejection is BUG-INSTALL-002. Neither describes this helper's behavior nor proves release or human acceptance.
 
-### Linux (verifiable manual venv path)
+### Linux (bundled native setup; manual path for audit)
 
-Linux uses the manual installation below; the config generator now supports native `.venv/bin/python`. Use `--copies` to keep the interpreter inside the repository for MCP's resolved-path trust checks; do not bypass them with an interpreter symlink pointing outside the checkout.
+Run the bundled `scripts/setup.sh` first inside the target Linux Git checkout. It checks Git identity and Python 3.11+, creates or reuses the checkout's copied venv, installs constrained dependencies, runs `pip check`, generates local MCP configuration, and runs the validator. It uses no sudo, changes no global Git/Python state, and deletes no existing data. GitHub Actions Ubuntu job `101496781967` observed native setup and repeat-install success, but that is not a conclusion for every Linux host, release, or acceptance.
+
+```bash
+./scripts/setup.sh
+```
+
+The following is the equivalent manual audit path. Use `--copies` to keep the interpreter inside the repository for MCP's resolved-path trust checks; do not bypass them with an interpreter symlink pointing outside the checkout.
 
 ```bash
 python3 --version                     # must be 3.11 or newer
@@ -311,8 +317,8 @@ To onboard an existing repository:
 | --- | --- |
 | Complete report, read-only project export, Case-bound runner | Implemented with local verification records. The report is not truncated at its first page; export refuses overwrite and excludes source/secrets; `test-run` executes only baselined version-bound argv, while an ordinary command outcome is not a Gate. See [export guide](docs/platform-v3/project-export.md) and [test-run validation](docs/platform-v3/test-run-validation.md). |
 | SQLite read capacity | Synthetic `capacity --profile full` was observed: 100 projects, 100,000 artifact versions, 1,000,000 events; terminal JSON PASS in 129.7199 s at 294,764,544 bytes with no public-read errors. This measures only local SQLite `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` reads, not production throughput, write performance, SLO, Gate, or release. See [performance validation](docs/platform-v3/performance-validation.md). |
-| Eight-hour soak | Started in `.rd-platform/benchmark-soak-8h-20260906-1`; the current run has a checkpoint but no terminal JSON, so there is no completion/PASS conclusion. The host’s 30-minute heartbeat is completion/failure notification only, not a benchmark result. |
-| GitHub Actions CI | The real [run 34032990521](https://github.com/leongibhub/codex-rd-platform/actions/runs/34032990521) for `527dae1b7f75d6b526682d1c5a6407c1b3fc6a53` completed SUCCESS at `2026-09-06T12:32:02Z`, with 4/4 jobs SUCCESS (Windows runtime job `101485885964` completed at `12:32:01Z`). Earlier success for `62c153e` and `c3eb271`, first-/second-run failures, and remediation remain in the [CI execution record](docs/platform-v3/ci-execution.md); `c3eb271` workflow success does not erase its later retained real-install failure. This row covers only that source workflow, not subsequent documentation-only changes; Node/fake-`wx` is not WeChat IDE, device, or publication validation. |
+| Eight-hour soak | The terminal for the same run `soak-9241634446774e1291126d1cc1c2a53b` is `PASS`/exit 0: 28800.740279 s elapsed, 4,952 samples, 8.191594 s maximum adjacent gap, and zero read errors; terminal SHA-256 `00BE7586AD05A8CDD03CFC510C7C730021920BEDB8EFDC1225E4A24765A398CD`. It covers only the synthetic SQLite public-read path of old source `E482F1E2DD6A5A7AB42736AE227DB56B8B5D12F2D6C1D5FA1F3293F78BEDBC9A`, not writes, whole-system/security behaviour, production, a Gate, release, or acceptance. See [performance validation](docs/platform-v3/performance-validation.md). |
+| GitHub Actions CI | The `026263f` [run 34038680898](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898) has 3/4 successful jobs: Windows Runtime ran 273 tests, OK with 1 skip; platform ran 133 tests, OK with 3 skips; the independent suite ran 98 tests with 1 error because `wsl.exe` exists but no Linux distro can start. This environment gap is not product success. After the readiness fix, the local endpoint suite ran 30 tests, OK in 24.700 s; an intermediate full independent suite ran 99 tests, OK with 1 skip in 114.547 s. Source changes continued afterward: frozen regression and new CI remain `PENDING`, and these historical counts cannot certify them. Historical CI and failures remain in the [CI execution record](docs/platform-v3/ci-execution.md); none is a Gate, production-deployment, or acceptance conclusion. |
 | Python requirement-by-requirement lifecycle closure | The scoped existing Python-expenses CLI project completed 37/37 current-Case PASS, 7/7 `COMPLETE` RTM, and G0–G8 `DECIDED PASS CURRENT`. This is not G9 human acceptance, production deployment, or release recommendation. G9–G11 remain `NOT_EVALUATED`; finalization is `G0_G8_COMPLETE_G9_PENDING`. |
 
 Capacity/soak use their specialized benchmark and a fresh isolated output directory. Do not target a project state database or reuse existing output:
@@ -367,6 +373,14 @@ $workspace = 'D:\workspaces\inventory-service'
 ```
 
 Record the returned `project_id`, then repeat the identical command to exercise retry. Do not copy the control DB into `$workspace\.rd-platform`, but do not mistake separated paths for a guarantee that a model cannot access it.
+
+New workflows enable the [strict stage policy](docs/platform-v3/orchestration-policy.md). A completed DRAFT handoff is not a passed stage: claiming the next stage requires a current effective PASS for the preceding Gate. Inspect the actual reason with:
+
+```powershell
+& .\.venv\Scripts\python.exe -X utf8 -m rd_platform --db $controlDb orchestrate-status --project-id 'PROJECT_ID'
+```
+
+The board's stage-work table shows the same roles, tasks, reasons, inputs, outputs and dependencies. `ALLOWED` means stage prerequisites only, not execution authority; worker identity, lease and retry safety are checked during claim. See the [status guide](docs/platform-v3/orchestration-status.md) for meanings and Linux commands. Existing generic projects are not silently migrated or recreated.
 
 ### Register real roles and run workers
 

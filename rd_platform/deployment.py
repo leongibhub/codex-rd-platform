@@ -16,6 +16,7 @@ import re
 from uuid import uuid4
 
 from ._workspace_directory import confined_directory
+from .lifecycle import LifecycleService
 from .runner import run_command
 
 
@@ -255,31 +256,30 @@ def _register_formal_deployment(runtime, config, result, receipt_ref):
     release_id, executor = _formal_deploy_preflight(runtime, config)
     if not receipt_ref or not receipt_ref[0]:
         raise ValueError("formal receipt must be stored under project repository")
-    evidence_id = "EVD-DEPLOY-" + uuid4().hex
-    evidence = runtime.execute("evidence.register", {
-        "project_id": config["project_id"], "evidence_id": evidence_id, "kind": "deployment", "status": "VERIFIED",
-        "source": {"kind": "host", "actor": executor},
-        "locator": {"path": receipt_ref[0], "sha256": receipt_ref[1]}, "observed_at": _now(),
-        "metadata": {"subject_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL", "artifact_refs": config["evidence_artifact_refs"]},
-    })
-    release = runtime.execute("release.record_deployment", {
-        "release_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL", "operator": config["operator"],
-        "environment_ref": config["environment_ref"], "evidence_refs": [{"type": "EVIDENCE", "id": evidence["id"], "version": evidence["version"]}],
-    })
-    mutation = {"deployment": release}
-    if result["status"] != "PASS":
-        rollback_evidence = runtime.execute("evidence.register", {
-            "project_id": config["project_id"], "evidence_id": "EVD-ROLLBACK-" + uuid4().hex,
-            "kind": "rollback", "status": "VERIFIED", "source": {"kind": "host", "actor": executor},
-            "locator": {"path": receipt_ref[0], "sha256": receipt_ref[1]}, "observed_at": _now(),
-            "metadata": {"subject_id": release_id, "result": "PASS" if result.get("compensated") else "FAIL", "artifact_refs": config["evidence_artifact_refs"]},
+    with runtime.store.transaction() as connection:
+        service = LifecycleService()
+        evidence = service.execute(connection, "evidence.register", {
+            "project_id": config["project_id"], "evidence_id": "EVD-DEPLOY-" + uuid4().hex, "kind": "deployment", "status": "VERIFIED",
+            "source": {"kind": "host", "actor": executor}, "locator": {"path": receipt_ref[0], "sha256": receipt_ref[1]}, "observed_at": _now(),
+            "metadata": {"subject_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL", "artifact_refs": config["evidence_artifact_refs"]},
         })
-        mutation["rollback"] = runtime.execute("release.rollback", {
-            "release_id": release_id, "result": "PASS" if result.get("compensated") else "FAIL",
-            "operator": config["operator"], "reason": "deployment or health command failed; declared compensation executed",
-            "evidence_refs": [{"type": "EVIDENCE", "id": rollback_evidence["id"], "version": rollback_evidence["version"]}],
+        release = service.execute(connection, "release.record_deployment", {
+            "release_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL", "operator": config["operator"],
+            "environment_ref": config["environment_ref"], "evidence_refs": [{"type": "EVIDENCE", "id": evidence["id"], "version": evidence["version"]}],
         })
-    return mutation
+        mutation = {"deployment": release}
+        if result["status"] != "PASS":
+            rollback_evidence = service.execute(connection, "evidence.register", {
+                "project_id": config["project_id"], "evidence_id": "EVD-ROLLBACK-" + uuid4().hex, "kind": "rollback", "status": "VERIFIED",
+                "source": {"kind": "host", "actor": executor}, "locator": {"path": receipt_ref[0], "sha256": receipt_ref[1]}, "observed_at": _now(),
+                "metadata": {"subject_id": release_id, "result": "PASS" if result.get("compensated") else "FAIL", "artifact_refs": config["evidence_artifact_refs"]},
+            })
+            mutation["rollback"] = service.execute(connection, "release.rollback", {
+                "release_id": release_id, "result": "PASS" if result.get("compensated") else "FAIL", "operator": config["operator"],
+                "reason": "deployment or health command failed; declared compensation executed",
+                "evidence_refs": [{"type": "EVIDENCE", "id": rollback_evidence["id"], "version": rollback_evidence["version"]}],
+            })
+        return mutation
 
 
 def _register_formal_rollback(runtime, config, result, receipt_ref):
@@ -287,17 +287,19 @@ def _register_formal_rollback(runtime, config, result, receipt_ref):
     release_id, executor = _formal_common(config)
     if not receipt_ref or not receipt_ref[0]:
         raise ValueError("formal receipt must be stored under project repository")
-    rollback_evidence = runtime.execute("evidence.register", {
-        "project_id": config["project_id"], "evidence_id": "EVD-ROLLBACK-" + uuid4().hex,
-        "kind": "rollback", "status": "VERIFIED", "source": {"kind": "host", "actor": executor},
-        "locator": {"path": receipt_ref[0], "sha256": receipt_ref[1]}, "observed_at": _now(),
-        "metadata": {"subject_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL", "artifact_refs": config["evidence_artifact_refs"]},
-    })
-    return {"rollback": runtime.execute("release.rollback", {
-        "release_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL",
-        "operator": config["operator"], "reason": "explicit declared rollback executed",
-        "evidence_refs": [{"type": "EVIDENCE", "id": rollback_evidence["id"], "version": rollback_evidence["version"]}],
-    })}
+    with runtime.store.transaction() as connection:
+        service = LifecycleService()
+        rollback_evidence = service.execute(connection, "evidence.register", {
+            "project_id": config["project_id"], "evidence_id": "EVD-ROLLBACK-" + uuid4().hex,
+            "kind": "rollback", "status": "VERIFIED", "source": {"kind": "host", "actor": executor},
+            "locator": {"path": receipt_ref[0], "sha256": receipt_ref[1]}, "observed_at": _now(),
+            "metadata": {"subject_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL", "artifact_refs": config["evidence_artifact_refs"]},
+        })
+        return {"rollback": service.execute(connection, "release.rollback", {
+            "release_id": release_id, "result": "PASS" if result["status"] == "PASS" else "FAIL",
+            "operator": config["operator"], "reason": "explicit declared rollback executed",
+            "evidence_refs": [{"type": "EVIDENCE", "id": rollback_evidence["id"], "version": rollback_evidence["version"]}],
+        })}
 
 
 def execute_deployment(runtime, config, *, action="deploy") -> dict:

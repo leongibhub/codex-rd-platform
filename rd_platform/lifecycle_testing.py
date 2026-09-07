@@ -123,6 +123,12 @@ class TestingCommands:
             bug=dict(id=self.ident('BUG'),project_id=p,version=1,source_execution=row['id'],category='UNCLASSIFIED',severity='UNCLASSIFIED',status='OPEN',owner_role=None,requirement_refs=row['requirement_refs'],regression_case_refs=[],created_at=self.now())
             self.put(c,'defects',bug,new=True); self.trace_link(c,{'project_id':p,'from':{'type':'TEST_EXECUTION','id':row['id']},'to':{'type':'BUG','id':bug['id']},'relation':'found'})
             row['defect_id']=bug['id']; self.put(c,'test_executions',row); self.event(c,p,'defect.opened',bug['id'],{'source_execution':row['id']})
+            # Strict bootstrap projects get an observable, bounded triage
+            # handoff in the same transaction.  It is intentionally not an
+            # auto-classification: a FAIL alone cannot prove a product bug.
+            from .orchestration_policy import create_repair_chain, strict_project
+            if strict_project(self,c,p):
+                create_repair_chain(self,c,bug)
         self.event(c,p,'test_execution.finished',row['id'],{'result':result})
         return row
 
@@ -146,10 +152,20 @@ class TestingCommands:
         owner=self.enum(d.get('owner_role'),{'developer','tester','architect','requirement_analyst'},'defect owner')
         permitted={'PRODUCT':{'developer'},'TEST_SCRIPT':{'tester','developer'},'ENVIRONMENT':{'developer'},'CONFIGURATION':{'developer'},'REQUIREMENT':{'requirement_analyst'},'PERFORMANCE':{'developer','architect'}}
         if owner not in permitted[category]: raise ValueError('owner role does not match defect category')
+        rationale=self.text(d.get('rationale'),'rationale')
         refs=self.refs(c,bug['project_id'],d.get('evidence_refs'))
         self.evidence_refs(c,bug['project_id'],refs)
-        bug.update(category=category,severity=self.enum(d.get('severity'),{'BLOCKER','CRITICAL','MAJOR','MINOR','TRIVIAL'},'defect severity'),owner_role=owner,rationale=self.text(d.get('rationale'),'rationale'),classification_evidence_refs=refs,classified_by=d['classified_by'])
+        severity=self.enum(d.get('severity'),{'BLOCKER','CRITICAL','MAJOR','MINOR','TRIVIAL'},'defect severity')
+        from .orchestration_policy import strict_project
+        if strict_project(self,c,bug['project_id']):
+            chain=[w for w in self.rows(c,'work_orders',bug['project_id']) if w.get('repair_defect_id')==bug['id'] and w.get('repair_stage')!='triage']
+            if chain and (category, severity, owner, rationale)!=(bug.get('category'),bug.get('severity'),bug.get('owner_role'),bug.get('rationale')):
+                raise ValueError('classified defect repair chain is immutable; create a new defect or change request')
+        bug.update(category=category,severity=severity,owner_role=owner,rationale=rationale,classification_evidence_refs=refs,classified_by=d['classified_by'])
         self.put(c,'defects',bug); self.event(c,bug['project_id'],'defect.classified',bug['id'],{'category':category,'owner_role':owner})
+        from .orchestration_policy import after_defect_classified
+        if strict_project(self,c,bug['project_id']):
+            after_defect_classified(self,c,bug)
         return bug
 
     def defect_fix(self,c,d):

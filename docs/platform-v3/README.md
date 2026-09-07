@@ -9,9 +9,9 @@
 
 ## 这是什么，不是什么
 
-V3 是运行在本机、以 SQLite 和 Git 工作区保存事实的研发控制面。它在 V2 的任务质量 Run 之外增加版本化生命周期、工件、追踪、测试执行、缺陷、Gate 候选评估、发布记录和多技术栈 Harness。其模型/Agent 是外部宿主（例如 Codex）显式派发的：宿主读取 Skill、创建或领取工作、执行命令并登记结果；Runtime 负责持久化、校验和展示，**不会**自行启动模型，也不是无人值守后台 daemon。
+V3 是运行在本机、以 SQLite 和 Git 工作区保存事实的研发控制面。它在 V2 的任务质量 Run 之外增加版本化生命周期、工件、追踪、测试执行、缺陷、Gate 候选评估、发布记录和多技术栈 Harness。可由 Codex 宿主按 Skill 派发专业 Agent，也可显式启动 [worker-service](worker-service.md) 处理持久化工作队列。Runtime 本身不会因查看看板就启动模型；worker 的模型连接、源码允许清单和并发预算需要可信宿主配置。
 
-因此，浏览器看板的刷新或 `READY/ACTIVE` 任务状态不代表后台 Agent 正在运行；`pause` 也不会杀掉宿主已启动的外部进程。需要取消实际进程时，操作员必须通过宿主/终端取消，并将真实结果记录为证据。
+因此，看板的刷新或 `READY` 状态不代表后台 Agent 正在运行。worker-service 会响应暂停并取消它自己拥有的执行；独立宿主启动的其他进程仍需其宿主取消。网络请求的本地取消不等于远端已经停止，未知结果会被明确记录。
 
 当前工作边界、证据和待验收项见：[能力状态矩阵](capability-status.md)、[发布就绪性](release-readiness.md)、[五样例经验](lessons-learned.md)。应用的独立测试和审查原始记录分别是 [独立应用测试](independent-app-tests.md)、[独立应用审查](app-review.md)、[独立平台测试](independent-platform-tests.md)。
 
@@ -79,7 +79,7 @@ Push-Location examples\multistack\web_notes; python -m http.server 8080 --bind 1
 & .\.venv\Scripts\python.exe -X utf8 -m rd_platform stack-package examples\multistack\python_expenses\manifest.json
 ```
 
-`stack-run` 对工具缺失输出 `NOT_AVAILABLE`，未声明命令输出 `NOT_EXECUTED`，两者都不是 `PASS`。Web 已有一次内置浏览器 XSS/持久化用户流证据，但其他浏览器和浏览器级存储拒绝仍须分别取得执行证据；微信 IDE 导入/真机/发布，以及 Java 在非 Windows 主机的真实执行也仍待取得。
+`stack-run` 对工具缺失输出 `NOT_AVAILABLE`，未声明命令输出 `NOT_EXECUTED`，两者都不是 `PASS`。Web 已有一次内置浏览器 XSS/持久化用户流证据，但其他浏览器和浏览器级存储拒绝仍须分别取得执行证据；微信 IDE 导入/真机/发布仍待取得。Java 的非 Windows 执行不再是无证据项：`026263f` 的 [Ubuntu multistack job 101501345248](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898/job/101501345248) 实际 SUCCESS。该事实只覆盖该 job/该提交；当前新 head 仍须 fresh QA/CI，不能把它外推为当前工作区、发布或验收结论。
 
 ## 备份、恢复与回滚
 

@@ -21,17 +21,28 @@ CREATE INDEX IF NOT EXISTS lc_trace_from ON lc_trace_links(project_id,json_extra
 CREATE INDEX IF NOT EXISTS lc_trace_to ON lc_trace_links(project_id,json_extract(data,'$.to.id'),status);
 '''
 
+MIGRATION_2 = 'CREATE INDEX IF NOT EXISTS lc_events_project_entity_sequence ON lc_events(project_id,entity_id,sequence);'
+
 
 def migrate(connection):
     digest = hashlib.sha256(SCHEMA.encode()).hexdigest()
+    digest2 = hashlib.sha256(MIGRATION_2.encode()).hexdigest()
     exists = connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='lc_migrations'").fetchone()
     if exists:
         old = connection.execute('SELECT sha256 FROM lc_migrations WHERE version=1').fetchone()
         if old:
             if old[0] != digest:
                 raise ValueError('lifecycle migration digest mismatch')
+            existing = connection.execute('SELECT sha256 FROM lc_migrations WHERE version=2').fetchone()
+            if existing and existing[0] != digest2:
+                raise ValueError('lifecycle migration digest mismatch')
+            connection.execute(MIGRATION_2)
+            if not existing:
+                connection.execute('INSERT INTO lc_migrations VALUES (2,?,?)', (digest2, datetime.now(timezone.utc).isoformat()))
             return
     # executescript commits implicitly; execute each DDL in the owning transaction.
     for statement in SCHEMA.split(';'):
         if statement.strip(): connection.execute(statement)
     connection.execute('INSERT INTO lc_migrations VALUES (1,?,?)', (digest, datetime.now(timezone.utc).isoformat()))
+    connection.execute(MIGRATION_2)
+    connection.execute('INSERT INTO lc_migrations VALUES (2,?,?)', (digest2, datetime.now(timezone.utc).isoformat()))

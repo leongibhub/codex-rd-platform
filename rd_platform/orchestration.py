@@ -2,6 +2,8 @@
 import hashlib
 from pathlib import Path
 
+from .orchestration_policy import STRICT_POLICY
+
 
 STAGES = (
     ('G0', 'requirement_analyst', 'Initial requirement model', 'DOC',
@@ -52,7 +54,8 @@ def start_project(runtime, *, name, idea, repository_root, request_id):
     bg = 'BG-' + hashlib.sha256(pid.encode()).hexdigest()[:16]
     a = runtime.execute('artifact.create', {'project_id': pid, 'artifact_type': 'BG',
         'artifact_id': bg, 'title': name, 'state': 'DRAFT', 'content_ref': {'inline_json': {
-            'idea': idea, 'source': 'explicit_user_input', 'approval': 'NOT_AVAILABLE'}},
+            'idea': idea, 'source': 'explicit_user_input', 'approval': 'NOT_AVAILABLE',
+            'orchestration_policy': STRICT_POLICY}},
         'source': {'kind': 'host', 'actor': actor}}, request_id=pid + ':idea')
     initial = {'type': 'BG', 'id': a['id'], 'version': a['version']}
     work = []
@@ -60,7 +63,8 @@ def start_project(runtime, *, name, idea, repository_root, request_id):
         w = runtime.execute('work.create', {'project_id': pid, 'gate_id': gate,
             'activity': activity, 'required_role': role, 'why': instructions,
             'input_refs': [initial], 'dependencies': [work[-1]['id']] if work else [],
-            'output_contract': {'required_types': [output_type], 'min_outputs': 1}},
+            'output_contract': {'required_types': [output_type], 'min_outputs': 1},
+            'strict_policy': STRICT_POLICY},
             request_id=pid + ':stage:' + gate)
         work.append(w)
     return {'project_id': pid, 'repository_root': str(root), 'work_orders': work,

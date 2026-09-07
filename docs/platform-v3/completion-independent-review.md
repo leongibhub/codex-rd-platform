@@ -113,13 +113,13 @@
 - Failure/impact：租约过期后进入 unsafe-retry skip，可恢复 work 被静默卡死；service 总体状态也与线程崩溃相反。
 - Resolution evidence：materialization/admission handler 现捕获 `OSError` 并只清理由本 attempt 创建的文件。原复现现在为总体 FAIL、work FAILED，既有文件内容不变且 artifact count 为 0。冻结前仍需加入 exact collision/permission regression。
 
-### CRV3-RV-014 — P1 — 唯一安全模型 backend 只能创建新文件，无法执行既有代码的修复/重试 — OPEN
+### CRV3-RV-014 — P1 — 唯一安全模型 backend 只能创建新文件，无法执行既有代码的修复/重试 — RESOLVED / RETESTED / REVIEWED
 
 - Requirement/task：REQ-V3-016/020 / TASK-V3-016/020；真实完整研发、失败→修复→重测循环，以及原设计的真实 Codex CLI 执行能力。
 - Evidence：因 RV-007，production validation 已拒绝 `type=codex`；`responses` 的 host admission 对每个 proposal 使用 exclusive `open("x")`，没有受版本/摘要约束的 update 或 delete 操作。模型也只有 host 提供的注册 context，没有本地工具。
 - Reproduction：G6 work 要求修复既有 `app.py`，Responses proposal 对同一路径给出新内容；安全实现按预期拒绝，work FAILED、旧文件保持不变、无 CODE_CHANGE artifact。即使首次 greenfield create 成功，G7 缺陷后的 retry 也无法修订该文件。
 - Failure/impact：当前安全路径无法完成最普通的维护、缺陷修复和迭代开发；禁用不安全 Codex 后，用户目标“Skill 真正驱动完整研发”及 development loop 没有等价执行能力。
-- Required remediation：以 material design/risk decision 选择：实现 host 侧 CAS journal（update 必须携带 expected current SHA/version、限定已授权路径/类型、拒绝 link/reparse、有限大小、原子替换并在 admission 失败时可靠恢复），或把 create-only 限制明确上升为不满足本 CR 的开放范围并不得宣称完整执行。不能退回 blind overwrite 或同 OS 不隔离 shell。
+- Resolution evidence：Responses proposal 当前支持 allowlist 内 create/update；update 必须绑定旧 SHA，完整批次先 journal 后 CAS/atomic replace，DB/文件失败可回滚，进程崩溃时由 exact refs + 当前目标 SHA 恢复判定。TC-V3-IND-927、929–933 及 TASK-V3-016 r9 的独立 unit/IT/review 覆盖 update、批量回滚、漂移拒绝、恢复和 worker handoff；review run `run-95e3f86d8cdd4bbc9758b395059355ff`。这不是 live Responses 或真实缺陷修复事实，delete 仍不在本轮设计范围。
 
 ### CRV3-RV-015 — P1 — Responses 请求开始后忽略 cancel event，可阻塞至一小时 timeout — RESOLVED / RETESTED
 
@@ -128,13 +128,13 @@
 - Failure/impact：late DONE 虽被 lease fence 阻止，外部生成请求、费用及 worker service 仍无法按 pause/stop 及时终止。
 - Resolution evidence：response read 现由 daemon reader 执行，外层轮询 cancel 并关闭 response；相同 slow-response 复现于约 0.06 秒返回 `FAIL/cancelled=true`，不再接受 late PASS。冻结前需固化 slow-read 与 run_service stop-latency regression。
 
-### CRV3-RV-016 — P2 — 公开 worker 文档仍引导使用已禁用且证实不安全的 Codex backend — OPEN
+### CRV3-RV-016 — P2 — 公开 worker 文档仍引导使用已禁用且证实不安全的 Codex backend — RESOLVED / STATICALLY VERIFIED
 
 - Requirement/task：REQ-V3-016/020 / TASK-V3-016/020；安全配置与中英文可运行交付。
 - Evidence：`worker_backends.validate_backend` 当前对 `type=codex` 直接 fail closed，安全路径改为 `responses`；但 `worker-service.md`、README/README.en 的配置、flag 与运维段落仍宣传 `sandbox=workspace-write`、`approval_mode=auto-review` 和 Codex CLI 行为。
 - Reproduction：复制当前文档示例运行 worker-service，配置阶段即得到 `codex backend is not production-safe; use responses proposals`；文档同时继续暗示 workspace 与 DB 分目录即可保护控制面，与 RV-007 实证冲突。
 - Failure/impact：操作者按正式指南无法启动 worker，或继续相信已经证伪的安全边界；Responses key/endpoint、no-tools、proposal admission 与 create-only 限制没有可操作说明。
-- Required remediation：同步中英文设计/指南/示例与 Skill，保留真实 sandbox probe 的安全 ruling，说明 Responses secret/environment、endpoint、context、no-tools、proposal/DRAFT 及当前 create-only 限制；不得把禁用 Codex 示例保留为生产路径。
+- Resolution evidence：`worker-service.md`、中英文 README 与 `platform-orchestration` Skill 当前一致说明：生产 Codex backend 已 fail closed，Responses 固定 no-tools、secret 只取宿主环境、模型只返回 proposal，宿主执行 allowlist/CAS/hash/version 校验并登记 DRAFT；`argv` 仅限已批准的可信宿主命令。公开文本未再把工作区路径或 Codex flag 宣称为隔离边界。
 
 ## 已验证但不构成批准
 
@@ -151,3 +151,41 @@
 ## 最终复审条件
 
 代码、测试和文档冻结后，逐项重放 CRV3-RV-001..016；运行完整 Runtime/platform/独立测试与五栈回归；核对真实安全 proposal execution、Linux 成功安装、部署失败补偿 receipt、formal Gate drift 与显式 rollback 历史。只有 P0/P1 清零、spec/code 两项结论重新评定后，才可给出最终 G8 建议。
+
+## 2026-09-07 continuation review（当前增量事实）
+
+本节保留上面的历史发现与当时结论，不把后续修复倒写成从未失败。当前审查基线为已推送提交 `026263f` 加本轮尚未冻结的工作区变更；因此本节仍是源码范围的增量门禁，不是项目 G8、发布、生产部署或人工验收结论。临时 SQLite、HTTP、SSH、部署和小应用 fixture 只证明接口行为，不能替代 live Responses、真实批准或生产环境执行。
+
+### 新增发现与处置
+
+| Finding | Severity | Evidence / failure mode | Current disposition |
+| --- | --- | --- | --- |
+| CRV3-RV-017 | P1 | proposal rollback 曾把写入前已经存在的空父目录也登记为本 attempt 创建，并在未提交恢复时删除。 | **RESOLVED / RETESTED**。`prepare` 只登记原本不存在的目录；TC-V3-IND-932 证明预先存在空父目录被保留。 |
+| CRV3-RV-018 | P1 | recovery 在 SQLite exact-ref proof 为真时曾不复核当前目标字节，可把外部漂移文件错误标成 `COMMITTED`。 | **RESOLVED / RETESTED**。positive proof 还要求目标存在且 SHA-256 等于 journal 的 `new_sha256`；TC-V3-IND-933 对漂移目标 fail closed。 |
+| CRV3-RV-019 | P1 | proposal apply、SQLite artifact/work 提交和 journal 状态跨越失败点，错误路径可能遗留文件/数据库/日志相互矛盾。 | **RESOLVED / RETESTED（进程崩溃范围）**。TC-V3-IND-927、929–933 覆盖批量登记失败回滚、未提交恢复、外部漂移拒绝、exact refs commit 与目录归属。当前设计明确不承诺主机掉电 durability。 |
+| CRV3-RV-020 | P1 | `pause` 把 CLAIMED work 变回 READY 时明确记录 `external_process_cancelled:false`，但 worker 只隔离 lease expiry；另一 service 可在旧进程仍运行时重复执行 unsafe argv。后续复审又发现 `reassign/modify` 与 snapshot→claim TOCTOU。 | **RESOLVED / RETESTED / REVIEWED at TASK-V3-016 r9**。claim 在同一事务校验 expected version 与 indexed immutable fence；pause、reassign、artifact/trace invalidation 发 canonical unknown-outcome event，rollback 在 claimed/unknown outcome 前 fail closed。QA unit `run-901b8eb923704979bb35775a5fe7cd9c` 64/64、IT `run-a918a474aa18436887ac526af9a180ff` 22/22；reviewer 另跑 76/76 和实际 adopted-v2 context seam，review `run-95e3f86d8cdd4bbc9758b395059355ff`，task DONE。r5 review 仅保留为被后续 revision 取代的历史。 |
+| CRV3-RV-021 | P1 | formal deployment/rollback 原先用多个独立 Runtime transaction；中途失败会遗留 orphan VERIFIED evidence 或与 release 状态分叉。 | **RESOLVED / RETESTED / REVIEWED**。正式 evidence 与 release mutation 现在共用一个 SQLite transaction；注入第二、第三 mutation 失败均回滚全部 Runtime 写入并保留物理 receipt。reviewer 本机 28/28 通过、1 个普通 symlink privilege skip（junction 边界已执行）；review run `run-63be26b13d0e4279905ed5bafec8fc91`，TASK-V3-018 r4 DONE。不是生产部署证据。 |
+| CRV3-RV-022 | P1 | 原 `orchestrate-start` 仅用前序 work `DONE` 解锁后续，DRAFT 文档即可跨阶段推进；FAIL 也不会自动创建有界、角色分离的修复工作链。 | **RESOLVED / RETESTED / REVIEWED at TASK-V3-021 r7**。host policy 保持 work 输出为 DRAFT candidate；G1+ claim 要求 fresh predecessor Gate PASS 并绑定实际采纳版本，G8+ 要求完整 RTM，G10 仍要求真实绑定 human approval。FAIL 创建有界 triage→owner fix→tester retest→reviewer chain。QA unit `run-08b47cfd324441f0b40766671dd84027` 7/7、integration `run-103efb41c50647f798b88e3a27d73f07` 18/18；review `run-3e3576b548ca4dea91dbbc52e813c693`。 |
+| CRV3-RV-023 | P2 | 已分类 triage 若仍 CLAIMED，直接清 lease 会留下未知旧进程；通用 retry/reassign/modify 可将其复活。 | **RESOLVED / RETESTED / REVIEWED**。分类会发布 canonical `work.invalidated(external_process_cancelled:false)`、清除旧 token 并保留未知结果 fence；已分类 triage 不能 retry/reassign/modify/rollback 复活。TASK-V3-016 r9 与 TASK-V3-021 r7 的并发/控制负例均通过。 |
+| CRV3-RV-024 | P1 | stage adoption 最初把 current adopted version 写入 `dependency_input_refs`，worker 却仍预检和消费 dependency 的旧 DRAFT `output_refs`；合法 v2 baseline 会在 claim 前被拒绝或把 v1 送入 context。 | **RESOLVED / RETESTED / REVIEWED at TASK-V3-016 r9**。strict READY 只在原子 claim 前预检直接 input；claim 解析并持久化 adopted refs，claimed context/heartbeat/finish 使用该精确集合。reviewer 隔离 Responses seam 观察到 G1 context 只有 adopted DOC v2、没有 v1。 |
+| CRV3-RV-025 | P1 | TEST_MODEL adoption 曾从无 `content_ref` 的 model row 取摘要而报错；TEST_CASE 后续虽可采纳，但当前实现不比较 DRAFT candidate 与 BASELINED revision 的测试语义，允许替换 steps/expected/requirement 后仍冒充原 work 输出。 | **RESOLVED / RETESTED / REVIEWED**。TEST_MODEL 绑定 companion artifact/version/hash；TEST_CASE 对完整声明语义字段做 current-vs-historical 对比、未知 schema fail closed，只允许治理字段变化。治理-only 正例及 steps/expected/requirement 三类漂移负例通过。 |
+| CRV3-RV-026 | P1 | strict project 的内置 `gate.decide(FAIL)` remediation、`lifecycle.control(rollback)` 及 `work.control(rollback)` compensation 均创建 `dependencies:[]`；G1+ claim 却强制从 predecessor work dependency 解析 stage output，因此这些恢复 work 永久 `STRICT_POLICY_STAGE_OUTPUT_MISSING`。 | **RESOLVED / RETESTED / REVIEWED**。三类宿主恢复 work 都通过同一 `recovery_dependencies` 选择已完成且已被 fresh predecessor assessment 精确采纳的 handoff；G1 Gate FAIL、work rollback、lifecycle rollback 均完成正向 claim。没有新增公有 bypass metadata。 |
+| CRV3-RV-027 | P1 | repair work completion 只检查 defect 已到 FIXED/RESOLVED/CLOSED 和 actor，未把实际 output ref 精确绑定到 `fix_task_ref`/retest executions/closure evidence；domain transition 后任意同类型 ref 可作为该 work 输出。 | **RESOLVED / RETESTED / REVIEWED**。fix/retest/review 分别精确等于 defect 持久化的 `fix_evidence_refs`、`retest_execution_refs`、`closure_evidence_refs`；unrelated evidence/execution 负例拒绝。fix 的共通合同改为 exact EVIDENCE，兼容 requirement analyst/architect owner，不伪装为 CODE_CHANGE。 |
+| CRV3-RV-028 | P1 | `REQ/TASK-V3-020` 设计和 TC-V3-IND-912 要求 final freeze 后重跑既有五栈；r3 tester integration 实际只执行 4 项 CLI/HTTP/README/fixture，却把 TC-912 标成 PASS，同一报告末尾又写“完整五栈 NOT_EXECUTED”。 | **OPEN / REVIEW FAILED**。reviewer 补跑 C++/Python/Java/V3 adapter 13/13、Web/微信 fake-`wx` 6/6 均通过，未观察到源码回归，但 reviewer 不能替代 current independent tester evidence。review run `run-3dffaf1ab6c2462dbda92e7b08cf33b2` 已按 P1 FAIL 登记；需保留失败历史、统一报告并由 tester 在新 attempt 同一冻结快照实际执行五栈。微信原生仍不在该证据范围。 |
+
+### 已完成的新增模块审查
+
+- TASK-V3-016 r9：模块级 **PASS**，见 `run-95e3f86d8cdd4bbc9758b395059355ff`。reviewer 本机 76/76，并额外验证 strict adopted-v2 worker context；结论不外推为 live Responses、真实批准、生产部署或掉电 durability。
+- TASK-V3-018 r4：模块级 **PASS**，见 `run-63be26b13d0e4279905ed5bafec8fc91`。结论仅限本地部署执行器源码与隔离 fixture。
+- TASK-V3-022 r1：只读编排状态 CLI/HTTP/前端投影模块级 **PASS**，见 `run-c7fb409ac5e04c9db2400a1fe569c31d`。状态读取不创建缺失 DB、不 claim/resume、不推进 Gate，并固定返回 `execution_authorized:false`；动态 UI 值通过 `textContent` 写入。未执行真实浏览器 accessibility 或人工验收。
+- TASK-V3-021 r7：host-enforced lifecycle policy 模块级 **PASS**，见 `run-3e3576b548ca4dea91dbbc52e813c693`。reviewer 本机 17/17；独立 QA unit 7/7、integration 18/18。结论仅限当前源码与隔离 Runtime/local-file fixture，不构成真实 Gate、批准或生产执行。
+- TASK-V3-017 与 TASK-V3-019 的先前独立 DONE 结论保持不变，不重做、不外推。
+
+### 当前门禁结论
+
+- P0：0。
+- P1：TASK-V3-016 r9 与 TASK-V3-021 r7 已清零各自 scoped P1；TASK-V3-020 r3 新增 CRV3-RV-028，review 已 FAIL。
+- TASK-V3-020 必须保留 r3 失败，在新 attempt 同一冻结快照由 independent tester 补跑五栈并消除证据报告矛盾，再进行独立复审；不能用 reviewer 补跑或历史绿记录替代。
+- Spec compliance：**FAIL / IN_REVIEW**；Code quality：**FAIL / IN_REVIEW**；Gate ruling：**NOT APPROVED**。当前没有“最终愿景全部完成”的独立证据。
+
+后续只在 TASK-V3-020 r3 完成 independent integration → reviewer、当前工作区冻结且 P0/P1 仍为零后，才重新评定本轮总体源码范围。live Responses、真实人类批准、生产部署、客户验收和微信原生发布继续按 `NOT_AVAILABLE`/`NOT_EXECUTED` 报告，不能由 fixture 或 Git push 替代。

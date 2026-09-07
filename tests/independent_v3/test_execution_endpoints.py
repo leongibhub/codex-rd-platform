@@ -6,6 +6,7 @@ do not reuse developer test helpers or call private worker functions.
 """
 from __future__ import annotations
 
+import ast
 import hashlib
 import http.client
 import json
@@ -48,12 +49,12 @@ class ExecutionEndpointIndependentTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def work(self, *, minimum=1, role="developer", dependencies=None, input_refs=None):
+    def work(self, *, minimum=1, role="developer", dependencies=None, input_refs=None, required_types=None):
         return self.runtime.execute("work.create", {
             "project_id": self.project, "gate_id": "G0", "activity": "independent execution",
             "required_role": role, "why": "verify bounded external execution",
             "input_refs": input_refs or [], "dependencies": dependencies or [],
-            "output_contract": {"required_types": ["DOC"], "min_outputs": minimum},
+            "output_contract": {"required_types": ["DOC"] if required_types is None else required_types, "min_outputs": minimum},
         })
 
     def config(self, agent, argv, *, output=4096, timeout=10):
@@ -150,6 +151,239 @@ class ExecutionEndpointIndependentTests(unittest.TestCase):
         snapshot = self.runtime.lifecycle_snapshot(self.project)
         self.assertEqual([], snapshot["artifacts"])
         self.assertNotEqual("DONE", snapshot["work_orders"][0]["status"])
+
+    def test_restart_reaps_unknown_lease_only_on_safe_retry_and_pause_resume_services_do_not_duplicate_argv(self):
+        """TC-V3-IND-906: unknown external attempts require an explicit safe retry."""
+        from rd_platform.worker_service import run_service
+
+        def plain_envelope_script(name, *, append_to=None, delay=0):
+            script = self.root / f"{name}.py"
+            writes = ""
+            if append_to:
+                writes = f"Path({str(append_to)!r}).open('a', encoding='utf-8').write('argv\\n')\n"
+            script.write_text(
+                "from pathlib import Path\nimport json, time\n" + writes +
+                (f"time.sleep({delay!r})\n" if delay else "") +
+                "print(json.dumps({'status':'DONE','summary':'safe retry observable','output_refs':[],'artifacts':[]}))\n",
+                encoding="utf-8",
+            )
+            return [sys.executable, str(script)]
+
+        def service_config(agent, argv, *, safe=False):
+            configured = self.config(agent, argv)
+            configured["workers"][0]["safe_to_retry"] = safe
+            return configured
+
+        # First, an expired lease is a durable "unknown external effect" fence.
+        expired = self.work(minimum=0, required_types=[])
+        self.runtime.execute("work.claim", {"work_order_id": expired["id"], "agent_id": "ind-worker-a", "lease_seconds": 1})
+        with patch("rd_platform.lifecycle_base.LifecycleBase.now", return_value="2099-01-01T00:00:00+00:00"):
+            self.assertEqual([expired["id"]], self.runtime.execute("work.reap", {"project_id": self.project})["expired"])
+        expired_marker = self.root / "expired-argv.txt"
+        unsafe = run_service(Runtime(self.runtime.db_path), service_config("ind-worker-b", plain_envelope_script("expired", append_to=expired_marker), safe=False), once=True)
+        self.assertEqual((0, 1), (unsafe["claimed"], unsafe["recovery_skipped"]))
+        self.assertFalse(expired_marker.exists(), "unsafe lease recovery must not re-run argv")
+        safe = run_service(Runtime(self.runtime.db_path), service_config("ind-worker-b", plain_envelope_script("expired-safe", append_to=expired_marker), safe=True), once=True)
+        self.assertEqual((1, 1), (safe["claimed"], safe["completed"]), safe)
+        self.assertEqual("argv\n", expired_marker.read_text(encoding="utf-8"))
+
+        # A prior expiry no longer blocks an ordinary retry after a later safe claim.
+        retryable = self.work(minimum=0, required_types=[])
+        self.runtime.execute("work.claim", {"work_order_id": retryable["id"], "agent_id": "ind-worker-a", "lease_seconds": 1})
+        with patch("rd_platform.lifecycle_base.LifecycleBase.now", return_value="2099-01-01T00:00:00+00:00"):
+            self.runtime.execute("work.reap", {"project_id": self.project})
+        broken = self.root / "broken-safe.py"; broken.write_text("print('not an envelope')\n", encoding="utf-8")
+        failed_safe = run_service(Runtime(self.runtime.db_path), service_config("ind-worker-b", [sys.executable, str(broken)], safe=True), once=True)
+        self.assertEqual(1, failed_safe["failed"])
+        self.runtime.execute("work.control", {"work_order_id": retryable["id"], "action": "retry", "reason": "independent safe retry recovery"})
+        retried_marker = self.root / "retried-argv.txt"
+        ordinary_retry = run_service(Runtime(self.runtime.db_path), service_config("ind-worker-a", plain_envelope_script("ordinary-retry", append_to=retried_marker), safe=False), once=True)
+        self.assertEqual((1, 1), (ordinary_retry["claimed"], ordinary_retry["completed"]))
+        self.assertEqual("argv\n", retried_marker.read_text(encoding="utf-8"))
+
+        # Pause/resume is another unknown-effect fence.  Two services may resume
+        # it with an explicit safe policy, but exactly one may launch argv.
+        paused = self.work(minimum=0, required_types=[])
+        self.runtime.execute("work.claim", {"work_order_id": paused["id"], "agent_id": "ind-worker-a", "lease_seconds": 30})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "pause", "reason": "independent pause/restart test"})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "resume", "reason": "independent pause/restart test"})
+        side_effect = self.root / "resumed-argv.txt"
+        shared = service_config("ind-worker-a", plain_envelope_script("resumed", append_to=side_effect, delay=.2), safe=True)
+        other = dict(shared["workers"][0]); other["agent_id"] = "ind-worker-b"
+        shared["workers"].append(other); shared["max_concurrency"] = 2
+        barrier, outcomes = threading.Barrier(3), []
+        def invoke():
+            barrier.wait()
+            outcomes.append(run_service(Runtime(self.runtime.db_path), shared, once=True))
+        first, second = threading.Thread(target=invoke), threading.Thread(target=invoke)
+        first.start(); second.start(); barrier.wait(); first.join(10); second.join(10)
+        self.assertFalse(first.is_alive()); self.assertFalse(second.is_alive())
+        self.assertEqual(1, sum(item["claimed"] for item in outcomes))
+        self.assertEqual(1, sum(item["completed"] for item in outcomes))
+        self.assertEqual("argv\n", side_effect.read_text(encoding="utf-8"), "second service must not duplicate argv side effect")
+
+    def test_claim_version_and_reassign_unknown_attempt_are_atomic_fences(self):
+        """TC-V3-IND-936: stale snapshots and reassign cannot replay unknown argv."""
+        from rd_platform.worker_service import run_service
+
+        versioned = self.work(minimum=0, required_types=[])
+        version = versioned["version"]
+        self.runtime.execute("work.claim", {"work_order_id": versioned["id"], "agent_id": "ind-worker-a", "lease_seconds": 30})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "pause", "reason": "independent stale snapshot test"})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "resume", "reason": "independent stale snapshot test"})
+        with self.assertRaisesRegex(ValueError, "version changed"):
+            self.runtime.execute("work.claim", {"work_order_id": versioned["id"], "agent_id": "ind-worker-b", "lease_seconds": 30, "expected_version": version, "safe_to_retry": True})
+        latest = next(row for row in self.runtime.lifecycle_snapshot(self.project)["work_orders"] if row["id"] == versioned["id"])
+        with self.assertRaisesRegex(ValueError, "safe_to_retry"):
+            self.runtime.execute("work.claim", {"work_order_id": versioned["id"], "agent_id": "ind-worker-b", "lease_seconds": 30, "expected_version": latest["version"]})
+        safe = self.runtime.execute("work.claim", {"work_order_id": versioned["id"], "agent_id": "ind-worker-b", "lease_seconds": 30, "expected_version": latest["version"], "safe_to_retry": True})
+        self.runtime.execute("work.finish", {"work_order_id": versioned["id"], "agent_id": "ind-worker-b", "lease_token": safe["lease_token"], "status": "DONE", "summary": "explicit safe retry", "output_refs": []})
+
+        reassigned = self.work(minimum=0, required_types=[])
+        marker = self.root / "reassign-argv.txt"
+        script = self.root / "reassign-slow.py"
+        script.write_text(
+            "from pathlib import Path\nimport json, time\n" +
+            f"Path({str(marker)!r}).open('a', encoding='utf-8').write('argv\\n')\n" +
+            "time.sleep(2)\nprint(json.dumps({'status':'DONE','summary':'slow','output_refs':[],'artifacts':[]}))\n",
+            encoding="utf-8",
+        )
+        first_result = {}
+        first = threading.Thread(target=lambda: first_result.setdefault("value", run_service(
+            self.runtime, self.config("ind-worker-a", [sys.executable, str(script)]), once=True)),
+        )
+        first.start()
+        deadline = time.monotonic() + 5
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(.02)
+        self.assertTrue(marker.exists(), "first argv never began")
+        self.runtime.execute("work.control", {"work_order_id": reassigned["id"], "action": "reassign", "agent_id": "ind-worker-b", "reason": "independent unknown external attempt"})
+        denied = run_service(Runtime(self.runtime.db_path), self.config("ind-worker-b", [sys.executable, str(script)]), once=True)
+        self.assertEqual((0, 1), (denied["claimed"], denied["recovery_skipped"]))
+        self.assertEqual("argv\n", marker.read_text(encoding="utf-8"), "reassign fence must prevent duplicate argv")
+        first.join(8)
+        self.assertFalse(first.is_alive(), "first service did not reconcile invalidated claim")
+        safe_config = self.config("ind-worker-b", [sys.executable, str(script)])
+        safe_config["workers"][0]["safe_to_retry"] = True
+        allowed = run_service(Runtime(self.runtime.db_path), safe_config, once=True)
+        self.assertEqual((1, 1), (allowed["claimed"], allowed["completed"]))
+        self.assertEqual("argv\nargv\n", marker.read_text(encoding="utf-8"))
+
+    def test_rollback_refuses_claimed_pause_or_expiry_unknown_attempt_without_compensation(self):
+        """TC-V3-IND-938: rollback never masks an unreconciled external attempt."""
+        def assert_rejected(work):
+            before = self.runtime.lifecycle_snapshot(self.project)["work_orders"]
+            with self.assertRaisesRegex(ValueError, "reconcile original external outcome"):
+                self.runtime.execute("work.control", {"work_order_id": work["id"], "action": "rollback", "reason": "independent unknown attempt"})
+            after = self.runtime.lifecycle_snapshot(self.project)["work_orders"]
+            self.assertEqual(len(before), len(after), "rejected rollback must not create compensation")
+            self.assertIsNone(next(row for row in after if row["id"] == work["id"]).get("compensation_work_id"))
+
+        claimed = self.work(minimum=0, required_types=[])
+        self.runtime.execute("work.claim", {"work_order_id": claimed["id"], "agent_id": "ind-worker-a", "lease_seconds": 30})
+        assert_rejected(claimed)
+
+        paused = self.work(minimum=0, required_types=[])
+        self.runtime.execute("work.claim", {"work_order_id": paused["id"], "agent_id": "ind-worker-b", "lease_seconds": 30})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "pause", "reason": "independent rollback pause"})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "resume", "reason": "independent rollback resume"})
+        assert_rejected(paused)
+
+        expired = self.work(minimum=0, required_types=[])
+        self.runtime.execute("work.claim", {"work_order_id": expired["id"], "agent_id": "ind-worker-b", "lease_seconds": 1})
+        with patch("rd_platform.lifecycle_base.LifecycleBase.now", return_value="2099-01-01T00:00:00+00:00"):
+            self.runtime.execute("work.reap", {"project_id": self.project})
+        assert_rejected(expired)
+
+        completed = self.work(minimum=0, required_types=[])
+        claim = self.runtime.execute("work.claim", {"work_order_id": completed["id"], "agent_id": "ind-worker-b", "lease_seconds": 30})
+        self.runtime.execute("work.finish", {"work_order_id": completed["id"], "agent_id": "ind-worker-b", "lease_token": claim["lease_token"], "status": "DONE", "summary": "completed before compensation", "output_refs": []})
+        rolled = self.runtime.execute("work.control", {"work_order_id": completed["id"], "action": "rollback", "reason": "completed compensation is allowed"})
+        records = {row["id"]: row for row in self.runtime.lifecycle_snapshot(self.project)["work_orders"]}
+        self.assertEqual("ROLLBACK_PENDING", records[completed["id"]]["status"])
+        self.assertEqual("READY", records[rolled["compensation_work_id"]]["status"])
+
+    def test_artifact_trace_invalidation_is_canonical_and_lifecycle_rollback_fails_closed(self):
+        """TC-V3-IND-939 / REQ-V3-016: changed inputs fence claims and rollback is atomic."""
+        def ref(kind, ident, version=1):
+            return {"type": kind, "id": ident, "version": version}
+
+        def artifact(ident, kind):
+            return self.runtime.execute("artifact.create", {
+                "project_id": self.project, "artifact_id": ident, "artifact_type": kind,
+                "title": ident, "state": "BASELINED",
+                "content_ref": {"inline_json": {"independent": ident}},
+                "source": {"kind": "host", "actor": "ind-worker-a"},
+            })
+
+        artifact("REQ-IND-939", "REQ")
+        artifact("CR-IND-939", "CR")
+        artifact_work = self.work(minimum=0, required_types=[], input_refs=[ref("REQ", "REQ-IND-939")])
+        self.runtime.execute("work.claim", {"work_order_id": artifact_work["id"], "agent_id": "ind-worker-a", "lease_seconds": 30})
+        self.runtime.execute("artifact.revise", {
+            "artifact_id": "REQ-IND-939", "expected_version": 1, "state": "BASELINED",
+            "content_ref": {"inline_json": {"independent": "revised"}}, "material": True,
+            "reason": "independent active-input invalidation", "change_id": "CR-IND-939",
+        })
+        snapshot = self.runtime.lifecycle_snapshot(self.project)
+        fenced = next(row for row in snapshot["work_orders"] if row["id"] == artifact_work["id"])
+        event = next(item for item in snapshot["events"] if item["type"] == "work.invalidated" and item["entity_id"] == artifact_work["id"])
+        self.assertEqual("REVIEW_REQUIRED", fenced["status"])
+        self.assertIs(event["data"]["external_process_cancelled"], False)
+        self.runtime.execute("work.control", {"work_order_id": artifact_work["id"], "action": "modify", "reason": "use current ref", "input_refs": [ref("REQ", "REQ-IND-939", 2)]})
+        with self.assertRaisesRegex(ValueError, "safe_to_retry"):
+            self.runtime.execute("work.claim", {"work_order_id": artifact_work["id"], "agent_id": "ind-worker-b", "lease_seconds": 30})
+
+        artifact("REQ-TRACE-939", "REQ")
+        artifact("DES-TRACE-939", "DES")
+        trace = self.runtime.execute("trace.link", {
+            "project_id": self.project, "from": ref("REQ", "REQ-TRACE-939"),
+            "to": ref("DES", "DES-TRACE-939"), "relation": "realized_by",
+        })
+        trace_work = self.work(minimum=0, required_types=[], input_refs=[ref("DES", "DES-TRACE-939")])
+        self.runtime.execute("work.claim", {"work_order_id": trace_work["id"], "agent_id": "ind-worker-b", "lease_seconds": 30})
+        self.runtime.execute("trace.invalidate", {"link_id": trace["id"], "reason": "independent trace invalidation", "change_id": "CR-IND-939"})
+        snapshot = self.runtime.lifecycle_snapshot(self.project)
+        trace_event = next(item for item in snapshot["events"] if item["type"] == "work.invalidated" and item["entity_id"] == trace_work["id"])
+        self.assertIs(trace_event["data"]["external_process_cancelled"], False)
+        self.assertEqual("REVIEW_REQUIRED", next(row for row in snapshot["work_orders"] if row["id"] == trace_work["id"])["status"])
+
+        # Move only G0 through its public evidence/assessment/decision protocol,
+        # then verify a rollback touching an active input performs no partial
+        # gate reset or compensation-work creation.
+        self.runtime.execute("agent.register", {"id": "ind-review-939", "role": "reviewer"})
+        artifact("DOC-G0-939", "DOC")
+        from rd_platform.lifecycle_governance import POLICY
+        evidence = self.runtime.execute("evidence.register", {
+            "project_id": self.project, "kind": "document", "status": "VERIFIED",
+            "source": {"kind": "host", "actor": "ind-review-939"},
+            "locator": {"inline_json": {"fixture": "independent rollback boundary"}},
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "metadata": {"gate_id": "G0", "criteria": list(POLICY["G0"]), "artifact_refs": [ref("DOC", "DOC-G0-939")]},
+        })
+        assessment = self.runtime.execute("gate.assess", {"project_id": self.project, "gate_id": "G0"})
+        self.assertEqual("PASS", assessment["candidate"], assessment)
+        decision = self.runtime.execute("evidence.register", {
+            "project_id": self.project, "kind": "gate_decision", "status": "VERIFIED",
+            "source": {"kind": "host", "actor": "ind-review-939"},
+            "locator": {"inline_json": {"fixture": "independent gate decision"}},
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "metadata": {"assessment_id": assessment["id"], "status": "PASS"},
+        })
+        self.runtime.execute("gate.decide", {"assessment_id": assessment["id"], "status": "PASS", "decided_by": "ind-review-939", "decision_evidence_refs": [ref("EVIDENCE", decision["id"])]})
+        active = self.work(minimum=0, required_types=[], input_refs=[ref("DOC", "DOC-G0-939")])
+        self.runtime.execute("work.claim", {"work_order_id": active["id"], "agent_id": "ind-worker-a", "lease_seconds": 30})
+        before = self.runtime.lifecycle_snapshot(self.project)
+        with self.assertRaisesRegex(ValueError, "reconcile original external outcome"):
+            self.runtime.execute("lifecycle.control", {
+                "project_id": self.project, "action": "rollback", "target_gate": "G0",
+                "change_id": "CR-IND-939", "affected_refs": [ref("DOC", "DOC-G0-939")],
+                "reason": "independent claimed-input rollback",
+            })
+        after = self.runtime.lifecycle_snapshot(self.project)
+        self.assertEqual(before["lifecycle"]["current_gate"], after["lifecycle"]["current_gate"])
+        self.assertEqual(len(before["work_orders"]), len(after["work_orders"]), "rejected lifecycle rollback must not create compensation")
+        self.assertEqual("CLAIMED", next(row for row in after["work_orders"] if row["id"] == active["id"])["status"])
 
     def test_empty_invalid_and_over_budget_output_do_not_complete_work(self):
         """TC-V3-IND-903 / REQ-V3-016: exit 0 is not output-contract evidence."""
@@ -553,6 +787,77 @@ class CliEndpointIndependentTests(unittest.TestCase):
             self.assertEqual(12, len(snapshot["work_orders"]))
             self.assertEqual(1, len(Runtime(db).snapshot()["projects"]))
 
+    def test_status_cli_http_board_and_bilingual_skill_keep_read_only_stage_boundary(self):
+        """TC-V3-IND-937 / REQ-V3-020: user-facing routes agree without granting execution."""
+        from rd_platform.web import create_server
+        with tempfile.TemporaryDirectory(prefix="ind-v3-cli-status-") as folder:
+            root = Path(folder); repository = root / "repository"; repository.mkdir(); db = root / "state.db"
+            cli = [sys.executable, "-m", "rd_platform", "--db", str(db)]
+            created = subprocess.run(cli + ["orchestrate-start", "--name", "independent status", "--idea", "read-only boundary", "--repository-root", str(repository), "--request-id", "ind-status-020"], cwd=Path(__file__).resolve().parents[2], capture_output=True, text=True, encoding="utf-8", check=False)
+            self.assertEqual(0, created.returncode, created.stderr)
+            project = json.loads(created.stdout)["project_id"]
+            before = hashlib.sha256(db.read_bytes()).hexdigest()
+            status = subprocess.run(cli + ["orchestrate-status", "--project-id", project], cwd=Path(__file__).resolve().parents[2], capture_output=True, text=True, encoding="utf-8", check=False)
+            self.assertEqual(0, status.returncode, status.stderr)
+            data = json.loads(status.stdout)
+            self.assertEqual(before, hashlib.sha256(db.read_bytes()).hexdigest())
+            self.assertFalse(data["execution_authorized"])
+            self.assertEqual("ALLOWED", data["work_orders"][0]["stage_admission"])
+            self.assertTrue(all(row["stage_admission"] == "WAITING_PREREQUISITE" for row in data["work_orders"][1:]))
+            server = create_server(db, port=0); thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                connection.request("GET", f"/api/orchestration?project_id={project}", headers={"Host": f"127.0.0.1:{server.server_port}"})
+                response = connection.getresponse(); board = json.loads(response.read()); connection.close()
+                self.assertEqual(200, response.status)
+                self.assertEqual(data["work_orders"], board["work_orders"])
+                connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                connection.request("GET", "/", headers={"Host": f"127.0.0.1:{server.server_port}"})
+                response = connection.getresponse(); page = response.read().decode("utf-8"); connection.close()
+                self.assertEqual(200, response.status); self.assertIn("阶段工作与推进条件", page)
+            finally:
+                server.shutdown(); server.server_close(); thread.join(5)
+            repository_root = Path(__file__).resolve().parents[2]
+            chinese = (repository_root / "README.md").read_text(encoding="utf-8")
+            english = (repository_root / "README.en.md").read_text(encoding="utf-8")
+            skill = (repository_root / ".agents" / "skills" / "platform-orchestration" / "SKILL.md").read_text(encoding="utf-8")
+            self.assertTrue(all("orchestrate-status" in text for text in (chinese, english, skill)))
+            self.assertIn("不是执行授权", chinese)
+            self.assertIn("not execution authority", english)
+            self.assertIn("DRAFT work DONE cannot unlock", skill)
+
+
+class ValidatorFixtureIndependentTests(unittest.TestCase):
+    """TC-V3-IND-940: validator fixture isolation is a test-environment contract."""
+
+    def test_temporary_validator_fixture_explicitly_excludes_live_runtime_state(self):
+        """TC-V3-IND-940 / REQ-V3-020: a copied fixture must never inherit `.rd-platform`."""
+        fixture = Path(__file__).resolve().parents[2] / "tests" / "platform" / "test_validator_contract.py"
+        tree = ast.parse(fixture.read_text(encoding="utf-8"), filename=str(fixture))
+        copy_call = next(
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "copytree"
+        )
+        ignored = next(keyword.value for keyword in copy_call.keywords if keyword.arg == "ignore")
+        self.assertIsInstance(ignored, ast.Call)
+        patterns = [item.value for item in ignored.args if isinstance(item, ast.Constant) and isinstance(item.value, str)]
+        self.assertIn(".rd-platform", patterns)
+
+        # Independently exercise the declared copy contract, rather than
+        # importing the developer test helper.  A volatile control database is
+        # deliberately placed next to a source contract and must not appear in
+        # the fixture seen by a validator test.
+        with tempfile.TemporaryDirectory(prefix="ind-v3-validator-source-") as source_dir, tempfile.TemporaryDirectory(prefix="ind-v3-validator-copy-") as copy_dir:
+            source, copied = Path(source_dir), Path(copy_dir) / "platform"
+            (source / ".rd-platform").mkdir()
+            (source / ".rd-platform" / "state.db").write_bytes(b"volatile-runtime-state")
+            (source / "platform-manifest.json").write_text('{"fixture":"contract"}', encoding="utf-8")
+            shutil.copytree(source, copied, ignore=shutil.ignore_patterns(*patterns))
+            self.assertTrue((copied / "platform-manifest.json").is_file())
+            self.assertFalse((copied / ".rd-platform").exists())
+
 
 class DeploymentEndpointIndependentTests(unittest.TestCase):
     """TC-V3-IND-909/910: isolated HTTP target, hash fence, and compensation."""
@@ -703,6 +1008,135 @@ class DeploymentEndpointIndependentTests(unittest.TestCase):
             self.assertFalse((self.app / "served.txt").exists())
             self.assertFalse((Path(outside) / "operations.jsonl").exists())
 
+    @staticmethod
+    def _ref(kind, ident, version=1):
+        return {"type": kind, "id": ident, "version": version}
+
+    def _ready_formal_release(self):
+        """Build a real, isolated READY release through public Runtime commands.
+
+        The approval verifier is a synthetic test mechanism only; it does not
+        represent a person or a repository approval.
+        """
+        from rd_platform.lifecycle_base import LifecycleBase
+        from rd_platform.lifecycle_governance import POLICY, REVIEW_CRITERIA, TEST_CRITERIA
+
+        class SyntheticFixtureApproval:
+            def verify(self, *, binding, approval_request):
+                return {
+                    "authenticated": True, "operator": "independent-fixture-human",
+                    "provider_id": "independent-test-only",
+                    "verification_id": "independent-" + binding["gate_id"],
+                    "binding_digest": LifecycleBase.digest(binding),
+                }
+
+        self.runtime = Runtime(self.root / "state.db", approval_provider=SyntheticFixtureApproval())
+        for ident, role in (("ind-dev", "developer"), ("ind-test", "tester"),
+                            ("ind-review", "reviewer"), ("ind-release", "release_manager")):
+            self.runtime.execute("agent.register", {"id": ident, "role": role})
+
+        def artifact(ident, kind):
+            return self.runtime.execute("artifact.create", {
+                "project_id": self.project, "artifact_id": ident, "artifact_type": kind,
+                "title": ident, "state": "BASELINED",
+                "content_ref": {"inline_json": {"fixture": "isolated independent formal contract"}},
+                "source": {"kind": "host", "actor": "ind-dev"},
+            })
+
+        def evidence(kind="document", actor="ind-review", metadata=None):
+            return self.runtime.execute("evidence.register", {
+                "project_id": self.project, "kind": kind, "status": "VERIFIED",
+                "source": {"kind": "host", "actor": actor},
+                "locator": {"inline_json": {"fixture": "independent test only"}},
+                "observed_at": datetime.now(timezone.utc).isoformat(), "metadata": metadata or {},
+            })
+
+        artifact("REQ-IND", "REQ")
+        self.runtime.execute("test_model.create", {
+            "project_id": self.project, "artifact_id": "TM-IND",
+            "source": {"kind": "host", "actor": "ind-test"}, "requirement_refs": ["REQ-IND"],
+            "function_tree": {"name": "formal", "children": ["atomicity"]},
+            "risks": [{"risk_id": "RISK-IND", "description": "partial formal mutation", "likelihood": "HIGH", "impact": "HIGH", "priority": "P0", "requirement_refs": ["REQ-IND"]}],
+            "objects": [{"object_id": "OBJ-IND", "description": "formal deployment"}], "types": ["FUNCTIONAL"],
+            "test_points": [{"point_id": "TP-IND", "object_id": "OBJ-IND", "type": "FUNCTIONAL", "rationale": "atomic formal registration", "risk_refs": ["RISK-IND"], "requirement_refs": ["REQ-IND"], "coverage_rule": "failure paths"}],
+        })
+        self.runtime.execute("test_case.create", {
+            "project_id": self.project, "case_id": "TC-IND", "test_model_id": "TM-IND", "test_point_refs": ["TP-IND"], "requirement_refs": ["REQ-IND"],
+            "test_type": "FUNCTIONAL", "module": "deployment", "priority": "P0", "risk": "HIGH", "preconditions": [], "test_data": {},
+            "steps": [{"order": 1, "action": "inject formal registration failure", "expected_observation": "all Runtime writes roll back"}],
+            "expected_result": "atomic rollback", "automation": {"status": "MANUAL"}, "state": "BASELINED",
+        })
+        environment = evidence("test_environment", "ind-test")
+        execution = self.runtime.execute("test_execution.start", {"case_id": "TC-IND", "case_version": 1, "executor_id": "ind-test", "environment_ref": self._ref("EVIDENCE", environment["id"])})
+        execution_evidence = evidence("test_execution", "ind-test", {"execution_id": execution["id"], "result": "PASS", "artifact_refs": [self._ref("TEST_CASE", "TC-IND")]})
+        self.runtime.execute("test_execution.finish", {"execution_id": execution["id"], "result": "PASS", "actual_result": "isolated fixture", "evidence_refs": [self._ref("EVIDENCE", execution_evidence["id"]) ]})
+
+        for ident, kind in (("DES-IND", "DES"), ("TASK-IND", "TASK"), ("CODE-IND", "CODE_CHANGE"), ("DOC-ROLLBACK-IND", "DOC")):
+            artifact(ident, kind)
+        for left, right, relation in ((self._ref("REQ", "REQ-IND"), self._ref("DES", "DES-IND"), "realized_by"),
+                                      (self._ref("DES", "DES-IND"), self._ref("TASK", "TASK-IND"), "planned_by"),
+                                      (self._ref("TASK", "TASK-IND"), self._ref("CODE_CHANGE", "CODE-IND"), "implemented_by")):
+            self.runtime.execute("trace.link", {"project_id": self.project, "from": left, "to": right, "relation": relation})
+        release = self.runtime.execute("release.create", {"project_id": self.project, "release_id": "REL-IND-FORMAL", "version": "0.0-test", "artifact_refs": [self._ref("CODE_CHANGE", "CODE-IND")], "requirement_refs": [self._ref("REQ", "REQ-IND")], "known_issue_refs": [], "rollback_ref": self._ref("DOC", "DOC-ROLLBACK-IND")})
+        for number in range(12):
+            gate = f"G{number}"; doc = f"DOC-{gate}-IND"; artifact(doc, "DOC"); subject = [self._ref("DOC", doc)]
+            ordinary = [item for item in POLICY[gate] if item not in TEST_CRITERIA | REVIEW_CRITERIA | {"human_acceptance"}]
+            if ordinary: evidence(metadata={"gate_id": gate, "criteria": ordinary, "artifact_refs": subject})
+            tests = [item for item in POLICY[gate] if item in TEST_CRITERIA]
+            if tests: evidence("test_execution", "ind-test", {"gate_id": gate, "criteria": tests, "execution_id": execution["id"], "result": "PASS", "artifact_refs": [self._ref("TEST_CASE", "TC-IND")]})
+            reviews = [item for item in POLICY[gate] if item in REVIEW_CRITERIA]
+            if reviews: evidence("review", "ind-review", {"gate_id": gate, "criteria": reviews, "subject_id": doc, "result": "PASS", "artifact_refs": subject})
+            if number >= 9:
+                self.runtime.register_human_approval({"project_id": self.project, "kind": "human_approval", "status": "VERIFIED", "locator": {"inline_json": {"synthetic_fixture": True}}, "observed_at": datetime.now(timezone.utc).isoformat(), "metadata": {"gate_id": gate, "criteria": ["human_acceptance"] if number == 9 else [], "decision": "APPROVE", "statement": "Synthetic independent fixture, not a human approval", "artifact_refs": subject}}, operator="independent-fixture-human")
+            assessment = self.runtime.execute("gate.assess", {"project_id": self.project, "gate_id": gate})
+            self.assertEqual("PASS", assessment["candidate"], assessment["missing"])
+            decision = evidence("gate_decision", "ind-review", {"assessment_id": assessment["id"], "status": "PASS"})
+            self.runtime.execute("gate.decide", {"assessment_id": assessment["id"], "status": "PASS", "decided_by": "ind-review", "decision_evidence_refs": [self._ref("EVIDENCE", decision["id"]) ]})
+            if number == 10:
+                self.assertEqual("READY", self.runtime.execute("release.ready", {"release_id": release["id"], "assessment_id": assessment["id"], "decision_evidence_refs": [self._ref("EVIDENCE", decision["id"]) ]})["status"])
+                env = evidence("deployment_environment", "ind-release")
+                return release, self._ref("EVIDENCE", env["id"]), self._ref("CODE_CHANGE", "CODE-IND")
+        self.fail("formal fixture did not reach a READY release")
+
+    def test_formal_second_and_third_registration_failures_rollback_runtime_but_keep_receipts(self):
+        """TC-V3-IND-935: formal Runtime writes are all-or-nothing after real command output."""
+        from rd_platform.deployment import execute_deployment
+        from rd_platform.lifecycle import LifecycleService
+
+        release, environment, release_ref = self._ready_formal_release()
+        base = self.config("ind-formal-second")
+        base.update({"mode": "formal", "release_id": release["id"], "operator": "independent-fixture-human", "executor_id": "ind-release", "environment_ref": environment, "evidence_artifact_refs": [release_ref]})
+        before = self.runtime.lifecycle_snapshot(self.project)
+        original = LifecycleService.execute
+        def fail_second(service, connection, command, data):
+            if command == "release.record_deployment":
+                raise ValueError("independent injected second registration failure")
+            return original(service, connection, command, data)
+        with patch.object(LifecycleService, "execute", fail_second):
+            second = execute_deployment(self.runtime, base)
+        after_second = self.runtime.lifecycle_snapshot(self.project)
+        self.assertEqual("FAIL", second["status"])
+        self.assertEqual(len(before["evidence"]), len(after_second["evidence"]))
+        current = next(item for item in after_second["releases"] if item["id"] == release["id"])
+        self.assertEqual("READY", current["status"]); self.assertEqual([], current["deployments"])
+        self.assertTrue((self.root / "receipts" / "operation-ind-formal-second-completed.json").is_file())
+
+        third = self.config("ind-formal-third", health=[sys.executable, "-c", "raise SystemExit(17)"])
+        third.update({"mode": "formal", "release_id": release["id"], "operator": "independent-fixture-human", "executor_id": "ind-release", "environment_ref": environment, "evidence_artifact_refs": [release_ref]})
+        before_third = self.runtime.lifecycle_snapshot(self.project)
+        def fail_third(service, connection, command, data):
+            if command == "evidence.register" and data.get("kind") == "rollback":
+                raise ValueError("independent injected third registration failure")
+            return original(service, connection, command, data)
+        with patch.object(LifecycleService, "execute", fail_third):
+            third_result = execute_deployment(self.runtime, third)
+        after_third = self.runtime.lifecycle_snapshot(self.project)
+        self.assertEqual("FAIL", third_result["status"])
+        self.assertEqual(len(before_third["evidence"]), len(after_third["evidence"]))
+        current = next(item for item in after_third["releases"] if item["id"] == release["id"])
+        self.assertEqual("READY", current["status"]); self.assertEqual([], current["deployments"])
+        self.assertTrue((self.root / "receipts" / "operation-ind-formal-third-completed.json").is_file())
+
     def test_public_deploy_cli_maps_trial_success_to_zero_and_formal_error_to_nonzero(self):
         """TC-V3-IND-921 / REQ-V3-018/020: CLI exit status follows trustworthy outcome."""
         trial_path = self.root / "trial.json"
@@ -722,10 +1156,33 @@ class DeploymentEndpointIndependentTests(unittest.TestCase):
         self.assertFalse((self.app / "served.txt").exists())
 
 
+def wsl_bash_ready(command, *, runner=subprocess.run):
+    """A Windows WSL client is insufficient; a distribution must start Bash."""
+    if not command:
+        return False
+    try:
+        result = runner([command, "-e", "bash", "-lc", "printf IND_V3_WSL_BASH_READY"],
+                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0 and result.stdout.strip() == "IND_V3_WSL_BASH_READY"
+
+
+WSL_BASH_READY = wsl_bash_ready(shutil.which("wsl.exe"))
+
+
 class LinuxSetupIndependentTests(unittest.TestCase):
     """TC-V3-IND-911: public Linux launcher fail-closed observation."""
 
-    @unittest.skipUnless(shutil.which("wsl.exe"), "WSL is unavailable")
+    def test_wsl_readiness_requires_a_real_distribution_and_bash(self):
+        """TC-V3-IND-934: no installed distro is NOT_AVAILABLE, not a product assertion failure."""
+        self.assertFalse(wsl_bash_ready(None))
+        self.assertFalse(wsl_bash_ready("wsl.exe", runner=lambda *args, **kwargs:
+            subprocess.CompletedProcess(args[0], 4294967295, "", "no distribution")))
+        self.assertTrue(wsl_bash_ready("wsl.exe", runner=lambda *args, **kwargs:
+            subprocess.CompletedProcess(args[0], 0, "IND_V3_WSL_BASH_READY", "")))
+
+    @unittest.skipUnless(WSL_BASH_READY, "NOT_AVAILABLE: WSL cannot start a Linux distribution and Bash")
     def test_public_wsl_launcher_rejects_python_below_required_version(self):
         root = Path(__file__).resolve().parents[2].as_posix().replace("D:", "/mnt/d")
         result = subprocess.run(

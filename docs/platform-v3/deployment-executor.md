@@ -26,6 +26,10 @@ operation fails as `unknown; reconcile before retry`; it never blindly replays
 a potentially non-idempotent deployment. Terminal command and compensation
 facts are retained both in an immutable individual receipt and append-only
 `operations.jsonl`. Runner output is bounded and secret-redacted.
+Receipt writes flush file data for ordinary process-crash recovery. They do not
+claim a host power-loss durability guarantee: this adapter does not issue a
+portable directory fsync after rename, so an operator must reconcile any
+operation lacking a terminal receipt after abrupt host or filesystem failure.
 An existing `operation_id` may return its terminal result only when the exact
 configuration fingerprint matches; a changed environment, target, argv, hash,
 or other payload is rejected as a receipt conflict.
@@ -39,6 +43,10 @@ registered release-manager `executor_id`, and an existing
 current G10 before launch. Its `receipt_dir` must resolve beneath the project
 repository before any operation receipt or command is launched, then it records
 only actual results through Runtime.
+All formal evidence and release mutations are executed through
+`LifecycleService` inside one SQLite transaction. A failed later mutation rolls
+back earlier evidence/release writes; the physical command receipt remains the
+separate, durable observation for reconciliation.
 The release API rechecks Gate state. If that registration is rejected due to
 concurrent Gate/evidence drift, `formal_registration_error` is returned while
 the durable physical command and rollback facts remain available for human

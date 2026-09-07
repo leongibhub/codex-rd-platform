@@ -55,6 +55,8 @@ def _validate(runtime, config):
         for source in paths:
             proposal_path(source, "source path")
             if (root/source).resolve() == Path(runtime.db_path).resolve(): raise ValueError("control database is not a source")
+        if "safe_to_retry" in worker and type(worker["safe_to_retry"]) is not bool:
+            raise ValueError("safe_to_retry must be boolean")
         checked.append({"agent_id": agent_id, "role": role, "lease_seconds": int(lease), "timeout_seconds": timeout,
                         "max_output_bytes": cap, "backend": validate_backend(worker.get("backend"), repository_root=root, control_db=runtime.db_path),
                         "safe_to_retry": worker.get("safe_to_retry") is True,
@@ -63,12 +65,27 @@ def _validate(runtime, config):
     return {"project_id": project_id, "root": root, "workers": checked, "max_concurrency": maximum, "poll": poll}
 
 
-def _expired_without_safe_retry(snapshot):
-    expired = set()
+def _unsafe_attempt_fences(snapshot):
+    """Return work IDs whose latest invalidated attempt has unknown effects.
+
+    A lifecycle pause or reap deliberately says that it did *not* cancel the
+    external process.  Another service therefore cannot infer that replaying
+    the READY work is safe.  The fence remains until a later claim begins a
+    new attempt (which this dispatcher only permits with ``safe_to_retry``),
+    so an older expiry cannot poison an ordinary retry after that safe attempt
+    has itself finished.
+    """
+    fenced = set()
     for event in snapshot.get("events", []):
-        if event.get("type") == "work.lease_expired" and not event.get("data", {}).get("external_process_cancelled"):
-            expired.add(event.get("entity_id"))
-    return expired
+        work_id = event.get("entity_id")
+        if event.get("type") in {"work.lease_expired", "work.invalidated"}:
+            if event.get("data", {}).get("external_process_cancelled") is not True:
+                fenced.add(work_id)
+        elif event.get("type") == "work.claimed":
+            # A later claim is a different attempt.  It could only have been
+            # issued after an explicit safe-retry decision by this service.
+            fenced.discard(work_id)
+    return fenced
 
 
 def _all_collection(runtime, project_id, collection):
@@ -91,15 +108,19 @@ def _all_events(runtime, project_id):
 
 def _bound_refs(work, all_work):
     refs = list(work.get("input_refs", []))
+    adopted = work.get("dependency_input_refs", [])
+    if adopted:
+        return refs + list(adopted)
     for dependency in work.get("dependencies", []):
         refs.extend(all_work.get(dependency, {}).get("output_refs", []))
     return refs
 
 
-def _validate_bound_refs(runtime, project_id, work, all_work):
+def _validate_bound_refs(runtime, project_id, work, all_work, *, preclaim=False):
     """Reject version *or content* drift for direct and dependency inputs."""
+    refs = list(work.get("input_refs", [])) if preclaim and work.get("strict_policy") else _bound_refs(work, all_work)
     with runtime.store.transaction(write=False) as connection:
-        LifecycleService().refs(connection, project_id, _bound_refs(work, all_work), nonempty=False)
+        LifecycleService().refs(connection, project_id, refs, nonempty=False)
 
 
 def _register_artifacts(svc, connection, project_id, root, agent_id, artifacts):
@@ -167,7 +188,8 @@ def _context_bundle(runtime, cfg, work):
     by_work = {item["id"]: item for item in _all_collection(runtime, cfg["project_id"], "work_orders")}
     refs = _bound_refs(work, by_work)
     _validate_bound_refs(runtime, cfg["project_id"], work, by_work)
-    records = {item["id"]: item for item in _all_collection(runtime, cfg["project_id"], "artifacts") + _all_collection(runtime, cfg["project_id"], "evidence")}
+    records = {item["id"]: item for collection in ("artifacts", "evidence", "test_cases", "test_models", "test_executions", "defects", "releases")
+               for item in _all_collection(runtime, cfg["project_id"], collection)}
     subjects = []
     for ref in refs:
         record = records.get(ref.get("id"))
@@ -182,7 +204,9 @@ def _context_bundle(runtime, cfg, work):
                 raise ValueError("context artifact content drifted")
             value = path.read_text(encoding="utf-8", errors="replace")[:65536]
         else:
-            value = "CONTENT_NOT_AVAILABLE"
+            # Lifecycle entities such as TEST_CASE have no file content_ref;
+            # a redacted current structured record is the bounded handoff.
+            value = {"record": record}
         subjects.append({"ref": ref, "content": LifecycleBase().redact_projection(value)})
     return {"schema_version": 1, "work": {key: work[key] for key in ("id", "activity", "why", "input_refs", "dependencies", "output_contract", "attempt", "version") if key in work},
             "resolved_subjects": subjects}
@@ -325,24 +349,25 @@ def run_service(runtime, config, *, once=False, stop_event=None) -> dict:
             continue
         snapshot["work_orders"] = _all_collection(runtime, cfg["project_id"], "work_orders")
         snapshot["events"] = _all_events(runtime, cfg["project_id"])
-        expired = _expired_without_safe_retry(snapshot)
+        unsafe_attempts = _unsafe_attempt_fences(snapshot)
         dispatched = []
         reserved = set()
         for worker in cfg["workers"]:
             if len(dispatched) >= cfg["max_concurrency"]: break
             claim = None
             for ready in (w for w in snapshot["work_orders"] if w["id"] not in reserved and w["status"] == "READY" and w["required_role"] == worker["role"]):
-                if ready["id"] in expired and not worker["safe_to_retry"]:
+                if ready["id"] in unsafe_attempts and not worker["safe_to_retry"]:
                     result["recovery_skipped"] += 1; reserved.add(ready["id"]); continue
                 try:
-                    _validate_bound_refs(runtime, cfg["project_id"], ready, {item["id"]: item for item in snapshot["work_orders"]})
+                    _validate_bound_refs(runtime, cfg["project_id"], ready, {item["id"]: item for item in snapshot["work_orders"]}, preclaim=True)
                 except (ValueError, KeyError):
                     # No lease exists yet. Preserve a durable, auditable refusal
                     # instead of silently spinning on a drifted ready order.
                     runtime.execute("work.control", {"work_order_id": ready["id"], "action": "reject", "reason": "Worker input or dependency reference is stale"})
                     result["failed"] += 1; reserved.add(ready["id"]); continue
                 try:
-                    claim = runtime.execute("work.claim", {"work_order_id": ready["id"], "agent_id": worker["agent_id"], "lease_seconds": worker["lease_seconds"]})
+                    claim = runtime.execute("work.claim", {"work_order_id": ready["id"], "agent_id": worker["agent_id"], "lease_seconds": worker["lease_seconds"],
+                        "expected_version": ready["version"], "safe_to_retry": worker["safe_to_retry"]})
                     break
                 except (ValueError, KeyError): reserved.add(ready["id"])
             if claim is None: continue

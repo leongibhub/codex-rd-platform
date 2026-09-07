@@ -34,10 +34,12 @@ class WorkerServiceTests(unittest.TestCase):
             "output_contract": {"required_types": list(required_types), "min_outputs": minimum},
         })
 
-    def config(self, argv):
+    def config(self, argv, *, safe_to_retry=False, poll_interval_seconds=.05):
         return {"project_id": self.project, "repository_root": str(self.root), "once": True,
+                "poll_interval_seconds": poll_interval_seconds,
                 "workers": [{"agent_id": "worker-dev", "role": "developer", "backend": {"type": "argv", "argv": argv},
-                             "lease_seconds": 30, "timeout_seconds": 10, "max_output_bytes": 4096}]}
+                             "lease_seconds": 30, "timeout_seconds": 10, "max_output_bytes": 4096,
+                             "safe_to_retry": safe_to_retry}]}
 
     def test_real_argv_output_registers_only_hashed_draft_artifact(self):
         self.work()
@@ -115,6 +117,143 @@ class WorkerServiceTests(unittest.TestCase):
         from rd_platform.worker_backends import execute_backend, validate_backend
         with self.assertRaisesRegex(ValueError, "not production-safe"):
             validate_backend({"type": "codex", "prompt": "do"}, repository_root=self.root, control_db=self.runtime.db_path)
+
+    def test_adopted_dependency_refs_replace_stale_predecessor_candidate_for_context(self):
+        from rd_platform.worker_service import _bound_refs
+        work = {"input_refs": [{"type": "REQ", "id": "REQ-1", "version": 1}], "dependencies": ["old"],
+                "dependency_input_refs": [{"type": "DOC", "id": "DOC-STAGE", "version": 2}]}
+        old = {"old": {"output_refs": [{"type": "DOC", "id": "DOC-STAGE", "version": 1}]}}
+        self.assertEqual(work["input_refs"] + work["dependency_input_refs"], _bound_refs(work, old))
+
+    def test_pause_resume_fences_second_service_before_duplicate_real_argv_side_effect(self):
+        """REQ-V3-016: another service cannot replay a paused unknown attempt."""
+        self.work(required_types=(), minimum=0)
+        side_effect = self.root / "side-effect.txt"
+        script = self.root / "slow.py"
+        script.write_text(
+            "from pathlib import Path\nimport sys, time\n"
+            "with Path(sys.argv[1]).open('a', encoding='utf-8') as stream:\n"
+            "    stream.write('ran\\n'); stream.flush()\n"
+            "time.sleep(5)\n"
+            "print('{\"status\":\"DONE\",\"summary\":\"done\",\"output_refs\":[],\"artifacts\":[]}')\n",
+            encoding="utf-8",
+        )
+        from rd_platform.worker_service import run_service
+        first = {}
+        service = threading.Thread(
+            target=lambda: first.setdefault("result", run_service(
+                self.runtime, self.config([sys.executable, str(script), str(side_effect)]), once=True)),
+            daemon=True,
+        )
+        service.start()
+        deadline = time.monotonic() + 3
+        while not side_effect.exists() and time.monotonic() < deadline:
+            time.sleep(.02)
+        self.assertTrue(side_effect.exists(), "first real argv did not begin")
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "pause", "reason": "test pause"})
+        self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "resume", "reason": "test resume"})
+
+        second = run_service(self.runtime, self.config([sys.executable, str(script), str(side_effect)]), once=True)
+        self.assertEqual(0, second["claimed"], second)
+        self.assertEqual(1, second["recovery_skipped"], second)
+        self.assertEqual("ran\n", side_effect.read_text(encoding="utf-8"))
+        service.join(8)
+        self.assertFalse(service.is_alive(), "first service did not reconcile its cancelled argv")
+
+    def test_safe_retry_does_not_leave_historical_expiry_fence_on_later_failure_retry(self):
+        """REQ-V3-016: an explicit safe retry clears only its own old fence."""
+        work = self.work(required_types=(), minimum=0)
+        initial = self.runtime.execute("work.claim", {"work_order_id": work["id"], "agent_id": "worker-dev", "lease_seconds": 1})
+        time.sleep(1.05)
+        self.runtime.execute("work.reap", {"project_id": self.project})
+        side_effect = self.root / "side-effect.txt"
+        failed = self.root / "failed.py"
+        failed.write_text(
+            "from pathlib import Path\nimport sys\n"
+            "with Path(sys.argv[1]).open('a', encoding='utf-8') as stream:\n"
+            "    stream.write('safe-failed\\n')\n"
+            "print('{\"status\":\"FAILED\",\"summary\":\"ordinary failure\",\"output_refs\":[],\"artifacts\":[]}')\n",
+            encoding="utf-8",
+        )
+        done = self.root / "done.py"
+        done.write_text(
+            "from pathlib import Path\nimport sys\n"
+            "with Path(sys.argv[1]).open('a', encoding='utf-8') as stream:\n"
+            "    stream.write('ordinary-retry\\n')\n"
+            "print('{\"status\":\"DONE\",\"summary\":\"done\",\"output_refs\":[],\"artifacts\":[]}')\n",
+            encoding="utf-8",
+        )
+        from rd_platform.worker_service import run_service
+        safe = run_service(self.runtime, self.config([sys.executable, str(failed), str(side_effect)], safe_to_retry=True), once=True)
+        self.assertEqual(1, safe["failed"], safe)
+        self.runtime.execute("work.control", {"work_order_id": work["id"], "action": "retry", "reason": "ordinary retry after safe attempt"})
+
+        ordinary = run_service(self.runtime, self.config([sys.executable, str(done), str(side_effect)]), once=True)
+        self.assertEqual(1, ordinary["completed"], ordinary)
+        self.assertEqual("safe-failed\nordinary-retry\n", side_effect.read_text(encoding="utf-8"))
+
+    def test_claim_version_fences_pause_resume_that_happens_after_worker_snapshot(self):
+        """REQ-V3-016: a snapshot cannot authorize a later changed attempt."""
+        self.work(required_types=(), minimum=0)
+        side_effect = self.root / "side-effect.txt"
+        script = self.root / "emit.py"
+        script.write_text(
+            "from pathlib import Path\nimport sys\n"
+            "Path(sys.argv[1]).write_text('executed', encoding='utf-8')\n"
+            "print('{\"status\":\"DONE\",\"summary\":\"done\",\"output_refs\":[],\"artifacts\":[]}')\n",
+            encoding="utf-8",
+        )
+        from rd_platform.worker_service import _validate_bound_refs, run_service
+        raced = False
+
+        def pause_resume_between_snapshot_and_claim(*args, **kwargs):
+            nonlocal raced
+            if not raced:
+                raced = True
+                self.runtime.execute("work.claim", {"work_order_id": self.runtime.lifecycle_snapshot(self.project)["work_orders"][0]["id"], "agent_id": "worker-dev", "lease_seconds": 30})
+                self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "pause", "reason": "race pause"})
+                self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "resume", "reason": "race resume"})
+            return _validate_bound_refs(*args, **kwargs)
+
+        with patch("rd_platform.worker_service._validate_bound_refs", side_effect=pause_resume_between_snapshot_and_claim):
+            result = run_service(self.runtime, self.config([sys.executable, str(script), str(side_effect)]), once=True)
+        self.assertTrue(raced)
+        self.assertEqual(0, result["claimed"], result)
+        self.assertFalse(side_effect.exists(), "stale snapshot launched the real argv")
+
+    def test_reassign_of_claimed_work_fences_second_service_real_argv(self):
+        """REQ-V3-016: reassign cannot replay an unknown running attempt."""
+        work = self.work(required_types=(), minimum=0)
+        side_effect = self.root / "side-effect.txt"
+        script = self.root / "slow.py"
+        script.write_text(
+            "from pathlib import Path\nimport sys, time\n"
+            "with Path(sys.argv[1]).open('a', encoding='utf-8') as stream:\n"
+            "    stream.write('ran\\n'); stream.flush()\n"
+            "time.sleep(5)\n"
+            "print('{\"status\":\"DONE\",\"summary\":\"done\",\"output_refs\":[],\"artifacts\":[]}')\n",
+            encoding="utf-8",
+        )
+        from rd_platform.worker_service import run_service
+        first = {}
+        service = threading.Thread(
+            target=lambda: first.setdefault("result", run_service(
+                self.runtime, self.config([sys.executable, str(script), str(side_effect)]), once=True)),
+            daemon=True,
+        )
+        service.start()
+        deadline = time.monotonic() + 3
+        while not side_effect.exists() and time.monotonic() < deadline:
+            time.sleep(.02)
+        self.assertTrue(side_effect.exists(), "first real argv did not begin")
+        self.runtime.execute("work.control", {"work_order_id": work["id"], "action": "reassign", "agent_id": "worker-dev", "reason": "test reassign"})
+
+        second = run_service(self.runtime, self.config([sys.executable, str(script), str(side_effect)]), once=True)
+        self.assertEqual(0, second["claimed"], second)
+        self.assertEqual(1, second["recovery_skipped"], second)
+        self.assertEqual("ran\n", side_effect.read_text(encoding="utf-8"))
+        service.join(8)
+        self.assertFalse(service.is_alive(), "first service did not reconcile its invalidated argv")
 
 
 if __name__ == "__main__":

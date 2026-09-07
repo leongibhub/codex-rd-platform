@@ -28,11 +28,71 @@
 
 失败与修复详见 [独立测试记录](completion-independent-tests.md) 和 [独立审查记录](completion-independent-review.md)。QA 的一次恢复 fixture 类型错误也保留为原始 FAIL，而不是删除记录后声称首轮通过。
 
+## 2026-09-07 当前 CI 与复审增补（保留上方历史）
+
+- 提交 `026263f` 的 [GitHub Actions run 34038680898](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898) 当前为 3/4 jobs SUCCESS：Windows Runtime 273 PASS、1 skip；Windows platform 133 PASS、3 skips；独立 job 实际为 98 tests、1 error（不能写成 98 PASS 再加 1 FAIL）。该独立失败是 Windows 存在 `wsl.exe` 却没有可启动 Linux distribution，不得把环境缺口改写为产品成功。
+- WSL readiness 修复后的本机端点 suite 为 30 PASS、24.700 秒；当前 root full suite 为 99 PASS、1 skip、114.547 秒。两项都是当前本机 QA 观察，不能代替新的 hosted CI；新 CI 仍 `PENDING`。
+- 历史 reviewer P1 为 worker fast pause→resume 重复执行风险和未受宿主严格条件约束的 stage claim。它们已在 TASK-V3-016 r9 / TASK-V3-021 r7 得到独立复测与 review（当前 scoped P0=0、P1=0）；该模块级结论不外推为真实批准、生产执行或全局完成。TASK-V3-020 r3 的首个 review 因独立 tester 证据与 TC912 记录不一致而 `FAIL`，现为同冻结快照的 attempt 2，结果 `PENDING`。
+- 历史 full-runtime `294` tests run reported one Windows `WinError 32` during `DeploymentExecutorTests.test_real_isolated_deploy_and_independent_http_health_succeed` teardown: the temporary `app` cwd was still locked while the fixture cleaned up. No deployment assertion failed. The fixture now observes its owned HTTP child exit and releases its completed `Popen` owner before `TemporaryDirectory.cleanup()`. A later reproducible split rerun (needed because the local command-output window is 30 seconds) observed 10/10 with 1 host symlink-privilege skip in 6.363 s, then 10/10 in 29.117 s: 19 PASS, 1 skip, with no `WinError 32`. This is fixture-lifecycle evidence, not a production executor leak conclusion; a fresh full CI run remains required.
+
+## 2026-09-07 冻结前 Runtime 快照与回归增补（不作最终结论）
+
+对当前 Runtime 快照的只读核对显示以下任务状态；`DONE` 仅是该 Runtime
+任务的已登记质量链状态，绝不等于项目 Gate、真实部署、人工批准或验收。
+
+| 任务 / 追踪 | 当前 Runtime 状态 | 仍需完成的事实 |
+| --- | --- | --- |
+| `TASK-V3-016` / `REQ-V3-016` | revision 9、`DONE`、4/4 checks；r8 已由 r9 取代。canonical fence 覆盖 unknown external-outcome invalidation/control 与 rollback，并将 adopted dependency resolution 延后到 atomic claim；post-claim context 使用持久 adopted refs 的有界脱敏生命周期记录。developer run `run-02c7d4559e71482a83e04c4ec278a7f3` 为 64 个 tests PASS；独立 unit `run-901b8eb923704979bb35775a5fe7cd9c` 为 64/64 PASS、26.886856 s，独立 integration `run-a918a474aa18436887ac526af9a180ff` 为 22/22 PASS、19.173931 s（新增 TC939）；review `run-95e3f86d8cdd4bbc9758b395059355ff` 已登记。 | `DONE` 是当前 Runtime 的模块质量链；该 review 仅限当前源码/隔离 fixture。新 CI 仍 `PENDING`；它不是端点总体、项目 Gate、外部执行或验收结论。 |
+| `TASK-V3-018` / `REQ-V3-018` | revision 4、`DONE`、4/4 checks；正式 Runtime 记录原子性仍只在隔离 fixture/本机源码范围有证据。 | 不存在真实目标部署、回滚、G10 或 release acceptance。 |
+| `TASK-V3-020` / `REQ-V3-020` | revision 3 的首个 review `run-3dffaf1ab6c2462dbda92e7b08cf33b2` 因 TC912 将未执行的五栈回归写为 PASS、且与末行 `NOT_EXECUTED` 矛盾而 `FAIL`；没有观察到产品源码回归。现为同一冻结快照的 attempt 2，结果 `PENDING`。attempt 2 实施验证为 33 tests、16.902 s、PASS，已交 QA；五 manifest 正式 integration 与后续 review 尚未完成。既有定向证据为 validator contract 28 tests、28.178 s、OK；独立 QA unit 33/33 PASS、18.413208 s；integration 4/4 PASS、3.320729 s；QA full platform 134 tests、179.961 s、OK；reviewer 已补跑五栈 Python 13/13、Node 6/6。 | 首次失败是独立 tester 的覆盖/文档证据缺口，reviewer 补跑不能替代独立 tester attempt 2 的重测。初次错误 package 命令仅 `Ran 0`，不计 PASS；fixture RED→GREEN 未改变产品 validator Gate。attempt 2 的 QA/后续 review 与 hosted CI 均 `PENDING`，不得从其它模块 PASS 继承批准。 |
+| [`CR-V3-005`](CR-V3-005-host-stage-policy.md) → `TASK-V3-021` / `REQ-V3-021` | revision 7、`DONE`、4/4 checks；r4–r6 已被 r7 取代。r7 解决 TC semantic adoption drift、repair 输出 exact refs、及内置 Gate FAIL/rollback recovery dependency binding。独立 QA unit 7/7、integration 18/18，reviewer 17/17；review `run-3e3576b548ca4dea91dbbc52e813c693`。详见[host policy](orchestration-policy.md)。 | 当前 policy review scope 的 P0=0/P1=0；该模块级结论只适用于当前源码与隔离 Runtime/local-file fixture，不构成真实 Gate、批准或生产执行。 |
+| `TASK-V3-022` / `REQ-V3-008,021` | revision 1、`DONE`、4/4 checks；[只读状态面](orchestration-status.md)只解释阶段与前提，固定不授权执行。 | 不创建/推进 Gate，且不替代 TASK-021 的 policy QA 或人工验收。 |
+
+冻结前的实际回归历史必须保留，且不能挑选旧绿结果作最终版本结论：platform
+suite 曾为 133 PASS、217.852 seconds；稍早 full runtime 为 288 PASS、177.502
+seconds、2 skips，发生在最终 freeze 之前。后续 full runtime 为 294 tests、1 FAIL，
+原因是 QA fixture teardown 的 Windows `WinError 32`，其 cleanup 修复不让该旧
+run 变成 PASS。full independent 实际为 109 tests、1 error、1 skip（成功 107），而非
+“109 PASS + 1 FAIL”；`TC304` 旧 fixture 将非 safe retry 当作可继续路径，现已改成明确的
+negative 断言，并以显式临时 `safe_to_retry`
+场景覆盖允许路径。上述修正后的最终冻结回归结果与新的 hosted CI 都仍 `PENDING`，
+在收到实际输出前本记录不作最终状态标记。
+
+其后实际 full runtime 为 303 tests、OK、2 skips、254.998 s；该 run 开始时
+`TASK-V3-021` 仍在 r4，因此不是随后 r5/r6 的完成证据。full platform 则为 133 tests、
+210.172 s、`FAILED (errors=2)`，原因是上述 QA fixture copytree 漏排 `.rd-platform`，
+复制时并行 Runtime 正删除临时目录而出现 `WinError 3`。首个新增回归 test 还曾因
+contextmanager wrapper 的 globals 错误失败；已改为被装饰函数 `__wrapped__` 的 globals，不是产品缺陷，
+原始工具/fixture失败历史保留。TC304 与 deployment fixture cleanup 后续复测的 deployment
+split 为 19 PASS、1 host-permission skip，未再出现 `WinError 32`；这不回写旧 294-test
+失败。随后 current fixture 的 full platform 为 134 tests、178.309 s、OK，定向 validator
+contract 为 28 tests、28.178 s、OK；其新增 RED→GREEN 仅证明 `.rd-platform` 不被 fixture
+复制，并未改动产品 validator Gate。当前各域冻结结果见下表；hosted CI 仍 `PENDING`。
+
+## 当前冻结验证表（范围化，不作 Gate）
+
+| 验证 | 可观察结果 | 解释边界 |
+| --- | --- | --- |
+| Full Runtime | `OBSERVED`：307 tests、236.304 s、exit 0、2 skips。 | 当前冻结源码的本机 Runtime 回归；不替代外部 API、批准、部署或验收。 |
+| Full platform | `OBSERVED`：QA 当前 134 tests、179.961 s、OK（先前同一已修 fixture run 为 178.309 s）。 | 包含 fixture live-state exclusion 回归；不是产品 validator Gate 决定。 |
+| Full independent | `OBSERVED`：当前 113 tests、135.173 s、OK、1 skip，包含新增 TC940。 | 旧 112 tests/148.845 s/OK/1 skip 是 TC940 新增前的冻结后历史快照；旧 146.471 s 也是前一轮，均不借作当前结果。此本机独立全量结果不替代 TASK-V3-020 attempt 2 的五 manifest integration/review、hosted CI 或任何外部事实。 |
+| 五应用与工具 | `OBSERVED`：独立 Python 13/13、Node 6/6、`python -X utf8` Skill quick validation、JS syntax 和 diff check 均 PASS。 | 局部应用/工具回归，不替代执行端 reviewer 或外部事实。 |
+
+整体源码范围仍为 `IN_REVIEW`：TASK-V3-016 r9、TASK-V3-018 r4、TASK-V3-021 r7 和
+TASK-V3-022 r1 是已登记的模块质量链；TASK-V3-020 r3 首次 review 已保留为失败历史，attempt 2 尚在进行。顶层 template
+Gate、live Responses、真实人类批准、生产部署/回滚、客户验收与新 hosted CI 均未因此产生 PASS。
+
+本轮对既有五应用的范围化重跑也已观察到：独立 Python suite 13 tests、12.839 s、OK；
+显式 Node 两文件 6/6 PASS、141.7366 ms；以 `python -X utf8` 执行 Skill
+`quick_validate.py` 为 PASS，JS syntax 与 diff check 成功。此前不带 UTF-8 的 GBK
+错误保留为工具/编码历史，不被这次正确编码调用抹除。这些是既有应用与 Skill 的局部
+回归证据，不替代 final-freeze 端点 QA、hosted CI、Gate 或外部验收。
+
 ## 仍需真实外部事实，而不是生成记录
 
 1. 无工具 API 后端的真实账号端到端验证需要配置受权凭据；目前有传输契约、源码准入及恢复 fixture 证据，没有远端 API PASS。
 2. 微信 IDE/真机、正式部署目标、真正的人工签名验收不能由 Node stub 或临时密钥代替。接口已经实现，不代表这些外部事件发生过。
-3. 原有同一次 8 小时公开读路径 soak 保持运行，由既有监控等待终态。未到时长不能宣称通过，也不将公开读压力等同完整应用长稳。
+3. 原有同一次 8 小时公开读路径 soak 已完成并核对 4,952 次采样、最大间隔 8.191594 秒及零读错误；监控已暂停。范围仅为合成 SQLite 公开读路径，不是完整应用长稳或内存无泄漏结论，详见 [长稳记录](performance-validation.md)。
 4. `orchestrate-start` 创建依赖工作计划，不自动把模型文档升成基线/测试/审批。可信宿主按 Skill 执行、独立验证并通过真实证据推进 Gate；这些控制不能为了“全自动完成”而旁路。
 
 所有可执行工具只对明确受权的项目和目标工作。远端请求取消结果可能未知；不承诺本地暂停就已停止远端计费。日志恢复冲突保留文件与诊断，须由宿主核对后恢复，不能自动覆盖外部修改。

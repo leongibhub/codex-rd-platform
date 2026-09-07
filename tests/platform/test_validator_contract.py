@@ -18,6 +18,19 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ValidatorContractTests(unittest.TestCase):
+    def test_fixture_copies_source_without_live_runtime_state(self):
+        # Parallel lifecycle tests create/remove state underneath .rd-platform.
+        # Validator fixtures need the source contracts, never this live state.
+        with TemporaryDirectory() as directory:
+            source = Path(directory)
+            (source / '.rd-platform').mkdir()
+            (source / '.rd-platform' / 'transient.db').write_bytes(b'fixture')
+            (source / 'source-contract.txt').write_text('keep', encoding='utf-8')
+            with patch.dict(self._temporary_root.__wrapped__.__globals__, ROOT=source):
+                with self._temporary_root() as copied:
+                    self.assertEqual('keep', (copied / 'source-contract.txt').read_text(encoding='utf-8'))
+                    self.assertFalse((copied / '.rd-platform').exists())
+
     def test_full_validation_runs_runtime_and_passes_template_mode(self):
         report = validate_platform(ROOT)
 
@@ -341,7 +354,7 @@ class ValidatorContractTests(unittest.TestCase):
             shutil.copytree(
                 ROOT,
                 root,
-                ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__", ".pytest_cache"),
+                ignore=shutil.ignore_patterns(".git", ".venv", ".rd-platform", "__pycache__", ".pytest_cache"),
             )
             yield root
 

@@ -1,4 +1,5 @@
 import tempfile
+import time
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -39,6 +40,13 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(12, len(s['gates']))
         self.assertTrue(all(g['gate_status'] is None for g in s['gates']))
         self.assertEqual('G0', s['lifecycle']['current_gate'])
+
+    def test_event_fence_lookup_uses_additive_entity_sequence_index(self):
+        with self.r.store.transaction(write=False) as connection:
+            plan = " ".join(row[3] for row in connection.execute(
+                'EXPLAIN QUERY PLAN SELECT type,data FROM lc_events WHERE project_id=? AND entity_id=? ORDER BY sequence',
+                (self.p, 'work-fixture')))
+        self.assertIn('lc_events_project_entity_sequence', plan)
 
     def test_empty_gate_cannot_pass(self):
         a = self.r.execute('gate.assess', {'project_id': self.p, 'gate_id': 'G0'})
@@ -107,12 +115,72 @@ class LifecycleTests(unittest.TestCase):
         self.r.execute('lifecycle.control',dict(project_id=self.p,action='pause',reason='human pause'))
         with self.assertRaises(ValueError): self.r.execute('work.heartbeat',payload)
         self.r.execute('lifecycle.control',dict(project_id=self.p,action='resume',reason='continue'))
-        claim2=self.r.execute('work.claim',dict(work_order_id=w['id'],agent_id='dev',lease_seconds=60))
+        with self.assertRaisesRegex(ValueError, 'explicit safe_to_retry'):
+            self.r.execute('work.claim',dict(work_order_id=w['id'],agent_id='dev',lease_seconds=60))
+        claim2=self.r.execute('work.claim',dict(work_order_id=w['id'],agent_id='dev',lease_seconds=60,safe_to_retry=True))
         with self.assertRaises(ValueError): self.r.execute('work.finish',dict(payload,status='DONE',output_refs=[],summary='late'))
         self.artifact()
         result=self.r.execute('work.finish',dict(payload,lease_token=claim2['lease_token'],status='DONE',output_refs=[self.ref('REQ','REQ-001')],summary='defined requirement'))
         self.assertEqual('DONE',result['status'])
         self.assertNotIn('lease_digest',self.r.lifecycle_snapshot(self.p)['work_orders'][0])
+
+    def test_rollback_refuses_claimed_or_unknown_attempt_before_creating_compensation(self):
+        """REQ-V3-016: compensation cannot overlap an unreconciled attempt."""
+        for agent in ('dev-2','dev-3','dev-4'):
+            self.r.execute('agent.register',dict(id=agent,role='developer'))
+        claimed = self.work()
+        self.r.execute('work.claim',dict(work_order_id=claimed['id'],agent_id='dev',lease_seconds=60))
+        with self.assertRaisesRegex(ValueError, 'reconcile original external outcome'):
+            self.r.execute('work.control',dict(work_order_id=claimed['id'],action='rollback',reason='unknown claimed process'))
+        self.assertEqual(1,len(self.r.lifecycle_snapshot(self.p)['work_orders']))
+
+        paused = self.work()
+        self.r.execute('work.claim',dict(work_order_id=paused['id'],agent_id='dev-2',lease_seconds=60))
+        self.r.execute('lifecycle.control',dict(project_id=self.p,action='pause',reason='unknown pause'))
+        self.r.execute('lifecycle.control',dict(project_id=self.p,action='resume',reason='resume does not prove stop'))
+        with self.assertRaisesRegex(ValueError, 'reconcile original external outcome'):
+            self.r.execute('work.control',dict(work_order_id=paused['id'],action='rollback',reason='unknown paused process'))
+        self.assertEqual(2,len(self.r.lifecycle_snapshot(self.p)['work_orders']))
+
+        expired = self.work()
+        self.r.execute('work.claim',dict(work_order_id=expired['id'],agent_id='dev-3',lease_seconds=1))
+        time.sleep(1.05)
+        self.r.execute('work.reap',dict(project_id=self.p))
+        with self.assertRaisesRegex(ValueError, 'reconcile original external outcome'):
+            self.r.execute('work.control',dict(work_order_id=expired['id'],action='rollback',reason='unknown expired process'))
+        self.assertEqual(3,len(self.r.lifecycle_snapshot(self.p)['work_orders']))
+
+        completed = self.work()
+        token=self.r.execute('work.claim',dict(work_order_id=completed['id'],agent_id='dev-4',lease_seconds=60))['lease_token']
+        self.artifact()
+        self.r.execute('work.finish',dict(work_order_id=completed['id'],agent_id='dev-4',lease_token=token,status='DONE',output_refs=[self.ref('REQ','REQ-001')],summary='completed before rollback'))
+        rolled_back=self.r.execute('work.control',dict(work_order_id=completed['id'],action='rollback',reason='completed compensation is allowed'))
+        snapshot=self.r.lifecycle_snapshot(self.p)
+        compensation=next(item for item in snapshot['work_orders'] if item['id']==rolled_back['compensation_work_id'])
+        self.assertEqual('READY',compensation['status'])
+
+    def test_artifact_and_trace_invalidation_fence_claimed_work_before_later_retry(self):
+        """REQ-V3-016: all invalidation paths preserve an unknown-process fence."""
+        self.artifact()
+        self.artifact('CR-INVALIDATE','CR')
+        artifact_work=self.work(input_refs=[self.ref('REQ','REQ-001')])
+        self.r.execute('work.claim',dict(work_order_id=artifact_work['id'],agent_id='dev',lease_seconds=60))
+        self.r.execute('artifact.revise',dict(artifact_id='REQ-001',expected_version=1,state='BASELINED',content_ref={'inline_json':{'acceptance':'revised'}},reason='invalidate active work',change_id='CR-INVALIDATE',material=True))
+        self.assertTrue(any(event['type']=='work.invalidated' and event['entity_id']==artifact_work['id'] for event in self.r.lifecycle_snapshot(self.p)['events']))
+        self.r.execute('work.control',dict(work_order_id=artifact_work['id'],action='modify',input_refs=[self.ref('REQ','REQ-001',2)],reason='operator retry'))
+        with self.assertRaisesRegex(ValueError,'explicit safe_to_retry'):
+            self.r.execute('work.claim',dict(work_order_id=artifact_work['id'],agent_id='dev',lease_seconds=60))
+
+        self.artifact('REQ-TRACE','REQ')
+        self.artifact('DES-TRACE','DES')
+        link=self.r.execute('trace.link',dict(project_id=self.p,**{'from':self.ref('REQ','REQ-TRACE'),'to':self.ref('DES','DES-TRACE')},relation='realized_by'))
+        trace_work=self.work(input_refs=[self.ref('DES','DES-TRACE')])
+        self.r.execute('work.claim',dict(work_order_id=trace_work['id'],agent_id='dev',lease_seconds=60))
+        self.r.execute('trace.invalidate',dict(link_id=link['id'],reason='invalidate active trace work',change_id='CR-INVALIDATE'))
+        self.assertTrue(any(event['type']=='work.invalidated' and event['entity_id']==trace_work['id'] for event in self.r.lifecycle_snapshot(self.p)['events']))
+        self.r.execute('work.control',dict(work_order_id=trace_work['id'],action='retry',reason='operator retry'))
+        with self.assertRaisesRegex(ValueError,'explicit safe_to_retry'):
+            self.r.execute('work.claim',dict(work_order_id=trace_work['id'],agent_id='dev',lease_seconds=60))
 
     def test_work_expiry_wrong_role_and_single_claim(self):
         w=self.work()
@@ -303,11 +371,16 @@ class LifecycleTests(unittest.TestCase):
         self.artifact('CR-ROLLBACK','CR')
         with self.assertRaises(ValueError):
             self.r.execute('lifecycle.control',dict(project_id=self.p,action='rollback',target_gate='G11',change_id='CR-ROLLBACK',affected_refs=[self.ref('DOC','DOC-G0')],reason='cannot move forward'))
+        active=self.work(input_refs=[self.ref('DOC','DOC-G0')])
+        token=self.r.execute('work.claim',dict(work_order_id=active['id'],agent_id='dev',lease_seconds=60))['lease_token']
+        with self.assertRaisesRegex(ValueError,'reconcile original external outcome'):
+            self.r.execute('lifecycle.control',dict(project_id=self.p,action='rollback',target_gate='G0',change_id='CR-ROLLBACK',affected_refs=[self.ref('DOC','DOC-G0')],reason='cannot overlap active work'))
+        self.r.execute('work.finish',dict(work_order_id=active['id'],agent_id='dev',lease_token=token,status='FAILED',output_refs=[],summary='reconciled failed work'))
         result=self.r.execute('lifecycle.control',dict(project_id=self.p,action='rollback',target_gate='G0',change_id='CR-ROLLBACK',affected_refs=[self.ref('DOC','DOC-G0')],reason='restore affected delivery'))
         self.assertTrue(result['compensation_work_id'])
         s=self.r.lifecycle_snapshot(self.p)
         self.assertEqual('SUPERSEDED',next(row for row in s['gate_assessments'] if row['id']==a['id'])['status'])
-        self.assertEqual('READY',s['work_orders'][0]['status'])
+        self.assertEqual('READY',next(item for item in s['work_orders'] if item['id']==result['compensation_work_id'])['status'])
         self.assertEqual(1,len(s['artifacts'])-1) # original DOC remains plus CR
 
     def test_full_gate_release_and_rollback_contract_using_synthetic_fixtures(self):

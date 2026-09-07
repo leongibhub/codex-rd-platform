@@ -153,7 +153,11 @@ class IndependentLifecycleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.runtime.execute("work.heartbeat", payload)
         self.runtime.execute("lifecycle.control", {"project_id": self.project, "action": "resume", "reason": "independent resume"})
-        second = self.runtime.execute("work.claim", {"work_order_id": work["id"], "agent_id": "ind-dev", "lease_seconds": 60})
+        with self.assertRaisesRegex(ValueError, "safe_to_retry"):
+            self.runtime.execute("work.claim", {"work_order_id": work["id"], "agent_id": "ind-dev", "lease_seconds": 60})
+        # This fixture launches no external process.  Its explicit decision to
+        # retry is therefore safe, but an ordinary caller must remain fenced.
+        second = self.runtime.execute("work.claim", {"work_order_id": work["id"], "agent_id": "ind-dev", "lease_seconds": 60, "safe_to_retry": True})
         self.artifact("REQ-LEASE-001")
         with self.assertRaises(ValueError):
             self.runtime.execute("work.finish", dict(payload, status="DONE", output_refs=[self.ref("REQ", "REQ-LEASE-001")], summary="stale host result"))

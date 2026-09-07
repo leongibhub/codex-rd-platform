@@ -20,14 +20,14 @@
 | REQ-V3-009 | TASK-V3-001/004 | `lifecycle_work.py`, `lifecycle_base.py`, `lifecycle_models.py` | pause/lease/idempotency/rollback tests；独立 TC-V3-IND-301/304/502 | pause 不杀外部进程；回滚不重写历史 |
 | REQ-V3-010 | TASK-V3-002/003/004 | `stack_harness.py`；`examples/multistack/`；Skill | 五应用单测+独立黑盒+review；Skill-forward 9 current PASS 及 GREEN | 微信仅 Node domain/fake-wx，原生 NOT_AVAILABLE |
 | NFR-V3-001 | TASK-V3-001/004 | `store.py`, `lifecycle_store.py` | 原平台 98、旧样例 19、V2兼容 Runtime 回归 | 新表保留，未执行破坏性回退 |
-| NFR-V3-002 | TASK-V3-001/004/005 | `lifecycle_store.py`, `lifecycle_query.py`, `scripts/benchmark_lifecycle.py` | 501 records 分页；实际 100项目/10万版本/100万事件，129.7199秒/294764544字节/0读取错误；独立预算/中断测试 | 合成只读容量已测；8小时读路径 soak RUNNING，非完整系统稳定性 |
+| NFR-V3-002 | TASK-V3-001/004/005 | `lifecycle_store.py`, `lifecycle_query.py`, `scripts/benchmark_lifecycle.py` | 501 records 分页；实际 100项目/10万版本/100万事件，129.7199秒/294764544字节/0读取错误；8h `soak-9241634446774e1291126d1cc1c2a53b` terminal PASS/exit 0，elapsed 28800.740279s、4952 样本、最大 gap 8.191594s、0 read errors，terminal SHA `00BE7586AD05A8CDD03CFC510C7C730021920BEDB8EFDC1225E4A24765A398CD`；独立预算/中断测试 | 仅旧源码 `E482F1E2DD6A5A7AB42736AE227DB56B8B5D12F2D6C1D5FA1F3293F78BEDBC9A` 的合成 SQLite 公共只读路径；非写入、全系统/安全/生产稳定性、Gate、release 或验收 |
 | NFR-V3-003 | TASK-V3-001 | `runtime.py`, `lifecycle_work.py` | 事务/幂等、租约过期与响应丢失旋转 tests | 非长时故障稳定性基准 |
 | NFR-V3-004 | TASK-V3-001/002/004 | `web.py`, `stack_harness.py`, `lifecycle_base.py` | 路径/secret/argv/HTTP tests；独立 TC-V3-IND-201..212/305/308 | Windows symlink fixture NOT_EXECUTED；Harness不是恶意代码沙箱 |
 | NFR-V3-005 | TASK-V3-001/004 | `lifecycle_governance.py`, `lifecycle_models.py`, `lifecycle_query.py` | 不可变版本/证据/历史FAIL/旧模型adopt；独立 runtime review | Git 与 Runtime 是相互链接的记录；禁止以日志充当人工签名 |
 
 ## 真实任务和独立性
 
-CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。真实 CI 又产生 TASK-V3-011..014 / BUG-CI-001..004，修复、独立角色和在线结果见 [ci-execution.md](ci-execution.md)。README 执行审查还产生 TASK009 revision 2 与 TASK-V3-015 / BUG-INSTALL-001..002；真实安装首次失败与修复后正常 setup 通过见 [install-real-validation.md](install-real-validation.md)，当前独立审查见 [install-transfer-review.md](install-transfer-review.md)。模块状态不能推导项目验收或 8h PASS。以下 5 个任务是上轮基线记录，不是新任务的总计。
+CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据见 [completion-delivery.md](completion-delivery.md) 与 [completion-qa.md](completion-qa.md)。真实 CI 又产生 TASK-V3-011..014 / BUG-CI-001..004，修复、独立角色和在线结果见 [ci-execution.md](ci-execution.md)。README 执行审查还产生 TASK009 revision 2 与 TASK-V3-015 / BUG-INSTALL-001..002；真实安装首次失败与修复后正常 setup 通过见 [install-real-validation.md](install-real-validation.md)，当前独立审查见 [install-transfer-review.md](install-transfer-review.md)。模块状态和该受限 8h 读路径证据都不能推导项目验收。以下 5 个任务是上轮基线记录，不是新任务的总计。
 
 平台项目 `project-908e903738184820b14264adac92adda` 的 5 个任务在最终读取时均为 DONE、当前 4/4 质量检查通过：
 
@@ -54,3 +54,12 @@ CR-V3-002 新增 TASK-V3-005..010 的当前任务、失败重试和交付证据�
 - [能力状态](capability-status.md)与[发布边界](release-readiness.md)：未执行项、未来 REL、真实部署和人工验收明确保留。
 
 代码变更与以上结果由 Git 提交绑定；Git push 只是源码交付，不创建 REL、不构成 G10/G11 或生产发布。
+
+## CR-V3-005 阶段策略与可解释状态
+
+| 需求 / 任务 | 设计与源码 | 独立证据 |
+| --- | --- | --- |
+| REQ-V3-021 / TASK-V3-021 (`task-41d3a56afca44a0bb290196bbd3a38a2`) | [变更与验收条件](CR-V3-005-host-stage-policy.md)、[策略](orchestration-policy.md)；`orchestration_policy.py`、bootstrap、work/test transaction hooks | [独立模型和执行](orchestration-policy-independent-tests.md)；审查以当前 revision 为准，旧绿结果不批准后续修改 |
+| REQ-V3-008、021 / TASK-V3-022 (`task-d2af8824945742e88b6329cddc5a6051`) | [状态指南](orchestration-status.md)；`orchestration_status.py`、CLI、只读 HTTP、阶段工作表、Skill 和双语 README | [独立状态接口测试](../06-test/orchestration-status-independent-test.md)、[真实浏览器断言](continuation-observability-check.md) |
+
+任务 016 的暂停/改派/租约重试修复和任务 018 的正式登记原子性仍使用原始需求 ID。所有当前/历史失败、修复和审核结果见[执行端交付记录](completion-execution-delivery.md)，不从此索引推导最终项目验收。

@@ -73,6 +73,8 @@ async function refreshLifecycle() {
   const projectId = byId("lifecycle-project").value;
   const status = byId("lifecycle-status");
   ["lifecycle-summary", "lifecycle-gates", "lifecycle-details"].forEach((id) => clear(byId(id)));
+  clear(byId("orchestration-work"));
+  byId("orchestration-status").textContent = "尚未读取编排前提。";
   if (!projectId) { status.textContent = "尚无项目。"; return; }
   try {
     const response = await fetch(`/api/lifecycle?project_id=${encodeURIComponent(projectId)}`, { cache: "no-store" });
@@ -92,7 +94,30 @@ async function refreshLifecycle() {
       const details = element("details", undefined, "run-details"); details.append(element("summary", `${label}（本页 ${rows.length} 项）`), element("pre", JSON.stringify(rows, null, 2))); byId("lifecycle-details").append(details);
     });
     if (data.has_more || Object.values(data.collections_truncated).some(Boolean)) byId("lifecycle-details").prepend(element("p", "数据已截页；使用 CLI lifecycle 查看事件后续，使用 lifecycle-collection 的游标查看各集合后续。不能把本页数量当作完整数量。", "table-note"));
+    await refreshOrchestration(projectId, generation);
   } catch (error) { if (generation === lifecycleRequest) status.textContent = `生命周期读取失败：${error.message}`; }
+}
+
+async function refreshOrchestration(projectId, generation) {
+  try {
+    const response = await fetch(`/api/orchestration?project_id=${encodeURIComponent(projectId)}`, { cache: "no-store" });
+    const data = await response.json();
+    if (generation !== lifecycleRequest) return;
+    if (!response.ok) throw new Error(data.error || "无法读取推进条件");
+    byId("orchestration-status").textContent = `${data.strict_policy ? "严格阶段策略" : "通用工作单"} · 本页 ${data.work_orders.length}/${data.total_work_orders} · 阶段前提通过不代表已授权执行或门禁通过${data.truncated ? "；更多工作请使用 lifecycle-collection 分页" : ""}`;
+    data.work_orders.forEach((work) => {
+      const row = element("tr");
+      const who = element("td"); who.append(element("strong", work.gate_id), element("p", work.required_role));
+      const activity = element("td"); activity.append(element("strong", work.activity), element("p", work.why), element("small", work.id));
+      const state = element("td"); state.append(element("strong", `${work.status} / ${work.stage_admission}`), element("p", work.reason));
+      const handoff = element("td");
+      const refs = (items) => (items || []).map((ref) => `${ref.type}:${ref.id}@${ref.version}`).join("；") || "无";
+      handoff.append(element("p", `输入：${refs(work.input_refs)}`), element("p", `输出：${refs(work.output_refs)}`), element("p", `前序：${(work.dependencies || []).join("；") || "无"}`));
+      row.append(who, activity, state, handoff); byId("orchestration-work").append(row);
+    });
+  } catch (error) {
+    if (generation === lifecycleRequest) byId("orchestration-status").textContent = `推进条件读取失败：${error.message}`;
+  }
 }
 
 function renderProjects() {

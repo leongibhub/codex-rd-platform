@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from urllib.request import urlopen
 
 from rd_platform.deployment import execute_deployment
@@ -69,12 +70,20 @@ class DeploymentExecutorTests(unittest.TestCase):
         self._wait_http("/")
 
     def tearDown(self):
-        self.server.terminate()
-        try:
-            self.server.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            self.server.kill()
-            self.server.wait(timeout=5)
+        server = self.server
+        if server.poll() is None:
+            server.terminate()
+            try:
+                server.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                server.wait(timeout=5)
+        self.assertIsNotNone(server.poll(), "owned HTTP child must exit before fixture cleanup")
+        # On Windows the child's cwd remains undeletable until its Popen owner
+        # releases the completed process handle.  This is synchronization, not
+        # a timing retry: cleanup starts only after the observed child exit.
+        self.server = None
+        del server
         self.temp.cleanup()
 
     @staticmethod
@@ -321,17 +330,22 @@ class DeploymentExecutorTests(unittest.TestCase):
         self.assertNotIn("release.record_deployment", runtime.commands)
 
     def test_formal_rollback_records_only_release_rollback_after_real_compensation_health(self):
-        (self.app / "served.txt").write_text("ready", encoding="utf-8")
+        release, environment, release_ref = self._ready_formal_release()
+        deploy = self.config(operation_id="formal-rollback-prior-deploy")
+        deploy.update(mode="formal", release_id=release["id"], operator="unit-test-fixture-human", executor_id="fixture-release",
+                      environment_ref=environment, evidence_artifact_refs=[release_ref])
+        self.assertEqual("PASS", execute_deployment(self.runtime, deploy)["status"])
         config = self.config(operation_id="formal-rollback")
-        config.update(mode="formal", release_id="REL-SYNTHETIC", operator="synthetic-human", executor_id="synthetic-release-manager",
-                      environment_ref={"type": "EVIDENCE", "id": "EVD-ENV", "version": 1}, evidence_artifact_refs=[{"type": "DOC", "id": "DOC-SYNTHETIC", "version": 1}])
-        runtime = SyntheticFormalRuntime(self.root, self.project["id"])
-        result = execute_deployment(runtime, config, action="rollback")
+        config.update(mode="formal", release_id=release["id"], operator="unit-test-fixture-human", executor_id="fixture-release",
+                      environment_ref=environment, evidence_artifact_refs=[release_ref])
+        result = execute_deployment(self.runtime, config, action="rollback")
         self.assertEqual("PASS", result["status"])
         self.assertEqual("PASS", result["rollback"]["status"])
         self.assertEqual("PASS", result["rollback_health"]["status"])
-        self.assertIn("release.rollback", runtime.commands)
-        self.assertNotIn("release.record_deployment", runtime.commands)
+        current = next(item for item in self.runtime.lifecycle_snapshot(self.project["id"])["releases"] if item["id"] == release["id"])
+        self.assertEqual("ROLLED_BACK", current["status"])
+        self.assertEqual(1, len(current["deployments"]))
+        self.assertEqual(1, len(current["rollbacks"]))
 
     def test_real_runtime_formal_deploy_then_rollback_uses_synthetic_gate_fixture_only(self):
         release, environment, release_ref = self._ready_formal_release()
@@ -364,3 +378,43 @@ class DeploymentExecutorTests(unittest.TestCase):
             self.assertEqual([], current["deployments"])
         finally:
             external.cleanup()
+
+    def test_formal_second_mutation_failure_rolls_back_evidence_and_release_but_keeps_receipt(self):
+        from rd_platform.lifecycle import LifecycleService
+        release, environment, release_ref = self._ready_formal_release()
+        config = self.config(operation_id="formal-transaction-second")
+        config.update(mode="formal", release_id=release["id"], operator="unit-test-fixture-human", executor_id="fixture-release",
+                      environment_ref=environment, evidence_artifact_refs=[release_ref])
+        before = self.runtime.lifecycle_snapshot(self.project["id"])
+        original = LifecycleService.execute
+        def fail_second(service, connection, command, data):
+            if command == "release.record_deployment": raise ValueError("injected second mutation failure")
+            return original(service, connection, command, data)
+        with patch.object(LifecycleService, "execute", fail_second):
+            result = execute_deployment(self.runtime, config)
+        after = self.runtime.lifecycle_snapshot(self.project["id"])
+        self.assertEqual("FAIL", result["status"])
+        self.assertEqual(len(before["evidence"]), len(after["evidence"]))
+        current = next(item for item in after["releases"] if item["id"] == release["id"])
+        self.assertEqual("READY", current["status"]); self.assertEqual([], current["deployments"])
+        self.assertTrue((self.root / "receipts" / "operation-formal-transaction-second-completed.json").is_file())
+
+    def test_formal_third_mutation_failure_rolls_back_failed_deploy_record_but_keeps_receipt(self):
+        from rd_platform.lifecycle import LifecycleService
+        release, environment, release_ref = self._ready_formal_release()
+        config = self.config(health=[sys.executable, "-c", "raise SystemExit(9)"], operation_id="formal-transaction-third")
+        config.update(mode="formal", release_id=release["id"], operator="unit-test-fixture-human", executor_id="fixture-release",
+                      environment_ref=environment, evidence_artifact_refs=[release_ref])
+        before = self.runtime.lifecycle_snapshot(self.project["id"])
+        original = LifecycleService.execute
+        def fail_third(service, connection, command, data):
+            if command == "evidence.register" and data.get("kind") == "rollback": raise ValueError("injected third mutation failure")
+            return original(service, connection, command, data)
+        with patch.object(LifecycleService, "execute", fail_third):
+            result = execute_deployment(self.runtime, config)
+        after = self.runtime.lifecycle_snapshot(self.project["id"])
+        self.assertEqual("FAIL", result["status"])
+        self.assertEqual(len(before["evidence"]), len(after["evidence"]))
+        current = next(item for item in after["releases"] if item["id"] == release["id"])
+        self.assertEqual("READY", current["status"]); self.assertEqual([], current["deployments"])
+        self.assertTrue((self.root / "receipts" / "operation-formal-transaction-third-completed.json").is_file())

@@ -81,7 +81,7 @@ regression evidence, not the black-box conclusion below.
 | TC-V3-IND-301 | REQ-V3-002/003/009; project isolation and affected-only invalidation | Cross-project trace reference rejected; revising REQ-IND-001 marked its case `REVIEW_REQUIRED`; unrelated REQ-IND-002 link remained `VALID`. | PASS | — |
 | TC-V3-IND-302 | REQ-V3-006; independent execution, resolution and closure | Developer executor rejected; incomplete regression set rejected; developer close rejected; separate reviewer close succeeded and original FAIL execution remained recorded. | PASS | — |
 | TC-V3-IND-303 | REQ-V3-004; false Gate/approval evidence | Empty G0 assessed `BLOCKED`; unsupported PASS decision, generic human_approval, and model-provenance VERIFIED gate evidence were all rejected. | PASS | — |
-| TC-V3-IND-304 | REQ-V3-009, NFR-V3-003; pause/recovery | Pause invalidated active lease; old heartbeat and finish rejected after resume; re-claim and fresh token completed work; snapshot had no lease token. | PASS | — |
+| TC-V3-IND-304 | REQ-V3-009, NFR-V3-003; pause/recovery | Pause invalidated active lease; old heartbeat and finish rejected after resume; an ordinary re-claim is now rejected as an unknown external outcome, while this no-external-process fixture explicitly sets `safe_to_retry:true` for its fresh token; snapshot has no lease token. | PASS on current r6 fixture rerun; no production or external-process cancellation fact is implied. | — |
 | TC-V3-IND-305 | NFR-V3-004; repository and secret boundaries | Plaintext password inline field and `../` content path were rejected and no artifacts registered. | PASS | — |
 | TC-V3-IND-306 | REQ-V3-004; human approval provenance | Bare operator without a trusted approval provider was rejected. No human approval was created. | PASS | — |
 | TC-V3-IND-307 | REQ-V3-006; defect fix quality boundary | Initial failure preserved in `run-e507a53d5fc147f0a45dddaacf53722f`. Final isolated regression creates a DRAFT-only task and confirms `defect.fix` rejects it; the full qualified four-phase fixture in TC-V3-IND-302 then completes only with independent identities. | PASS | BUG-V3-002 (resolved) |
@@ -92,6 +92,12 @@ The independent integration command was
 Runtime record `run-e507a53d5fc147f0a45dddaacf53722f` preserves its actual
 `7 PASS, 1 FAIL` result, including the TC-V3-IND-307 assertion
 `ValueError not raised`.
+
+Current r6 fixture history: root frozen-head independent run of 109 tests
+first failed only TC-V3-IND-304 because its former ordinary re-claim predated
+the new fail-closed `safe_to_retry` contract. The test now first asserts that
+rejection and then makes the explicit no-external-process fixture decision;
+the first failure is retained as a test-contract update, not a product BUG.
 
 | Bug ID | Severity | Linked REQ / TC | Status | Evidence |
 |---|---|---|---|---|

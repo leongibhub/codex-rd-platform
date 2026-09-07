@@ -47,12 +47,13 @@ class LifecycleService(TestingCommands, TestModelCommands, GovernanceCommands, W
             if target['ordinal']>=int(p['current_gate'][1:]): raise ValueError('rollback target must be an earlier Gate')
             change=self.ref(c,p['id'],{'type':'CR','id':d.get('change_id')})
             refs=self.refs(c,p['id'],d.get('affected_refs'))
-            for ref in refs: self.invalidate(c,p['id'],ref,reason,change['id'])
+            for ref in refs: self.invalidate(c,p['id'],ref,reason,change['id'],fail_if_claimed=True)
             for gate in self.rows(c,'gates',p['id']):
                 if gate['ordinal']>=target['ordinal']:
                     self.supersede_assessment(c,gate.get('current_assessment_id'))
                     gate.update(evaluation_state='NOT_EVALUATED',gate_status=None,current_assessment_id=None,decided_at=None); self.put(c,'gates',gate)
-            work=self.work_create(c,dict(project_id=p['id'],gate_id=target['gate_id'],activity='compensate lifecycle rollback',required_role='documentation_manager',why=reason,input_refs=refs,output_contract={'required_types':['EVIDENCE'],'min_outputs':1},dependencies=[]))
+            from .orchestration_policy import recovery_dependencies
+            work=self.work_create(c,dict(project_id=p['id'],gate_id=target['gate_id'],activity='compensate lifecycle rollback',required_role='documentation_manager',why=reason,input_refs=refs,output_contract={'required_types':['EVIDENCE'],'min_outputs':1},dependencies=recovery_dependencies(self,c,p['id'],target['gate_id'])))
             self.refresh_stage(c,p['id']); p=self.project(c,p['id']); p['compensation_work_id']=work['id']
         elif action == 'pause':
             if p['state'] == 'PAUSED': raise ValueError('already paused')
@@ -201,7 +202,7 @@ class LifecycleService(TestingCommands, TestModelCommands, GovernanceCommands, W
         self.put(c,'trace_links',row); self.event(c,row['project_id'],'trace.invalidated',row['id'],{'reason':reason})
         return row
 
-    def invalidate(self,c,p,start,reason,change):
+    def invalidate(self,c,p,start,reason,change,*,fail_if_claimed=False):
         affected={start['id']}; frontier=[start['id']]
         links=self.rows(c,'trace_links',p)
         while frontier:
@@ -216,6 +217,10 @@ class LifecycleService(TestingCommands, TestModelCommands, GovernanceCommands, W
                 case['status']='REVIEW_REQUIRED'; affected.add(case['id']); self.put(c,'test_cases',case)
         for w in self.rows(c,'work_orders',p):
             if any(r['id'] in affected for r in w['input_refs']):
+                if w['status']=='CLAIMED':
+                    if fail_if_claimed:
+                        raise ValueError('reconcile original external outcome before compensation')
+                    self.event(c,p,'work.invalidated',w['id'],{'reason':reason,'change_id':change,'external_process_cancelled':False})
                 w.update(status='REVIEW_REQUIRED',lease_digest=None,lease_until=None,agent_id=None,version=w['version']+1); self.put(c,'work_orders',w)
         for rel in self.rows(c,'releases',p):
             if any(r['id'] in affected for r in rel['artifact_refs']+rel['requirement_refs']+rel['known_issue_refs']+[rel['rollback_ref']]):
