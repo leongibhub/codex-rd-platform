@@ -4,7 +4,7 @@
 
 这是一个供 **Codex 宿主协作** 使用的本地研发控制面：它将项目、任务、质量检查、版本化生命周期工件、测试执行、缺陷、Gate 候选评估和多技术栈验证存入 SQLite；源代码和文档事实仍在 Git 工作区中。
 
-它不是自动调用模型的云服务、多租户系统或生产发布平台。当前源码已包含受信任宿主启动的常驻 `worker-service`、SSH Ed25519 审批适配器、受控部署执行器和 Linux 原生安装脚本；它们不暴露匿名远程命令接口。已确认的安全 probe 证明 Codex auto-review 可读写 workspace 外路径，因此生产 Codex backend 现已 fail-closed 禁用；控制库与 workspace 分目录只是运维卫生，**不是**隔离边界。当前默认提案路径是 no-tools Responses HTTPS：模型不直接拥有文件/命令工具，宿主才会受控 CAS 落盘和登记 DRAFT。Runtime 校验、记录和展示事实；新执行端仍在独立复审，尚无真实人类审批、生产部署/回滚、客户验收、成功的 live Codex smoke 或 live Responses 执行结论。请先阅读 [V3 运行说明](docs/platform-v3/README.md) 与 [V3 执行端交付记录](docs/platform-v3/completion-execution-delivery.md)。
+它不是自动调用模型的云服务、多租户系统或生产发布平台。当前源码已包含受信任宿主启动的常驻 `worker-service`、SSH Ed25519 审批适配器、受控部署执行器和 Linux 原生安装脚本；它们不暴露匿名远程命令接口。已确认的安全 probe 证明 Codex auto-review 可读写 workspace 外路径，因此生产 Codex backend 现已 fail-closed 禁用；控制库与 workspace 分目录只是运维卫生，**不是**隔离边界。当前默认提案路径是 no-tools Responses HTTPS：模型不直接拥有文件/命令工具，宿主才会受控 CAS 落盘和登记 DRAFT。Runtime 校验、记录和展示事实。执行端、严格阶段编排及集成已通过本轮独立源码复审；这不代表真实人类审批、生产部署/回滚、客户验收或 live Responses 已执行。请先阅读 [V3 运行说明](docs/platform-v3/README.md) 与 [V3 执行端交付记录](docs/platform-v3/completion-execution-delivery.md)。
 
 ## 当前范围与版本
 
@@ -318,7 +318,7 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 | 全量报告、只读项目导出、Case 绑定 runner | 已实现并有本机验证记录。全量报告不截断首个页面；导出拒绝覆盖且不含源码/秘密；`test-run` 只能运行已基线的版本绑定 argv，普通命令结果不等于 Gate。见 [导出说明](docs/platform-v3/project-export.md) 与 [test-run 验证](docs/platform-v3/test-run-validation.md)。 |
 | SQLite 读取容量 | 已观察到 synthetic `capacity --profile full`：100 projects、100,000 artifact versions、1,000,000 events，终端 JSON 为 PASS，129.7199 s、294,764,544 bytes、无公开读取错误。它只衡量 `Runtime.lifecycle_collection`/`Runtime.lifecycle_snapshot` 的本地 SQLite 读路径，不是生产吞吐、写入性能、SLO、Gate 或发布结论。见 [性能验证](docs/platform-v3/performance-validation.md)。 |
 | 8 小时 soak | 同一 run `soak-9241634446774e1291126d1cc1c2a53b` 的 terminal 已 `PASS`/exit 0：elapsed 28800.740279s、4,952 样本、最大相邻 gap 8.191594s、0 read errors；terminal SHA-256 `00BE7586AD05A8CDD03CFC510C7C730021920BEDB8EFDC1225E4A24765A398CD`。它仅覆盖旧源码 `E482F1E2DD6A5A7AB42736AE227DB56B8B5D12F2D6C1D5FA1F3293F78BEDBC9A` 的合成 SQLite 公共读路径，不能外推写入、完整系统/安全、生产、Gate、release 或验收。见[性能验证](docs/platform-v3/performance-validation.md)。 |
-| GitHub Actions CI | `026263f` 的 [run 34038680898](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898) 为 3/4 jobs SUCCESS：Windows Runtime 共 273 tests、OK、1 skip；platform 共 133 tests、OK、3 skips；独立 suite 共 98 tests、1 error，原因是 Windows 检出存在 `wsl.exe` 但无可启动 Linux distro，不是将该环境缺口写成产品通过。WSL 探测修复后的本机端点 suite 为 30 tests、OK、24.700s；阶段性 full independent suite 为 99 tests、OK、1 skip、114.547s。后续源码已继续修改，最终冻结回归和新 CI 仍 `PENDING`，不能复用这组历史数字。历史 CI 和失败记录保留在 [CI 执行记录](docs/platform-v3/ci-execution.md)，均不等于 Gate、生产部署或验收。 |
+| GitHub Actions CI | 冻结源码 `fbd9b36` 对应 [run 34095997725](https://github.com/leongibhub/codex-rd-platform/actions/runs/34095997725)，于 2026-09-07 07:48:30 UTC 完成 SUCCESS：Windows、Ubuntu 的 Runtime/platform 和五栈 manifest 共 4/4 jobs 成功。本机冻结回归另为 Runtime 307（2 skip）、platform 134、independent 113（1 skip），均 OK；这些不是 CI 测试计数。旧 `026263f` 的失败保留。后续文档提交不冒充已被该源码 CI 覆盖；CI 不等于 Gate、生产部署或验收。详见 [CI 执行记录](docs/platform-v3/ci-execution.md)。 |
 | Python 逐需求生命周期收口 | 有界的既有 Python 费用 CLI 项目已完成 37/37 当前 Case PASS、7/7 RTM `COMPLETE` 和 G0–G8 `DECIDED PASS CURRENT`；这不是 G9 人工验收、生产部署或发布建议。G9–G11 保持 `NOT_EVALUATED`，finalization 为 `G0_G8_COMPLETE_G9_PENDING`。 |
 
 容量/soak 使用专用基准脚本和隔离的全新输出目录；不要指向项目状态库或复用已有输出：
@@ -356,7 +356,9 @@ GITLAB_BASE_URL, GITLAB_TOKEN, GITLAB_PROJECT_ID
 - [五栈样例经验](docs/platform-v3/lessons-learned.md)
 - [V2 Runtime 使用说明](docs/platform-v2/README.md)
 
-## CR-V3-003 执行端：受控使用（当前实现，待最终复审）
+<a id="cr-v3-003-执行端受控使用当前实现待最终复审"></a>
+
+## CR-V3-003 执行端：受控使用
 
 本节是新执行端的当前 CLI/JSON 契约，不是“已部署”声明。控制面和项目工作区仍应使用**不同目录**，但这只是降低误操作/备份混淆的运维措施，不能隔离同一 OS 身份下的模型。已确认 Codex auto-review 可越过 workspace 边界读写无害 sentinel，故生产 Codex backend 已 fail-closed 禁用。以下 `PROJECT_ID`、操作员、路径、Git SHA、证据 ID 与 hash 都是占位符，必须替换为本次真实值。
 
@@ -488,4 +490,4 @@ git config --local user.email 'your-approved-address@example.invalid'
 
 脚本会先验证 Git 身份与 Python 3.11+，再创建/复用本仓 `.venv`，运行 `pip check`、`write_local_config.py` 与 `validate_platform.py`。只有实际输出 `Setup complete.` 且 validator 成功才是该机器的安装/health 证据；失败保留诊断，修复后可重跑。
 
-新端点的源码、CLI help 和开发者/独立测试记录可观察，但 review 尚未最终完成；本轮不发布全局 PASS。当前 live Codex smoke 的失败保持只读历史，不在此处改写为成功。详见 [执行端设计](docs/platform-v3/completion-execution-design.md)、[worker service](docs/platform-v3/worker-service.md)、[审批提供方](docs/platform-v3/approval-provider.md)、[部署执行器](docs/platform-v3/deployment-executor.md) 和 [Linux 安装](docs/platform-v3/linux-setup.md)。
+当前执行端与严格编排的模块质量链已完成独立测试和复审，已登记结果见[交付记录](docs/platform-v3/completion-execution-delivery.md)。本机冻结回归为 Runtime 307 项（2 skip）、platform 134 项、independent 113 项（1 skip），均 OK；独立 tester 另实际执行了五样例的全部 11 个声明阶段及黑盒回归。它们不是项目级验收：live Responses、真实人类批准、生产部署和微信原生验证仍需真实外部条件。旧 live Codex smoke 的失败保持历史，不改写为成功。详见 [执行端设计](docs/platform-v3/completion-execution-design.md)、[worker service](docs/platform-v3/worker-service.md)、[审批提供方](docs/platform-v3/approval-provider.md)、[部署执行器](docs/platform-v3/deployment-executor.md) 和 [Linux 安装](docs/platform-v3/linux-setup.md)。

@@ -65,7 +65,7 @@
 | `REQ-V3-017` / authenticated approval | `OBSERVED`：SSH Ed25519 provider、canonical challenge、外部签名验证与 `approval-challenge`/`approval-register` 已在当前源码。 | `NOT_AVAILABLE`：没有本项目受权 operator、真实外部签名、human approval 或 Gate decision。fixture keys/signatures 不是人类审批事实。 |
 | `REQ-V3-018` / deployment executor | `OBSERVED`：显式 argv、source SHA-256、health、rollback/rollback-health、append-only receipt 和 trial/formal 分域已在当前源码。 | `NOT_EXECUTED`：没有授权目标的真实 production deploy/rollback、G10 或 release acceptance。trial receipt 也不是 release 事实。 |
 | `REQ-V3-019` / Linux setup | `OBSERVED`：`scripts/setup.sh`、本仓 venv `--copies`、配置生成和 validator 调用已在当前源码。 | `OBSERVED`：GitHub Actions [Ubuntu job 101496781967](https://github.com/leongibhub/codex-rd-platform/actions/runs/34036999184/job/101496781967) 的实际 native setup 与 repeat-install 步骤均 SUCCESS；其 `setup.sh` blob 与当前文件一致。该证据只覆盖该 Ubuntu job/脚本版本，不推出全局 release、生产部署、人工验收或最终 CR PASS。 |
-| `REQ-V3-020` / integration and delivery | `OBSERVED`：新 CLI 已出现在 `--help`，根 README 已给出中英文受控配置与恢复用法。 | `PENDING`：r3 首个独立 review 因 TC912 的五栈覆盖/记录矛盾而失败，现为同冻结快照的 attempt 2；不能给模块、CR、Gate 或 release 统一 PASS。此前 217 runtime、1 skip 是中途快照，不是本轮 final verdict。 |
+| `REQ-V3-020` / integration and delivery | `OBSERVED`：新 CLI 已出现在 `--help`，根 README 已给出中英文受控配置与恢复用法。 | `OBSERVED`：r3 首个独立 review 因 TC912 的五栈覆盖/记录矛盾而失败；同冻结快照 attempt 2 已补齐独立 tester 五栈命令级记录，并通过 review `run-192ea18554814c1a8155e6a206da993a`，Runtime 为 `DONE` 4/4。此模块级结论不能给 CR、Gate 或 release 统一 PASS。此前 217 runtime、1 skip 是中途快照，不是本轮 final verdict。 |
 
 追踪状态为 `PARTIAL`：`CR-V3-003 → DES-V3-003 → REQ-V3-016..020 → TASK-V3-016..020 → 当前工作区变更/测试 → 待完成独立 review → 未来 release`。本仓仍为 template lifecycle mode；本节不是中央 Gate Register，绝不产生 G0–G11 决定。
 
@@ -77,9 +77,9 @@
 | --- | --- | --- |
 | 8 小时公开读路径 soak | `OBSERVED`：同一 run `soak-9241634446774e1291126d1cc1c2a53b` terminal 为 `PASS`/exit 0，elapsed `28800.74027900002` seconds；4,952 样本，最大相邻 gap `8.19159369985573` seconds，`reads.errors=[]`；terminal SHA-256 `00BE7586AD05A8CDD03CFC510C7C730021920BEDB8EFDC1225E4A24765A398CD`。 | 仅绑定旧源码 `E482F1E2DD6A5A7AB42736AE227DB56B8B5D12F2D6C1D5FA1F3293F78BEDBC9A` 的合成 SQLite 公共读路径；不是写入、全系统/安全、生产、Gate、release 或验收结论。 |
 | `026263f` hosted CI 与后续本机 QA | `OBSERVED`：[GitHub Actions run 34038680898](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898) 为 3/4 jobs SUCCESS：Windows Runtime 273 PASS/1 skip，Windows platform 133 PASS/3 skips；独立 job 实际为 98 tests/1 error，不能虚增为 98 PASS 再加 1 FAIL。WSL readiness 修复后，本机端点 suite 30 PASS/24.700 s，root full suite 99 PASS/1 skip/114.547 s。 | 独立 job 的失败是 `wsl.exe` 存在但没有可启动 Linux distro；不能改写为成功。上述本机 QA 不替代 hosted CI；新 CI 为 `PENDING`。任一 CI/本机测试都不是 Gate、部署或验收。 |
-| P1 复审与收口策略 | `OBSERVED`：历史 P1（worker fast pause→resume 重复执行、未受 host 严格条件约束的 stage claim）已由 TASK-V3-016 r9 和 TASK-V3-021 r7 独立复测/review；当前 policy review scope P0=0、P1=0。 | 这是当前源码/隔离 fixture 的模块级结论；TASK-V3-020 r3 reviewer、hosted CI、真实 API/批准/部署/验收仍各自未完成。 |
+| P1 复审与收口策略 | `OBSERVED`：历史 P1（worker fast pause→resume 重复执行、未受 host 严格条件约束的 stage claim）已由 TASK-V3-016 r9、TASK-V3-020 r3 attempt 2 和 TASK-V3-021 r7 独立复测/review；当前 module review scope P0=0、P1=0。 | 这是当前源码/隔离 fixture 的模块级结论；hosted CI、真实 API/批准/部署/验收仍各自未完成。 |
 
-因此，`CR-V3-003/004` 的实现存在和范围化测试证据保持 `OBSERVED`，但跨端点独立 review、fresh CI、真实 API、人工批准、真实部署/回滚、G10 及验收仍分别保持其既有 `PENDING`、`NOT_AVAILABLE` 或 `NOT_EXECUTED` 边界。本页不产生全局 PASS。
+因此，`CR-V3-003/004` 的实现、范围化测试与当前模块 review 证据保持 `OBSERVED`，但 fresh CI、真实 API、人工批准、真实部署/回滚、G10 及验收仍分别保持其既有 `PENDING`、`NOT_AVAILABLE` 或 `NOT_EXECUTED` 边界。本页不产生全局 PASS。
 
 ## 2026-09-07 冻结前任务与回归事实（追加，不替换历史）
 
@@ -91,7 +91,7 @@ lifecycle mode，也不产生 Gate decision。
 | --- | --- | --- |
 | `TASK-V3-016` / `REQ-V3-016` | `OBSERVED`：Runtime 为 revision 9、`DONE`、4/4 checks；r8 已被 r9 取代。canonical fence 覆盖 unknown external-outcome invalidation/control 与 rollback，并将 adopted dependency resolution 延后到 atomic claim；post-claim context 使用持久 adopted refs 的有界脱敏生命周期记录。developer 64 tests PASS；独立 unit `run-901b8eb923704979bb35775a5fe7cd9c` 为 64/64 PASS/26.886856 s，独立 integration `run-a918a474aa18436887ac526af9a180ff` 为 22/22 PASS/19.173931 s（TC939）；review `run-95e3f86d8cdd4bbc9758b395059355ff` 已登记。 | `DONE` 仅为当前源码/隔离 fixture 的模块质量链；新 CI 仍 `PENDING`，不是端点总体、项目 Gate、外部执行或验收结论。 |
 | `TASK-V3-018` / `REQ-V3-018` | `OBSERVED`：Runtime 为 revision 4、`DONE`、4/4 checks，限于受控本机/fixture 的正式登记原子性质量链。 | `NOT_EXECUTED`：真实部署、rollback、G10、release acceptance。 |
-| `TASK-V3-020` / `REQ-V3-020` | `OBSERVED`：r3 首个 review `run-3dffaf1ab6c2462dbda92e7b08cf33b2` 为 `FAIL`，原因是 TC912 把未执行的五栈回归写为 PASS、又与 `NOT_EXECUTED` 记录冲突；未观察到产品源码回归。现为同一冻结快照的 attempt 2，结果 `PENDING`；实施验证 33 tests/16.902 s/PASS，已交 QA，五 manifest 正式 integration 与后续 review 尚未完成。既有定向证据：validator contract 28 tests/28.178 s/OK；独立 QA unit 33/33 PASS/18.413208 s、integration 4/4 PASS/3.320729 s，QA full platform 134/179.961 s/OK；reviewer 补跑五栈 Python 13/13、Node 6/6。 | reviewer 的补跑不替代独立 tester attempt 2 的重测。初次错误 package 命令仅 `Ran 0`，不计 PASS；fixture RED→GREEN 未改产品 validator Gate。attempt 2 的 QA/后续 review 与 hosted CI 为 `PENDING`，不得从其它模块 PASS 继承批准。 |
+| `TASK-V3-020` / `REQ-V3-020` | `OBSERVED`：r3 首个 review `run-3dffaf1ab6c2462dbda92e7b08cf33b2` 为 `FAIL`，原因是 TC912 把未执行的五栈回归写为 PASS、又与 `NOT_EXECUTED` 记录冲突；未观察到产品源码回归。attempt 2 unit `run-7ecc1fb37c4a415aabcd37872ceb305b` 33/33 PASS/15.482481 s；integration `run-2f1239aa6e794fe5ae01e6539c89fb7c` 15 条实际命令 PASS/31.697916 s（非 15 个测试用例），覆盖 C++ WSL build/unit/integration、Python build/unit、Web unit、Java 8 build/unit/integration、微信 unit/integration；独立五栈 13/13、Web Node 3/3、微信 fake-`wx` Node 3/3、CLI/fixture 4/4；TC912 已更正。attempt 2 review `run-192ea18554814c1a8155e6a206da993a` 为 PASS，Runtime `DONE` 4/4。 | 这是本机/fixture/adapter 的模块质量链。微信 fake-`wx` 不构成原生微信；`Ran 0` 与 fixture RED→GREEN 不计产品 Gate。hosted CI、live Responses、真实人批、生产部署/回滚、客户验收与顶层 Gate 仍未由此产生 PASS。 |
 | [`CR-V3-005`](CR-V3-005-host-stage-policy.md) / `TASK-V3-021` / `REQ-V3-021` | `OBSERVED`：Runtime 为 revision 7、`DONE`、4/4 checks；r4–r6 已被 r7 取代。r7 修复 TC semantic adoption、repair exact refs、内置 Gate FAIL/rollback recovery dependency binding；QA unit 7/7、integration 18/18、reviewer 17/17，review `run-3e3576b548ca4dea91dbbc52e813c693`。 | 当前 policy scope P0=0/P1=0；模块级证据仅限源码/隔离 fixture，不构成真实 Gate、批准或生产执行。 |
 | `TASK-V3-022` / `REQ-V3-008,021` | `OBSERVED`：Runtime 为 revision 1、`DONE`、4/4 checks；[只读状态面](orchestration-status.md)解释前提但不授权执行。 | `NOT_APPLICABLE`：该只读状态任务不推进 Gate，也不代替 TASK-021 QA 或人工验收。 |
 | 冻结前回归记录 | `OBSERVED`：platform 133 PASS/217.852 s；早期 full runtime 288 PASS/177.502 s/2 skips（freeze 前）；后续 full runtime 294 tests/1 FAIL（QA fixture teardown Windows `WinError 32`）；full independent 实际 109 tests/1 error/1 skip（成功 107；TC304 旧 non-safe-retry fixture）。TC304 已改为明确 negative 与显式临时 `safe_to_retry` 允许场景。本轮五应用独立 Python 13/13 PASS/12.839 s、显式 Node 两文件 6/6 PASS/141.7366 ms、`python -X utf8` Skill `quick_validate.py` PASS，JS syntax/diff check 成功。 | 修复不回写旧 FAIL；不带 UTF-8 的 GBK 工具错误保留历史。该历史记录产生时 final-freeze 回归与 hosted CI 尚 `PENDING`；后续当前冻结回归列于本节末，新 hosted CI 仍 `PENDING`。不得挑选旧绿或局部五应用结果为最终版本 PASS。 |
@@ -102,5 +102,11 @@ full platform 133 tests/2 errors/210.172 s（fixture copytree race）和 context
 （被装饰函数 `__wrapped__` 的 globals）错误保留为工具/fixture历史，不归因产品；TC304/deployment cleanup 后 deployment split
 19 PASS、1 host-permission skip，未再现 `WinError 32`。当前冻结回归为 Runtime 307 tests/
 236.304 s/OK/2 skips、platform QA 134 tests/179.961 s/OK（先前已修 fixture run 为 178.309 s）、independent full 113 tests/135.173 s/OK/1
-skip（包含 TC940）。112 tests/148.845 s/OK/1 skip 是 TC940 新增前的历史冻结后快照，不能借为当前结果。这些 `OBSERVED` 结果仍不能替代 TASK-V3-020 r3 attempt 2 的 QA/review、
+skip（包含 TC940）。112 tests/148.845 s/OK/1 skip 是 TC940 新增前的历史冻结后快照，不能借为当前结果。这些 `OBSERVED` 结果仍不能替代
 新 hosted CI、live Responses、真实人类批准、生产部署/回滚、客户验收或顶层 Gate PASS。
+
+当前冻结源码 checkpoint 为提交 `fbd9b36d5ad429bd3528328c1ec6a06b49cc990b`（45 个变更文件）。`OBSERVED` 的提交存在只固化本页所列待验收状态；它不是全量完成、Gate、发布或外部事实。
+
+## 最终 CI 补录：覆盖上文的新 CI 待执行快照
+
+上述源码 `fbd9b36` 的 [run 34095997725](https://github.com/leongibhub/codex-rd-platform/actions/runs/34095997725) 于 `2026-09-07T07:48:30Z` 完成 `SUCCESS`，Windows/Ubuntu Runtime-platform 与 multistack 共 4/4 jobs 成功。此实际结果覆盖上文新 hosted CI 的 `PENDING` 描述；此前失败、当时待执行状态及其作用范围仍作为历史保留。准确 job ID、时间及计数证据边界见 [CI 执行记录](ci-execution.md)。它不改变真实 API、人工批准、微信原生、生产部署及验收仍缺少实际执行事实的状态，也不创建顶层 Gate PASS。

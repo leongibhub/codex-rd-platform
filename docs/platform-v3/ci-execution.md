@@ -73,3 +73,22 @@ CI 使用真实 Python 3.13、Node 22 和 Temurin JDK 8。Python manifest 仅 bu
 | Ubuntu | 200 tests，5 skips，0 fail/error | 119 tests，14 skips，0 fail/error | 69 tests，10 skips，0 fail/error | 4/4 PASS |
 
 Windows 专用安装器/链接测试在 Ubuntu 标注 skip，不冒充执行；Windows job 实际执行这些用例。两 OS 的五应用声明阶段也均实际通过。后续仅 README/报告等文档提交以本段明确的代码 SHA 为验证基准，文档自身另做链接/CLI/使用步骤检查，不声称未来提交已经包含在该 CI 中。
+
+## 2026-09-07：执行控制与阶段策略冻结源码复验
+
+源码 `fbd9b36d5ad429bd3528328c1ec6a06b49cc990b` 的真实 [run 34095997725](https://github.com/leongibhub/codex-rd-platform/actions/runs/34095997725) 已为 `completed / success`，最终更新时间 `2026-09-07T07:48:30Z`。以下结果由 GitHub Actions Run/Jobs API 实际读取，所有时间均为 UTC。
+
+| Job | 结果 | 开始 | 完成 |
+| --- | --- | --- | --- |
+| Windows multistack `101659687230` | SUCCESS | 07:32:55 | 07:34:03 |
+| Ubuntu multistack `101659687356` | SUCCESS | 07:32:55 | 07:33:25 |
+| Ubuntu Runtime/platform `101659687365` | SUCCESS | 07:32:55 | 07:38:51 |
+| Windows Runtime/platform `101659687418` | SUCCESS | 07:32:55 | 07:48:30 |
+
+Runtime/platform 作业执行 Runtime、platform、independent V3、adapter black-box 契约；Ubuntu 的原生安装与重复安装步骤也成功。两个 multistack 作业执行既有 C++、Python、Web、Java、微信示例的 manifest 声明阶段。没有通过取消、忽略失败或添加 blanket skip 获得此结果。
+
+本次记录以实际作业及步骤结论为依据：日志下载一次返回 403、一次超时，未取得完整计数摘要，因此不以本机计数替代 CI 计数。另行完成的本机冻结回归是 Runtime 307 tests（2 skips）、platform 134 tests、independent V3 113 tests（1 skip），均 OK。OS/权限不适用项没有被记为已执行。
+
+上一个源码 `026263f` 的 [run 34038680898](https://github.com/leongibhub/codex-rd-platform/actions/runs/34038680898) 整体失败仍保留：3/4 作业成功，Windows independent suite 为 98 tests / 1 error；`wsl.exe` 存在但无可启动 distro 导致 readiness 夹具错误。本次修复与新成功不改写旧失败。
+
+以上仅证明指定源码、workflow 和声明阶段成功，不证明真实 Responses API、微信 IDE/真机、生产部署/回滚、客户验收或项目 Gate。后续文档补录提交单独进行文档契约和平台校验，不声称其提交 SHA 已包含在本次源码 CI 中。

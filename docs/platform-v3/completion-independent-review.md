@@ -1,6 +1,6 @@
 # CR-V3-003 独立代码与架构审查
 
-评审状态：`IN_REVIEW`。评审基线为 `fd649c8`，当前对象是该基线之上的共享工作区变更；工作区尚未冻结，因此本报告不是最终 G8、发布或人工验收结论。
+当前评审状态：本轮已实现源码范围 `PASS`，最终增量结论见文末 2026-09-07 continuation；P0=0、P1=0。下方前半部分保留以 `fd649c8` 为基线时的 `IN_REVIEW / NOT APPROVED` 历史，不能把它误读为当前结论，也不能把源码 review 外推为 G8、发布或人工验收。
 
 ## 范围与门禁结论
 
@@ -154,7 +154,7 @@
 
 ## 2026-09-07 continuation review（当前增量事实）
 
-本节保留上面的历史发现与当时结论，不把后续修复倒写成从未失败。当前审查基线为已推送提交 `026263f` 加本轮尚未冻结的工作区变更；因此本节仍是源码范围的增量门禁，不是项目 G8、发布、生产部署或人工验收结论。临时 SQLite、HTTP、SSH、部署和小应用 fixture 只证明接口行为，不能替代 live Responses、真实批准或生产环境执行。
+本节保留上面的历史发现与当时结论，不把后续修复倒写成从未失败。当前源码审查基线为已推送提交 `fbd9b36`，工作区只余待提交的证据文档更新；因此本节仍是源码范围的增量门禁，不是项目 G8、发布、生产部署或人工验收结论。临时 SQLite、HTTP、SSH、部署和小应用 fixture 只证明接口行为，不能替代 live Responses、真实批准或生产环境执行。
 
 ### 新增发现与处置
 
@@ -171,7 +171,7 @@
 | CRV3-RV-025 | P1 | TEST_MODEL adoption 曾从无 `content_ref` 的 model row 取摘要而报错；TEST_CASE 后续虽可采纳，但当前实现不比较 DRAFT candidate 与 BASELINED revision 的测试语义，允许替换 steps/expected/requirement 后仍冒充原 work 输出。 | **RESOLVED / RETESTED / REVIEWED**。TEST_MODEL 绑定 companion artifact/version/hash；TEST_CASE 对完整声明语义字段做 current-vs-historical 对比、未知 schema fail closed，只允许治理字段变化。治理-only 正例及 steps/expected/requirement 三类漂移负例通过。 |
 | CRV3-RV-026 | P1 | strict project 的内置 `gate.decide(FAIL)` remediation、`lifecycle.control(rollback)` 及 `work.control(rollback)` compensation 均创建 `dependencies:[]`；G1+ claim 却强制从 predecessor work dependency 解析 stage output，因此这些恢复 work 永久 `STRICT_POLICY_STAGE_OUTPUT_MISSING`。 | **RESOLVED / RETESTED / REVIEWED**。三类宿主恢复 work 都通过同一 `recovery_dependencies` 选择已完成且已被 fresh predecessor assessment 精确采纳的 handoff；G1 Gate FAIL、work rollback、lifecycle rollback 均完成正向 claim。没有新增公有 bypass metadata。 |
 | CRV3-RV-027 | P1 | repair work completion 只检查 defect 已到 FIXED/RESOLVED/CLOSED 和 actor，未把实际 output ref 精确绑定到 `fix_task_ref`/retest executions/closure evidence；domain transition 后任意同类型 ref 可作为该 work 输出。 | **RESOLVED / RETESTED / REVIEWED**。fix/retest/review 分别精确等于 defect 持久化的 `fix_evidence_refs`、`retest_execution_refs`、`closure_evidence_refs`；unrelated evidence/execution 负例拒绝。fix 的共通合同改为 exact EVIDENCE，兼容 requirement analyst/architect owner，不伪装为 CODE_CHANGE。 |
-| CRV3-RV-028 | P1 | `REQ/TASK-V3-020` 设计和 TC-V3-IND-912 要求 final freeze 后重跑既有五栈；r3 tester integration 实际只执行 4 项 CLI/HTTP/README/fixture，却把 TC-912 标成 PASS，同一报告末尾又写“完整五栈 NOT_EXECUTED”。 | **OPEN / REVIEW FAILED**。reviewer 补跑 C++/Python/Java/V3 adapter 13/13、Web/微信 fake-`wx` 6/6 均通过，未观察到源码回归，但 reviewer 不能替代 current independent tester evidence。review run `run-3dffaf1ab6c2462dbda92e7b08cf33b2` 已按 P1 FAIL 登记；需保留失败历史、统一报告并由 tester 在新 attempt 同一冻结快照实际执行五栈。微信原生仍不在该证据范围。 |
+| CRV3-RV-028 | P1 | `REQ/TASK-V3-020` 设计和 TC-V3-IND-912 要求 final freeze 后重跑既有五栈；r3 tester integration 实际只执行 4 项 CLI/HTTP/README/fixture，却把 TC-912 标成 PASS，同一报告末尾又写“完整五栈 NOT_EXECUTED”。 | **RESOLVED / RETESTED / REVIEWED at attempt 2**。首审 `run-3dffaf1ab6c2462dbda92e7b08cf33b2` FAIL 保留；同一冻结源码的新 attempt 由 tester 实际执行 11 个 manifest 阶段、独立多栈 13/13、Web 3/3、微信 fake-`wx` 3/3、端点/CLI/HTTP/board/Skill/README/fixture 4/4，integration `run-2f1239aa6e794fe5ae01e6539c89fb7c`。矛盾末行已修正；review `run-192ea18554814c1a8155e6a206da993a` PASS。微信原生仍不在该证据范围。 |
 
 ### 已完成的新增模块审查
 
@@ -179,13 +179,13 @@
 - TASK-V3-018 r4：模块级 **PASS**，见 `run-63be26b13d0e4279905ed5bafec8fc91`。结论仅限本地部署执行器源码与隔离 fixture。
 - TASK-V3-022 r1：只读编排状态 CLI/HTTP/前端投影模块级 **PASS**，见 `run-c7fb409ac5e04c9db2400a1fe569c31d`。状态读取不创建缺失 DB、不 claim/resume、不推进 Gate，并固定返回 `execution_authorized:false`；动态 UI 值通过 `textContent` 写入。未执行真实浏览器 accessibility 或人工验收。
 - TASK-V3-021 r7：host-enforced lifecycle policy 模块级 **PASS**，见 `run-3e3576b548ca4dea91dbbc52e813c693`。reviewer 本机 17/17；独立 QA unit 7/7、integration 18/18。结论仅限当前源码与隔离 Runtime/local-file fixture，不构成真实 Gate、批准或生产执行。
+- TASK-V3-020 r3 attempt 2：集成交付模块级 **PASS**，见 `run-192ea18554814c1a8155e6a206da993a`。unit `run-7ecc1fb37c4a415aabcd37872ceb305b` 33/33；integration `run-2f1239aa6e794fe5ae01e6539c89fb7c` 15 个真实本机命令，覆盖全部声明五栈阶段与端点/双语/Skill。首审 evidence-gap FAIL 保留，不误写成产品回归；微信原生、live API 和生产事实不在范围。
 - TASK-V3-017 与 TASK-V3-019 的先前独立 DONE 结论保持不变，不重做、不外推。
 
 ### 当前门禁结论
 
 - P0：0。
-- P1：TASK-V3-016 r9 与 TASK-V3-021 r7 已清零各自 scoped P1；TASK-V3-020 r3 新增 CRV3-RV-028，review 已 FAIL。
-- TASK-V3-020 必须保留 r3 失败，在新 attempt 同一冻结快照由 independent tester 补跑五栈并消除证据报告矛盾，再进行独立复审；不能用 reviewer 补跑或历史绿记录替代。
-- Spec compliance：**FAIL / IN_REVIEW**；Code quality：**FAIL / IN_REVIEW**；Gate ruling：**NOT APPROVED**。当前没有“最终愿景全部完成”的独立证据。
+- P1：本报告列出的当前源码范围发现均已处置；P0=0、P1=0。TASK-V3-016 r9、018 r4、021 r7、022 r1、020 r3 attempt 2 均有独立 tester/reviewer 当前链路。
+- Spec compliance：**PASS（本轮已实现源码范围）**；Code quality：**PASS（本轮已实现源码范围）**。这不是项目 G8/G9、release 或人工验收决定，也不把缺失外部事实改写为完成。
 
-后续只在 TASK-V3-020 r3 完成 independent integration → reviewer、当前工作区冻结且 P0/P1 仍为零后，才重新评定本轮总体源码范围。live Responses、真实人类批准、生产部署、客户验收和微信原生发布继续按 `NOT_AVAILABLE`/`NOT_EXECUTED` 报告，不能由 fixture 或 Git push 替代。
+当前源码范围可以交由 root 做最终 Git/CI/交付汇总。live Responses、真实人类批准、生产部署、客户验收和微信原生发布继续按 `NOT_AVAILABLE`/`NOT_EXECUTED` 报告，不能由 fixture、模块 review、CI 或 Git push 替代；因此本结论不是“所有外部目标环境已经验收”的声明。
